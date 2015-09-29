@@ -1,0 +1,9 @@
+Weeks
+
+<ul>
+    {% for week in weeks %}
+        <li><a href="{{ week.url }}">{{ week.start }} - {{ week.end }}</a></li>
+    {% endfor %}
+</ul>
+
+
