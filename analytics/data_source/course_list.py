@@ -4,36 +4,13 @@ from restclients.canvas.reports import Reports
 from restclients.canvas import Canvas
 from restclients.sws import SWS
 from restclients.dao_implementation.canvas import Live
+from django.conf import settings
 
 def get_all_course_sis_ids():
-#    return ['2014-autumn-JSIS A-435-A']
-#    return ['2014-autumn-ECFS-311-A']
-    return ['2015-winter-ECFS-301-C',
-            '2015-winter-ECFS-303-C',
-            '2015-winter-ECFS-401-A',
-            '2015-winter-ECFS-411-B',
-            '2015-winter-ECFS-455-B',
-            '2015-winter-NSG-432-A',
-            '2015-winter-AES-489-B',
-            '2015-winter-ANTH-478-A',
-            '2015-winter-COM-220-B',
-            '2015-winter-COM-468-C',
-            '2015-winter-COM-489-B',
-            '2015-winter-ECON-201-F',
-            '2015-winter-GWSS-489-B',
-            '2015-winter-ISS-355-A',
-            '2015-winter-JSIS B-406-A',
-            '2015-winter-JSIS B-416-A',
-            '2015-winter-LSJ-327-A',
-            '2015-winter-PHIL-343-B',
-            '2015-winter-POL S-327-A',
-            '2015-winter-POL S-432-A',
-            '2015-winter-SOC-362-C']
-#    return ['2015-spring-PSYCH-101-A', '2014-spring-BIOST-513-A']
-##    return ['2014-spring-AFRAM-260-A--']
-#    return ['2014-spring-LIS-590-A']
-#    return ['2014-spring-ENGL-131-A1']
-#    return ['2014-winter-ASTR-101-A']
+    return settings.ANALYTICS_SIS_COURSE_IDS
+
+    # We originally thought it would be all courses!  Dead code below :(
+
     # Root account name - uwcourse
     account_name = "uwcourse"
 

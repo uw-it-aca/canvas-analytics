@@ -147,7 +147,7 @@ def build_data_by_person(gatherers, start_time, course_ids, time_period, term):
             traceback.print_exc(file=sys.stdout)
 
 def get_time_period():
-    term_module = getattr(settings, 'ANALYTICS_CURRENT_TERM_MODULE', 'analytics.data_source.spring_term')
+    term_module = getattr(settings, 'ANALYTICS_CURRENT_TERM_MODULE', 'analytics.data_source.config_term')
     mod = import_module(term_module)
 
     current_term = mod.get_term()
