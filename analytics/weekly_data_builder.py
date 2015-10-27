@@ -37,6 +37,7 @@ def build_data_by_course(gatherers, start_time, time_period, term):
         for gatherer in gatherers:
             gatherer_data = []
             try:
+                raise Exception("Skip!")
                 data = gatherer.collect_analytics_for_sis_course_id(course_id, time_period)
                 for entry in data:
                     try:

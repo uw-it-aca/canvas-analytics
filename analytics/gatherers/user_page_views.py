@@ -93,9 +93,6 @@ def collect_analytics_for_sis_person_id(person_id, time_period):
                 counts_by_page_type[course_id]["other"] += 1
             else:
                 counts_by_page_type[course_id]["other"] += 1
-                print "P: ", person_id, " C: ", entry["controller"]
-                print "E: ", entry
-
 
         for course_id in counts_by_page_type:
             for page_type in counts_by_page_type[course_id]:
