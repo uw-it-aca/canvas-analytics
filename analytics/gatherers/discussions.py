@@ -8,8 +8,6 @@ def collect_analytics_for_sis_course_id(course_id, time_period):
     users_sis_id = re.sub("--$", "", course_id)
     users = Users().get_users_for_sis_course_id(users_sis_id)
 
-    print "Users: ", users
-
     course_id = re.sub("--$", "", course_id)
     login_by_id = {}
     counts_by_id = {}
