@@ -1,0 +1,65 @@
+<head>
+  <meta charset="utf-8">
+    <title>Manage analytics</title>
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+    <script src="//code.jquery.com/jquery-1.10.2.js"></script>
+    <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+    <script>
+    $(function() {
+        $( "#start_date" ).datepicker();
+        $( "#end_date" ).datepicker();
+    });
+    </script>
+</head>
+
+{% if error %}
+<div>
+Error saving: {{ error }}
+</div>
+{% endif %}
+
+<h2>Set the current term:</h2>
+
+<form action="{% url 'analytics.views.manage' %}" method="POST">
+{% csrf_token %}
+<input type="hidden" name="change" value="term"/>
+Quarter:
+<select name="term_quarter">
+    <option value="winter" {% if term_quarter == "winter" %}selected="selected"{%endif %} >Winter</option>
+    <option value="spring" {% if term_quarter == "spring" %}selected="selected"{%endif %} >Spring</option>
+    <option value="summer" {% if term_quarter == "summer" %}selected="selected"{%endif %} >Summer</option>
+    <option value="autumn" {% if term_quarter == "autumn" %}selected="selected"{%endif %} >Autumn</option>
+</select>
+
+Year: <input type="text" name="year" value="{{ term_year }}">
+
+<br />
+Start date: <input type="text" id="start_date" name="start_date" value="{{ term_start }}"/> <br />
+End date: <input type="text" id="end_date" name="end_date" value="{{ term_end }}"/> <br />
+
+
+<input type="submit" value="Save" />
+</form>
+<h2>Courses:</h2>
+
+<form action="{% url 'analytics.views.manage' %}" method="POST">
+{% csrf_token %}
+<input type="hidden" name="change" value="courses"/>
+
+<p>Values must be of the form:
+<i>{year}-{quarter}-{curriculum}-{course number}-{section}</i> <br>
+e.g. 2015-autumn-TRAIN-011-A
+<br />
+If a curriculum has spaces or 'odd' characters, leave them in.
+<br />
+e.g. 'ES&amp;S', 'JSIS A'
+<br />
+<textarea name="new_list" style="width: 200px; height: 500px;">{% for id in course_ids %}{{ id }}
+{% endfor %}</textarea>
+
+<br />
+
+<input type="submit" value="Save"/>
+
+</form>
+

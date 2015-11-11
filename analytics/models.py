@@ -67,3 +67,21 @@ class WeeklyDataDataPoint(models.Model):
     key = models.CharField(max_length=500, db_index=True)
     value = models.TextField(null=True)
 
+
+class ManagedCurrentTerm(models.Model):
+    """
+    Somewhat hacky - there can/should only be one.
+    Configured through the web front-end.
+    """
+    start_date = models.DateField()
+    end_date = models.DateField()
+    quarter = models.CharField(max_length=50)
+    year = models.PositiveIntegerField()
+
+
+class ManagedCourseSISIDs(models.Model):
+    """
+    Just tracks the list of current courses.  Nothing tracks past courses,
+    except any data that may have been stored!
+    """
+    sis_id = models.CharField(max_length=200)

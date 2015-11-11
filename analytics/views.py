@@ -3,6 +3,8 @@ from django.http import HttpResponse
 from django.template import RequestContext
 from django.core.urlresolvers import reverse
 from analytics.models import WeeklyDataTimePeriod, WeeklyDataDataPoint
+from analytics.models import ManagedCurrentTerm, ManagedCourseSISIDs
+from dateutil import parser
 import StringIO
 import csv
 import codecs
@@ -89,6 +91,64 @@ def data(request, term, week_id, course_id):
     # With text/csv excel wants to open it - but it doesn't parse as csv
     # on my computer :(
     return HttpResponse(csv_file.getvalue(), content_type="text/plain")
+
+
+def manage(request):
+    error = None
+    if "POST" == request.META['REQUEST_METHOD']:
+        if "term" == request.POST["change"]:
+            try:
+                year = request.POST["year"]
+                quarter = request.POST["term_quarter"]
+                start = parser.parse(request.POST["start_date"])
+                end = parser.parse(request.POST["end_date"])
+
+                obj = ManagedCurrentTerm()
+                obj.year = year
+                obj.quarter = quarter
+                obj.start_date = start
+                obj.end_date = end
+                # Try to save first, so if that fails for some reasonable
+                # reason, we didn't just delete everything
+                obj.save()
+                ManagedCurrentTerm.objects.all().delete()
+                obj.save()
+
+            except Exception as ex:
+                error = str(ex)
+
+        if "courses" == request.POST["change"]:
+            ManagedCourseSISIDs.objects.all().delete()
+            seen = {}
+            values = request.POST["new_list"]
+
+            for sis_id in values.splitlines():
+                plain = sis_id.strip()
+                if plain not in seen:
+                    if plain:
+                        seen[plain] = True
+                        ManagedCourseSISIDs.objects.create(sis_id=plain)
+
+    data = {
+        "error": error,
+    }
+
+    try:
+        current_term = ManagedCurrentTerm.objects.all()[0]
+        data["term_year"] = current_term.year
+        data["term_quarter"] = current_term.quarter
+        data["term_start"] = current_term.start_date.strftime("%m/%d/%Y")
+        data["term_end"] = current_term.end_date.strftime("%m/%d/%Y")
+    except Exception as ex:
+        pass
+
+    data["course_ids"] = []
+    all_course_sis_ids = ManagedCourseSISIDs.objects.all()
+    for val in sorted(all_course_sis_ids, key=lambda x: x.sis_id):
+        data["course_ids"].append(val.sis_id)
+
+    return render_to_response("manage_everything.html", data,
+                              RequestContext(request))
 
 
 # From the csv documentation:

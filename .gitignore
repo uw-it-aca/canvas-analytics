@@ -55,3 +55,17 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# Vim
+*.swp
+
+# Virtualenv
+/bin
+/include
+/local
+/src
+
+# project stuff
+/project
+db.sqlite3
+/manage.py
