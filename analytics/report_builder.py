@@ -1,5 +1,4 @@
 from django.conf import settings
-from django.utils.log import getLogger
 from django.utils.timezone import utc
 from restclients.canvas.accounts import Accounts as CanvasAccounts
 from restclients.canvas.analytics import Analytics as CanvasAnalytics
