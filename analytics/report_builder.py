@@ -3,6 +3,7 @@ from django.utils.timezone import utc
 from uw_canvas.accounts import Accounts as CanvasAccounts
 from uw_canvas.analytics import Analytics as CanvasAnalytics
 from uw_canvas.reports import Reports as CanvasReports
+from uw_canvas.terms import Terms as CanvasTerms
 from restclients_core.exceptions import DataFailureException
 from analytics.models import Report, SubaccountActivity
 from datetime import datetime
@@ -64,7 +65,7 @@ class ReportBuilder():
             activity.save()
 
         # Generate course totals
-        term = self._reports.get_term_by_sis_id(sis_term_id)
+        term = CanvasTerms().get_term_by_sis_id(sis_term_id)
         course_prov_report = self._reports.create_course_provisioning_report(
             root_account.account_id, term.term_id,
             params={"include_deleted": True})
