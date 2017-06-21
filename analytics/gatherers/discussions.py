@@ -1,5 +1,5 @@
-from restclients.canvas.discussions import Discussions
-from restclients.canvas.users import Users
+from uw_canvas.discussions import Discussions
+from uw_canvas.users import Users
 import json
 import re
 

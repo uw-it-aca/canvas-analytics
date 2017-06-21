@@ -1,6 +1,6 @@
-from restclients.canvas import Canvas
-from restclients.canvas.users import Users
-from restclients.canvas.quizzes import Quizzes
+from uw_canvas import Canvas
+from uw_canvas.users import Users
+from uw_canvas.quizzes import Quizzes
 import json
 import re
 

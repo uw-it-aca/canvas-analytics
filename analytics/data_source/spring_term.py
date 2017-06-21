@@ -1,4 +1,4 @@
-from restclients.models.canvas import CanvasTerm
+from uw_canvas.models import CanvasTerm
 from dateutil import parser
 
 # Just kidding, it's winter

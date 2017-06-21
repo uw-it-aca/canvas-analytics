@@ -2,7 +2,7 @@ from django.conf import settings
 from django.utils.importlib import import_module
 from datetime import datetime
 from analytics.models import WeeklyDataTimePeriod, WeeklyDataDataPoint
-from restclients.canvas.courses import Courses
+from uw_canvas.courses import Courses
 
 def build_data():
     start_time = datetime.now()
