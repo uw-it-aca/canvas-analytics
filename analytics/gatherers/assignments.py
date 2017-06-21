@@ -1,9 +1,9 @@
-from restclients.canvas import Canvas
+from uw_canvas import Canvas
 from django.utils import timezone
 import traceback
-from restclients.exceptions import DataFailureException
-from restclients.canvas.analytics import Analytics
-from restclients.canvas.users import Users
+from restclients_core.exceptions import DataFailureException
+from uw_canvas.analytics import Analytics
+from uw_canvas.users import Users
 from dateutil import parser
 import datetime
 import re

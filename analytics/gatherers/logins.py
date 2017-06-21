@@ -1,4 +1,4 @@
-from restclients.canvas.authentications import Authentications
+from uw_canvas.authentications import Authentications
 
 def collect_analytics_for_sis_person_id(person_id, time_period):
     try:

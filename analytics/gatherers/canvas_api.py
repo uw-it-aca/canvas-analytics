@@ -1,4 +1,4 @@
-from restclients.canvas.analytics import Analytics
+from uw_canvas.analytics import Analytics
 
 def collect_analytics_for_sis_course_id(course_id, time_period):
     pass

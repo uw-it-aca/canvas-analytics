@@ -1,9 +1,9 @@
-from restclients.canvas import Canvas
-from restclients.canvas.courses import Courses
-from restclients.canvas.groups import Groups
-from restclients.canvas.enrollments import Enrollments
-from restclients.models.canvas import CanvasEnrollment
-from restclients.canvas.conversations import Conversations
+from uw_canvas import Canvas
+from uw_canvas.courses import Courses
+from uw_canvas.groups import Groups
+from uw_canvas.enrollments import Enrollments
+from uw_canvas.models import CanvasEnrollment
+from uw_canvas.conversations import Conversations
 from random import random
 import re
 import json

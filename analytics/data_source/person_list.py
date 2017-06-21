@@ -1,6 +1,7 @@
-from restclients.canvas import Canvas
-from restclients.canvas.sections import Sections
-from restclients.canvas.enrollments import Enrollments
+from uw_canvas import Canvas
+from uw_canvas.sections import Sections
+from uw_canvas.enrollments import Enrollments
+
 
 def get_all_person_sis_ids(course_ids):
     person_ids = {}

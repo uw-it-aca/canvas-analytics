@@ -1,5 +1,5 @@
-from restclients.canvas import Canvas
-from restclients.canvas.users import Users
+from uw_canvas import Canvas
+from uw_canvas.users import Users
 import json
 
 def collect_analytics_for_sis_course_id(course_id, timeperiod):
