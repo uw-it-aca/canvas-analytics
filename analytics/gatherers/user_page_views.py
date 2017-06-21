@@ -1,7 +1,6 @@
-from restclients.dao_implementation.canvas import Live
-from restclients.canvas.page_views import PageViews
-from restclients.canvas.assignments import Assignments
-from restclients.canvas.quizzes import Quizzes
+from uw_canvas.page_views import PageViews
+from uw_canvas.assignments import Assignments
+from uw_canvas.quizzes import Quizzes
 import re
 import json
 

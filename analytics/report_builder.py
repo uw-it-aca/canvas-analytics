@@ -1,9 +1,9 @@
 from django.conf import settings
 from django.utils.timezone import utc
-from restclients.canvas.accounts import Accounts as CanvasAccounts
-from restclients.canvas.analytics import Analytics as CanvasAnalytics
-from restclients.canvas.reports import Reports as CanvasReports
-from restclients.exceptions import DataFailureException
+from uw_canvas.accounts import Accounts as CanvasAccounts
+from uw_canvas.analytics import Analytics as CanvasAnalytics
+from uw_canvas.reports import Reports as CanvasReports
+from restclients_core.exceptions import DataFailureException
 from analytics.models import Report, SubaccountActivity
 from datetime import datetime
 from time import sleep

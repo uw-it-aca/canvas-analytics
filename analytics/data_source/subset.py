@@ -1,9 +1,8 @@
-
-from restclients.canvas import Canvas
-from restclients.canvas.reports import Reports
-from restclients.sws import SWS
+from uw_canvas import Canvas
+from uw_canvas.reports import Reports
+from uw_sws.term import get_current_term
 from datetime import datetime
-from restclients.dao_implementation.canvas import Live
+
 
 def get_all_course_sis_ids():
 #    provisioning_csv
@@ -15,7 +14,7 @@ def get_all_course_sis_ids():
     account_info = Canvas()._get_resource("/api/v1/accounts/sis_account_id:%s" % (account_name))
     account_id = account_info["root_account_id"]
 
-    current_sws_term = SWS().get_current_term()
+    current_sws_term = get_current_term()
     current_sis_id = "%s-%s" % (current_sws_term.year, current_sws_term.quarter)
 
     terms = Canvas()._get_resource("/api/v1/accounts/%s/terms" % (account_id), data_key="enrollment_terms")

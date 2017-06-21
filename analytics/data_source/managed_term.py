@@ -1,4 +1,4 @@
-from restclients.models.canvas import CanvasTerm
+from uw_canvas.models import CanvasTerm
 from analytics.models import ManagedCurrentTerm
 from django.conf import settings
 from dateutil import parser
