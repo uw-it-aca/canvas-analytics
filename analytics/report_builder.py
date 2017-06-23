@@ -77,12 +77,12 @@ class ReportBuilder():
                 continue
 
             sis_course_id = row[1]
-            sis_account_id = row[5]
+            sis_account_id = row[6]
             if (sis_course_id is None or sis_account_id is None or
                 sis_account_id not in account_courses):
                 continue
 
-            status = row[8]
+            status = row[9]
             ind_study = True if len(sis_course_id.split("-")) == 6 else False
             is_active = True if status == "active" else False
             for sis_id in account_courses:
