@@ -14,13 +14,11 @@ setup(
     packages=['analytics'],
     include_package_data=True,
     install_requires = [
-        'setuptools',
-        'django',
+        'Django==1.10.5',
+        'UW-RestClients-SWS>=1.0,<2.0',
+        'UW-RestClients-Canvas>=0.6.6,<1.0',
     ],
-    dependency_links = [
-        'http://github.com/uw-it-aca/uw-restclients#egg=RestClients'
-    ],
-    license='Apache License, Version 2.0',  # example license
+    license='Apache License, Version 2.0',
     description='Builds reports about UW Canvas usage',
     long_description=README,
     url='https://github.com/uw-it-aca/canvas-analytics',
@@ -30,10 +28,9 @@ setup(
         'Environment :: Web Environment',
         'Framework :: Django',
         'Intended Audience :: Developers',
-        'License :: OSI Approved :: Apache Software License', # example license
+        'License :: OSI Approved :: Apache Software License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
     ],
 )
