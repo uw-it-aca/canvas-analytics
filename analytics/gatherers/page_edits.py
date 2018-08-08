@@ -2,6 +2,7 @@ from uw_canvas import Canvas
 from uw_canvas.users import Users
 import json
 
+
 def collect_analytics_for_sis_course_id(course_id, timeperiod):
     url = "/api/v1/courses/sis_course_id:%s/pages" % course_id
     data = Canvas()._get_resource(url)

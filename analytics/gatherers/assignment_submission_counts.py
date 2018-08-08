@@ -2,6 +2,7 @@ from uw_canvas.assignments import Assignments
 from uw_canvas.users import Users
 import re
 
+
 def collect_analytics_for_sis_course_id(course_id, time_period):
     assignments = Assignments().get_assignments_by_sis_id(course_id)
 
@@ -26,7 +27,6 @@ def collect_analytics_for_sis_course_id(course_id, time_period):
                 per_user_counts[person_map[user_id]] = 0
 
             per_user_counts[person_map[user_id]] = per_user_counts[person_map[user_id]] + 1
-
 
         for user in per_user_counts:
             return_values.append({

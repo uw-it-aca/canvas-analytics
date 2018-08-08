@@ -44,9 +44,9 @@ def collect_analytics_for_sis_person_id(person_id, time_period):
                 if re.match("https://canvas.uw.edu/courses/([\d]+)/assignments/([\d]+)/submissions", url):
                     try:
                         assignment_id = re.match("https://canvas.uw.edu/courses/([\d]+)/assignments/([\d]+)", url).group(2)
-                        if not course_id in user_submitted_assignment_views:
+                        if course_id not in user_submitted_assignment_views:
                             user_submitted_assignment_views[course_id] = {}
-                        if not assignment_id in user_submitted_assignment_views[course_id]:
+                        if assignment_id not in user_submitted_assignment_views[course_id]:
                             user_submitted_assignment_views[course_id][assignment_id] = 0
 
                         current = user_submitted_assignment_views[course_id][assignment_id]
@@ -57,9 +57,9 @@ def collect_analytics_for_sis_person_id(person_id, time_period):
                 elif re.match("https://canvas.uw.edu/courses/([\d]+)/assignments/([\d]+)", url):
                     try:
                         assignment_id = re.match("https://canvas.uw.edu/courses/([\d]+)/assignments/([\d]+)", url).group(2)
-                        if not course_id in user_assignment_views:
+                        if course_id not in user_assignment_views:
                             user_assignment_views[course_id] = {}
-                        if not assignment_id in user_assignment_views[course_id]:
+                        if assignment_id not in user_assignment_views[course_id]:
                             user_assignment_views[course_id][assignment_id] = 0
 
                         current = user_assignment_views[course_id][assignment_id]
@@ -130,6 +130,7 @@ def collect_analytics_for_sis_person_id(person_id, time_period):
 
     return return_values
 
+
 def _add_course_id(counts, course_id):
     if course_id in counts:
         return
@@ -154,5 +155,3 @@ def get_assignment_by_course_id_and_assignment_id(course_id, assignment_id):
     data = assign._get_resource(url)
 
     return assign._assignment_from_json(data)
-
-
