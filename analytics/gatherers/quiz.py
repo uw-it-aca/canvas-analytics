@@ -4,6 +4,7 @@ from uw_canvas.quizzes import Quizzes
 import json
 import re
 
+
 def collect_analytics_for_sis_course_id(course_id, time_period):
     q = Quizzes()
 
@@ -21,7 +22,8 @@ def collect_analytics_for_sis_course_id(course_id, time_period):
     for quiz in quizzes:
         per_user_counts = {}
         quiz_id = quiz.quiz_id
-        submissions = q.get_submissions_for_sis_course_id_and_quiz_id(course_id, quiz_id)
+        submissions = q.get_submissions_for_sis_course_id_and_quiz_id(
+            course_id, quiz_id)
         for s in submissions["quiz_submissions"]:
             if s["user_id"] not in login_by_id:
                 login = "unknown_user_%s" % s["user_id"]
@@ -33,7 +35,7 @@ def collect_analytics_for_sis_course_id(course_id, time_period):
                 login_by_id[s["user_id"]] = login
 
             login_name = login_by_id[s["user_id"]]
-            if not login_name in per_user_counts:
+            if login_name not in per_user_counts:
                 per_user_counts[login_name] = 0
 
             per_user_counts[login_name] = per_user_counts[login_name] + 1
@@ -66,4 +68,3 @@ def collect_analytics_for_sis_course_id(course_id, time_period):
                 "value": per_user_counts[login_name],
             })
     return return_values
-

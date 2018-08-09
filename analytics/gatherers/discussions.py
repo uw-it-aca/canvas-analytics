@@ -3,6 +3,7 @@ from uw_canvas.users import Users
 import json
 import re
 
+
 def collect_analytics_for_sis_course_id(course_id, time_period):
     api = Discussions()
     users_sis_id = re.sub("--$", "", course_id)
@@ -42,6 +43,5 @@ def collect_analytics_for_sis_course_id(course_id, time_period):
             "type": "Discussion Board Posts",
             "value": counts_by_id[key],
         })
-
 
     return return_values

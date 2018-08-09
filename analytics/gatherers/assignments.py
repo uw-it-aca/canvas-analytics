@@ -8,6 +8,7 @@ from dateutil import parser
 import datetime
 import re
 
+
 def collect_analytics_for_sis_course_id(course_id, time_period):
     users_sis_id = re.sub("--$", "", course_id)
     users = Users().get_users_for_sis_course_id(users_sis_id)
@@ -56,7 +57,6 @@ def collect_analytics_for_sis_course_id(course_id, time_period):
                             "value": "1"
                         })
 
-
                     return_values.append({
                         "login_name": user.login_id,
                         "type": "Assignment submission date - %s" % assignment["title"],
@@ -66,7 +66,7 @@ def collect_analytics_for_sis_course_id(course_id, time_period):
                     if get_days_late:
                         try:
                             date_due = parser.parse(assignment["due_at"])
-                            date_against = None # Either the day turned in, or today
+                            date_against = None  # Either the day turned in, or today
                             if assignment["status"] == "late":
                                 date_against = parser.parse(assignment["submission"]["submitted_at"])
                             elif assignment["status"] == "missing":
@@ -94,7 +94,6 @@ def collect_analytics_for_sis_course_id(course_id, time_period):
                         }
                         return_values.append(late_assignment_data)
 
-
                     # This is for scores.  I *think* each assignment is points-based, with different displays.
                     # This tries to turn them into a percentage, so there's some normalization.  If that fails,
                     # It'll return a raw score instead, which hopefully covers any other bad assumptions made.
@@ -110,7 +109,6 @@ def collect_analytics_for_sis_course_id(course_id, time_period):
                             "value": possible
                         }
                         return_values.append(assignment_grade_data)
-
 
                         # Should this record a blank score instead?
                         if score is None:
@@ -140,7 +138,7 @@ def collect_analytics_for_sis_course_id(course_id, time_period):
                             "value": str(ex)
                         }
                         return_values.append(assignment_grade_data)
-                        # @lyle3: ok, thanks. Could you only include percentage score in the spreadsheet? Even though I told Decisive Data to ignore "score" and "percentage", I got a flurry of questions about these fields. 
+                        # @lyle3: ok, thanks. Could you only include percentage score in the spreadsheet? Even though I told Decisive Data to ignore "score" and "percentage", I got a flurry of questions about these fields.
 #                        score = assignment["submission"]["score"]
 #
 #                        assignment_grade_data = {
@@ -180,7 +178,6 @@ def collect_analytics_for_sis_course_id(course_id, time_period):
 
                     except Exception as ex:
                         pass
-
 
             return_values.append({
                 "login_name": user.login_id,

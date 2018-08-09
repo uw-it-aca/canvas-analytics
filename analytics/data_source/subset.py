@@ -5,7 +5,7 @@ from datetime import datetime
 
 
 def get_all_course_sis_ids():
-#    provisioning_csv
+    # provisioning_csv
     # Root account name - uwcourse
     account_name = "uwcourse"
 
@@ -26,7 +26,9 @@ def get_all_course_sis_ids():
             current_term = term
             break
 
-    report = Reports().create_report("provisioning_csv", account_id, term['id'], params={"enrollments":"true" })
+    report = Reports().create_report(
+        "provisioning_csv", account_id, term['id'],
+        params={"enrollments": "true"})
 
     data = Reports().get_report_data(report)
     print "D: ", data

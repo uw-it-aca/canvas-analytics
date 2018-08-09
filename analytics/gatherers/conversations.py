@@ -11,6 +11,7 @@ import json
 __conversations_run_id = None
 __conversation_data = {}
 
+
 def collect_analytics_for_sis_person_id(person_id, time_period):
     return []
     # This is tricky!  We can only reliably get message *to* a user.  If I start
@@ -41,7 +42,7 @@ def collect_analytics_for_sis_person_id(person_id, time_period):
         for participant in participants:
             pids.append(int(participant["id"]))
 
-        if not context_name in __conversation_data:
+        if context_name not in __conversation_data:
             __conversation_data[context_name] = {}
 
         for message in conversation["messages"]:
@@ -51,16 +52,17 @@ def collect_analytics_for_sis_person_id(person_id, time_period):
                 if pid != author_pid:
                     # Always put the author first - we only care about
                     # the messages that someone sends, not that they receive
-                    if not author_pid in __conversation_data[context_name]:
+                    if author_pid not in __conversation_data[context_name]:
                         __conversation_data[context_name][author_pid] = {}
 
-                    if not pid in __conversation_data[context_name][author_pid]:
+                    if pid not in __conversation_data[context_name][author_pid]:
                         __conversation_data[context_name][author_pid][pid] = {}
 
                     __conversation_data[context_name][author_pid][pid][message_id] = True
 
-
     return []
+
+
 def post_process(course_ids):
     global __conversation_data
 
@@ -81,7 +83,7 @@ def post_process(course_ids):
 
             enrollments = Enrollments().get_enrollments_for_section_by_sis_id(raw_cid)
             for enrollment in enrollments:
-                if not enrollment.login_id in role_in_course:
+                if enrollment.login_id not in role_in_course:
                     role_in_course[enrollment.user_id] = {}
                 role_in_course[enrollment.user_id][cid] = enrollment.role
                 instructor_messages[cid][enrollment.user_id] = 0
@@ -156,4 +158,3 @@ def post_process(course_ids):
                 })
 
     return return_values
-

@@ -3,6 +3,9 @@ from django.utils.importlib import import_module
 from datetime import datetime
 from analytics.models import WeeklyDataTimePeriod, WeeklyDataDataPoint
 from uw_canvas.courses import Courses
+import traceback
+import sys
+
 
 def build_data():
     start_time = datetime.now()
@@ -24,6 +27,7 @@ def build_data():
     course_ids = build_data_by_course(course_modules, start_time, period, term)
     build_data_by_person(person_modules, start_time, course_ids, period, term)
 
+
 def build_data_by_course(gatherers, start_time, time_period, term):
     course_module = getattr(settings, 'ANALYTICS_COURSE_LIST_MODULE', 'analytics.data_source.course_list')
     mod = import_module(course_module)
@@ -44,7 +48,7 @@ def build_data_by_course(gatherers, start_time, time_period, term):
                         key = entry["type"]
                         value = entry["value"]
 
-                        #gatherer_data.append(WeeklyDataDataPoint(
+                        # gatherer_data.append(WeeklyDataDataPoint(
                         WeeklyDataDataPoint.objects.create(
                             time_period=time_period,
                             course_id=course_id,
@@ -56,16 +60,16 @@ def build_data_by_course(gatherers, start_time, time_period, term):
                         print "Error: ", ex
             except Exception as ex:
                 print "E: ", ex
-                import sys, traceback
                 traceback.print_exc(file=sys.stdout)
                 # XXX - handle these later
                 pass
-             # Oops - Error saving data:  too many SQL variables
+#            Oops - Error saving data:  too many SQL variables
 #            try:
 #                WeeklyDataDataPoint.objects.bulk_create(gatherer_data)
 #            except Exception as ex:
 #                print "Error saving data: ", ex
     return all_ids
+
 
 def build_data_by_person(gatherers, start_time, course_ids, time_period, term):
     person_module = getattr(settings, 'ANALYTICS_PERSON_LIST_MODULE', 'analytics.data_source.person_list')
@@ -90,7 +94,7 @@ def build_data_by_person(gatherers, start_time, course_ids, time_period, term):
                         course_id = None
                         if "course_canvas_id" in entry:
                             canvas_id = entry["course_canvas_id"]
-                            if not canvas_id in sis_course_lookup:
+                            if canvas_id not in sis_course_lookup:
                                 course = Courses().get_course(canvas_id)
                                 sis_course_lookup[canvas_id] = course.sis_course_id
                             course_id = sis_course_lookup[canvas_id]
@@ -99,7 +103,7 @@ def build_data_by_person(gatherers, start_time, course_ids, time_period, term):
                         key = entry["type"]
                         value = entry["value"]
 
-                        #gatherer_data.append(WeeklyDataDataPoint(
+                        # gatherer_data.append(WeeklyDataDataPoint(
                         WeeklyDataDataPoint.objects.create(
                             time_period=time_period,
                             course_id=course_id,
@@ -115,7 +119,6 @@ def build_data_by_person(gatherers, start_time, course_ids, time_period, term):
                 print "E: ", ex
                 pass
 
-
     for gatherer in gatherers:
         try:
             data = gatherer.post_process(course_ids)
@@ -128,7 +131,7 @@ def build_data_by_person(gatherers, start_time, course_ids, time_period, term):
                     key = entry["type"]
                     value = entry["value"]
 
-                    #gatherer_data.append(WeeklyDataDataPoint(
+                    # gatherer_data.append(WeeklyDataDataPoint(
                     WeeklyDataDataPoint.objects.create(
                         time_period=time_period,
                         course_id=course_id,
@@ -142,9 +145,9 @@ def build_data_by_person(gatherers, start_time, course_ids, time_period, term):
         except AttributeError:
             pass
         except Exception as ex:
-            import sys, traceback
             print "Err: ", ex
             traceback.print_exc(file=sys.stdout)
+
 
 def get_time_period():
     term_module = getattr(settings, 'ANALYTICS_CURRENT_TERM_MODULE', 'analytics.data_source.managed_term')
@@ -163,5 +166,3 @@ def get_time_period():
     new_period = WeeklyDataTimePeriod.objects.create(term=current_sis_id, start_date=start_date, end_date=end_date)
 
     return new_period, current_term
-
-

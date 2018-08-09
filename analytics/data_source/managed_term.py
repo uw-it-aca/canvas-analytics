@@ -3,6 +3,7 @@ from analytics.models import ManagedCurrentTerm
 from django.conf import settings
 from dateutil import parser
 
+
 def get_term():
     # Hopefully there's only one!
     managed = ManagedCurrentTerm.objects.all()[0]

@@ -2,6 +2,7 @@ from uw_canvas.models import CanvasTerm
 from django.conf import settings
 from dateutil import parser
 
+
 # Just kidding, it's winter
 def get_term():
     term = CanvasTerm()

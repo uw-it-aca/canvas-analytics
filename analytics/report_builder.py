@@ -79,7 +79,7 @@ class ReportBuilder():
             sis_course_id = row[1]
             sis_account_id = row[6]
             if (sis_course_id is None or sis_account_id is None or
-                sis_account_id not in account_courses):
+                    sis_account_id not in account_courses):
                 continue
 
             status = row[9]
@@ -99,8 +99,9 @@ class ReportBuilder():
         for sis_account_id in account_courses:
             try:
                 totals = account_courses[sis_account_id]
-                activity = SubaccountActivity.objects.get(report=report,
-                    term_id=sis_term_id, subaccount_id=sis_account_id)
+                activity = SubaccountActivity.objects.get(
+                    report=report, term_id=sis_term_id,
+                    subaccount_id=sis_account_id)
                 activity.courses = totals["courses"]
                 activity.active_courses = totals["active_courses"]
                 activity.ind_study_courses = totals["ind_study_courses"]
@@ -111,4 +112,3 @@ class ReportBuilder():
 
         report.finished_date = datetime.utcnow().replace(tzinfo=utc)
         report.save()
-

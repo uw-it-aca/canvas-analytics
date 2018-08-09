@@ -1,15 +1,19 @@
-from django.shortcuts import render_to_response
+from django.conf import settings
+from django.shortcuts import render
 from django.http import HttpResponse
-from django.template import RequestContext
 from django.core.urlresolvers import reverse
-from analytics.models import WeeklyDataTimePeriod, WeeklyDataDataPoint
-from analytics.models import ManagedCurrentTerm, ManagedCourseSISIDs
+from uw_saml.decorators import group_required
+from analytics.models import (
+    WeeklyDataTimePeriod, WeeklyDataDataPoint, ManagedCurrentTerm,
+    ManagedCourseSISIDs)
 from dateutil import parser
 import StringIO
 import csv
 import codecs
 import cStringIO
 
+
+@group_required(settings.CANVAS_ANALYTICS_GROUP)
 def home(request):
     term_names = WeeklyDataTimePeriod.objects.values('term').distinct()
 
@@ -18,44 +22,51 @@ def home(request):
         term = item["term"]
         terms.append({
             "name": term,
-            "url": reverse('week_list', kwargs={"term": term }),
+            "url": reverse('week_list', kwargs={"term": term}),
         })
+    return render(request, "term_list.html", {"terms": terms})
 
-    return render_to_response("term_list.html", { "terms": terms}, RequestContext(request))
 
+@group_required(settings.CANVAS_ANALYTICS_GROUP)
 def weeks(request, term):
-    periods = WeeklyDataTimePeriod.objects.filter(term=term).order_by('start_date')
+    periods = WeeklyDataTimePeriod.objects.filter(
+        term=term).order_by('start_date')
 
     weeks = []
     for period in periods:
         weeks.append({
             "start": period.start_date,
             "end": period.end_date,
-            "url": reverse("courses_list", kwargs={"term": term, "week_id": period.id}),
+            "url": reverse("courses_list", kwargs={
+                "term": term, "week_id": period.id}),
         })
+    return render(request, "weeks.html", {"weeks": weeks})
 
-    return render_to_response("weeks.html", {"weeks": weeks}, RequestContext(request))
 
+@group_required(settings.CANVAS_ANALYTICS_GROUP)
 def courses(request, term, week_id):
     period = WeeklyDataTimePeriod.objects.get(id=week_id)
 
-    course_ids = WeeklyDataDataPoint.objects.filter(time_period=period).values("course_id").distinct()
+    course_ids = WeeklyDataDataPoint.objects.filter(
+        time_period=period).values("course_id").distinct()
 
     courses = []
     for course in course_ids:
         course_id = course["course_id"]
         courses.append({
             "name": course_id,
-            "url": reverse("course_data", kwargs={"term":term, "week_id": week_id, "course_id": course_id }),
+            "url": reverse("course_data", kwargs={
+                "term": term, "week_id": week_id, "course_id": course_id}),
         })
+    return render(request, "courses_list.html", {"courses": courses})
 
 
-    return render_to_response("courses_list.html", {"courses": courses}, RequestContext(request))
-
+@group_required(settings.CANVAS_ANALYTICS_GROUP)
 def data(request, term, week_id, course_id):
     period = WeeklyDataTimePeriod.objects.get(id=week_id)
 
-    data_points = WeeklyDataDataPoint.objects.filter(time_period=period, course_id=course_id)
+    data_points = WeeklyDataDataPoint.objects.filter(
+        time_period=period, course_id=course_id)
 
     keys = {}
     by_person_course_data = {}
@@ -63,7 +74,7 @@ def data(request, term, week_id, course_id):
     for item in data_points:
         keys[item.key] = True
 
-        if not item.login_name in by_person_course_data:
+        if item.login_name not in by_person_course_data:
             by_person_course_data[item.login_name] = {}
 
         by_person_course_data[item.login_name][item.key] = item.value
@@ -71,9 +82,7 @@ def data(request, term, week_id, course_id):
     data_keys = keys.keys()
     data_keys.sort()
 
-
     csv_file = StringIO.StringIO()
-
     csv_writer = UnicodeWriter(csv_file, dialect=csv.excel)
     csv_writer.writerow(["login name"] + data_keys)
 
@@ -93,6 +102,7 @@ def data(request, term, week_id, course_id):
     return HttpResponse(csv_file.getvalue(), content_type="text/plain")
 
 
+@group_required(settings.CANVAS_ANALYTICS_GROUP)
 def manage(request):
     error = None
     if "POST" == request.META['REQUEST_METHOD']:
@@ -147,12 +157,10 @@ def manage(request):
     for val in sorted(all_course_sis_ids, key=lambda x: x.sis_id):
         data["course_ids"].append(val.sis_id)
 
-    return render_to_response("manage_everything.html", data,
-                              RequestContext(request))
+    return render(request, "manage_everything.html", data)
 
 
 # From the csv documentation:
-
 class UnicodeWriter:
     """
     A CSV writer which will write rows to CSV file "f",
@@ -168,8 +176,9 @@ class UnicodeWriter:
 
     def writerow(self, row):
         # Uglying up their code a bit, cause we sometimes have null values:
-        #self.writer.writerow([s.encode("utf-8") for s in row])
-        self.writer.writerow([s.encode("utf-8") if s is not None else "" for s in row])
+        # self.writer.writerow([s.encode("utf-8") for s in row])
+        self.writer.writerow([s.encode("utf-8") if (
+            s is not None) else "" for s in row])
         # Fetch UTF-8 output from the queue ...
         data = self.queue.getvalue()
         data = data.decode("utf-8")
@@ -183,4 +192,3 @@ class UnicodeWriter:
     def writerows(self, rows):
         for row in rows:
             self.writerow(row)
-
