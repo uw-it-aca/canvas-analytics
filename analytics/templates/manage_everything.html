@@ -20,7 +20,7 @@ Error saving: {{ error }}
 
 <h2>Set the current term:</h2>
 
-<form action="{% url 'analytics.views.manage' %}" method="POST">
+<form action="{% url 'manage' %}" method="POST">
 {% csrf_token %}
 <input type="hidden" name="change" value="term"/>
 Quarter:
@@ -42,7 +42,7 @@ End date: <input type="text" id="end_date" name="end_date" value="{{ term_end }}
 </form>
 <h2>Courses:</h2>
 
-<form action="{% url 'analytics.views.manage' %}" method="POST">
+<form action="{% url 'manage' %}" method="POST">
 {% csrf_token %}
 <input type="hidden" name="change" value="courses"/>
 

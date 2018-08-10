@@ -10,6 +10,6 @@ urlpatterns = [
         r'^term/(?P<term>[a-z0-9\-]+)/(?P<week_id>[0-9]+)',
         courses, name="courses_list"),
     url(r'^term/(?P<term>[a-z0-9\-]+)/', weeks, name="week_list"),
-    url(r'^manage$', manage),
-    url(r'^$', home),
+    url(r'^manage$', manage, name="manage"),
+    url(r'^$', home, name="home"),
 ]
