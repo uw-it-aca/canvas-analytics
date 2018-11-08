@@ -37,7 +37,8 @@ def build_data_by_course(gatherers, start_time, time_period, term):
     total = len(all_ids)
     for course_id in all_ids:
         count = count + 1
-        print "On course %s of %s, time: %s" % (count, total, (datetime.now() - start_time).__str__())
+        print("On course {} of {}, time: {}".format(
+            count, total, (datetime.now() - start_time).__str__()))
         for gatherer in gatherers:
             gatherer_data = []
             try:
@@ -57,9 +58,9 @@ def build_data_by_course(gatherers, start_time, time_period, term):
                             value=value
                         )
                     except Exception as ex:
-                        print "Error: ", ex
+                        print("Error: {}".format(ex))
             except Exception as ex:
-                print "E: ", ex
+                print("Error: {}".format(ex))
                 traceback.print_exc(file=sys.stdout)
                 # XXX - handle these later
                 pass
@@ -67,7 +68,7 @@ def build_data_by_course(gatherers, start_time, time_period, term):
 #            try:
 #                WeeklyDataDataPoint.objects.bulk_create(gatherer_data)
 #            except Exception as ex:
-#                print "Error saving data: ", ex
+#                print("Error saving data: {}".format(ex))
     return all_ids
 
 
@@ -85,7 +86,8 @@ def build_data_by_person(gatherers, start_time, course_ids, time_period, term):
 
     for person_id in all_ids:
         count = count + 1
-        print "On person %s of %s, time: %s" % (count, total, (datetime.now() - start_time).__str__())
+        print("On person {} of {}, time: {}".format(
+            count, total, (datetime.now() - start_time).__str__()))
         for gatherer in gatherers:
             try:
                 data = gatherer.collect_analytics_for_sis_person_id(person_id, time_period)
@@ -112,11 +114,11 @@ def build_data_by_person(gatherers, start_time, course_ids, time_period, term):
                             value=value
                         )
                     except Exception as ex:
-                        print "Error: ", ex, entry
+                        print("Error {}: {}".format(entry, ex))
 
             except Exception as ex:
                 # XXX - handle these later
-                print "E: ", ex
+                print("Error: {}".format(ex))
                 pass
 
     for gatherer in gatherers:
@@ -140,12 +142,12 @@ def build_data_by_person(gatherers, start_time, course_ids, time_period, term):
                         value=value
                     )
                 except Exception as ex:
-                    print "Error: ", ex, entry
+                    print("Error {}: {}".format(entry, ex))
 
         except AttributeError:
             pass
         except Exception as ex:
-            print "Err: ", ex
+            print("Error: {}".format(ex))
             traceback.print_exc(file=sys.stdout)
 
 

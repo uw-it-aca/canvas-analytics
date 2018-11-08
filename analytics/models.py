@@ -18,7 +18,7 @@ class Report(models.Model):
 class SubaccountActivity(models.Model):
     """ Represents activity by sub-account and term
     """
-    report = models.ForeignKey(Report)
+    report = models.ForeignKey(Report, on_delete=models.CASCADE)
     term_id = models.CharField(max_length=20)
     subaccount_id = models.CharField(max_length=100)
     subaccount_name = models.CharField(max_length=200)

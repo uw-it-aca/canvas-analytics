@@ -29,8 +29,7 @@ def collect_analytics_for_sis_course_id(course_id, time_period):
             assignment_data = Analytics().get_student_assignments_for_sis_course_id_and_canvas_user_id(course_id, person_id)
             for assignment in assignment_data:
                 if "Lesson 08 Presentation 8-1 (9:43)" == assignment["title"]:
-                    print "Title: ", assignment["title"]
-                    print assignment
+                    print("Title: {}".format(assignment["title"]))
                 missing_assignment = True
                 if "submission" in assignment:
                     if assignment["status"] != "missing":
@@ -82,7 +81,7 @@ def collect_analytics_for_sis_course_id(course_id, time_period):
                             return_values.append(late_assignment_data)
 
                         except Exception as ex:
-                            print "Ex: ", ex
+                            print("Error: {}".format(ex))
                             # Maybe the due date isn't parseable?
                             pass
 
@@ -98,7 +97,6 @@ def collect_analytics_for_sis_course_id(course_id, time_period):
                     # This tries to turn them into a percentage, so there's some normalization.  If that fails,
                     # It'll return a raw score instead, which hopefully covers any other bad assumptions made.
                     try:
-                        # print "Status: ", assignment["status"], "Dates: ", assignment["submission"]["submitted_at"], assignment["due_at"], "Score: ", assignment["submission"]["score"], assignment["points_possible"]
                         missing_assignment = False
                         score = assignment["submission"]["score"]
                         possible = assignment["points_possible"]
@@ -129,9 +127,9 @@ def collect_analytics_for_sis_course_id(course_id, time_period):
                         return_values.append(assignment_grade_data)
 
                     except Exception as ex:
-                        print "A: ", assignment["title"]
-                        print "S, P: ", score, possible
-                        print "Ex: ", ex
+                        print("Assignment: {}".format(assignment["title"]))
+                        print("Score: {}, Possible: {}".format(score, possible))
+                        print("Error: {}".format(ex))
                         assignment_grade_data = {
                             "login_name": user.login_id,
                             "type": "Assignment - %s - ERROR" % assignment["title"],
@@ -203,7 +201,7 @@ def collect_analytics_for_sis_course_id(course_id, time_period):
         except DataFailureException as ex:
             pass
         except Exception as e2:
-            print "Exception: ", e2
-            print traceback.format_exc()
+            print("Error: {}".format(e2))
+            print(traceback.format_exc())
 
     return return_values

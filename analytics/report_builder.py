@@ -60,7 +60,9 @@ class ReportBuilder():
                                                            sis_term_id)
 
             for item in data["by_category"]:
-                setattr(activity, "%s_views" % item["category"], item["views"])
+                setattr(activity,
+                        "{}_views".format(item["category"]),
+                        item["views"])
 
             activity.save()
 

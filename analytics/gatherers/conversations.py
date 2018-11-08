@@ -95,7 +95,6 @@ def post_process(course_ids):
 
     except Exception as ex:
         pass
-        # print "E: ", ex
 
     seen_keys = {}
     for key in __conversation_data:
@@ -132,7 +131,6 @@ def post_process(course_ids):
 
                     if not found_match:
                         pass
-                        # print "R1: ", role1, role2, user1, user2
 
     return_values = []
     for cid in instructor_messages:
