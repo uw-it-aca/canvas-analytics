@@ -13,9 +13,9 @@ def get_all_person_sis_ids(course_ids):
                 try:
                     person_ids[enrollment.login_id] = True
                 except Exception as ex:
-                    print "No login_id for ", enrollment.user_id
+                    print("No login_id for {}".format(enrollment.user_id))
         except Exception as ex:
-            print "E: ", ex
+            print("Error: {}".format(ex))
 
     person_list = []
     for person in person_ids:

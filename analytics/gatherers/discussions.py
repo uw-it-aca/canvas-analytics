@@ -22,7 +22,7 @@ def collect_analytics_for_sis_course_id(course_id, time_period):
         entries = api.get_entries_for_topic(topic)
         for entry in entries:
             if entry.user_id not in login_by_id:
-                login = "unknown_user_%s" % entry.user_id
+                login = "unknown_user_{}".format(entry.user_id)
                 try:
                     user = Users().get_user(entry.user_id)
                     login = user.login_id
@@ -33,7 +33,7 @@ def collect_analytics_for_sis_course_id(course_id, time_period):
             try:
                 counts_by_id[login_by_id[entry.user_id]] += 1
             except Exception as ex:
-                print "Error on ", entry.user_id, ex
+                print("Error on {}: {}".format(entry.user_id, ex))
 
     return_values = []
 

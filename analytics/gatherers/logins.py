@@ -7,4 +7,4 @@ def collect_analytics_for_sis_person_id(person_id, time_period):
 
         return [{"type": "All Logins", "value": count}]
     except Exception as ex:
-        print "ERR! ", ex
+        print("Error: {}".format(ex))

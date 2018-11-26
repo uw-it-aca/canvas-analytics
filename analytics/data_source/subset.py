@@ -31,7 +31,7 @@ def get_all_course_sis_ids():
         params={"enrollments": "true"})
 
     data = Reports().get_report_data(report)
-    print "D: ", data
+    print("Data: {}".format(data))
 #    data = Canvas()._get_resource("/api/v1/accounts/sis_account_id:uwcourse/courses?enrollment_term_id=%s&with_enrollments=true&per_page=100" % (current_term["id"]))
 
-    print "CT: ", current_term
+    print("Current term: {}".format(current_term))

@@ -14,10 +14,10 @@ setup(
     packages=['analytics'],
     include_package_data=True,
     install_requires = [
-        'Django==1.11.10',
-        'UW-RestClients-SWS>=1.5.1,<2.0',
-        'UW-RestClients-Canvas>=0.7.1,<1.0',
-        'UW-Django-SAML2>=0.4.5',
+        'Django>=2.1',
+        'UW-RestClients-SWS>=2.0.3,<3.0',
+        'UW-RestClients-Canvas>=1.0.3,<2.0',
+        'UW-Django-SAML2>=1.2.1,<2.0',
     ],
     license='Apache License, Version 2.0',
     description='Builds reports about UW Canvas usage',
@@ -32,7 +32,6 @@ setup(
         'License :: OSI Approved :: Apache Software License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.6',
     ],
 )

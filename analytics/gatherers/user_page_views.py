@@ -32,7 +32,7 @@ def collect_analytics_for_sis_person_id(person_id, time_period):
                 course_id = re.match("https://canvas.uw.edu/courses/([\d]+).*", url).group(1)
                 _add_course_id(counts_by_page_type, course_id)
             except Exception as ex:
-                print "Error: ", url
+                print("Error: {}".format(url))
 
             controller = entry["controller"]
 
@@ -52,7 +52,7 @@ def collect_analytics_for_sis_person_id(person_id, time_period):
                         current = user_submitted_assignment_views[course_id][assignment_id]
                         user_submitted_assignment_views[course_id][assignment_id] = current + 1
                     except Exception as ex:
-                        print "Oops: ", ex
+                        print("Error: {}".format(ex))
 
                 elif re.match("https://canvas.uw.edu/courses/([\d]+)/assignments/([\d]+)", url):
                     try:
@@ -65,7 +65,7 @@ def collect_analytics_for_sis_person_id(person_id, time_period):
                         current = user_assignment_views[course_id][assignment_id]
                         user_assignment_views[course_id][assignment_id] = current + 1
                     except Exception as ex:
-                        print "Oops: ", ex
+                        print("Error: {}".format(ex))
 
             elif "courses" == controller:
                 counts_by_page_type[course_id]["general"] += 1
@@ -106,7 +106,6 @@ def collect_analytics_for_sis_person_id(person_id, time_period):
                 assignment = get_assignment_by_course_id_and_assignment_id(course_id, assignment_id)
 
                 name = assignment.name
-#            print "Name: ", assignment_lookup[assignment_id]
                 return_values.append({
                     "course_canvas_id": course_id,
                     "type": "Assignment Views - %s" % name,
@@ -118,7 +117,6 @@ def collect_analytics_for_sis_person_id(person_id, time_period):
                 assignment = get_assignment_by_course_id_and_assignment_id(course_id, assignment_id)
 
                 name = assignment.name
-#            print "Name: ", assignment_lookup[assignment_id]
                 return_values.append({
                     "course_canvas_id": course_id,
                     "type": "Assignment Submission Views - %s" % name,
@@ -126,7 +124,7 @@ def collect_analytics_for_sis_person_id(person_id, time_period):
                 })
 
     except Exception as ex:
-        print "Error: ", ex
+        print("Error: {}".format(ex))
 
     return return_values
 
