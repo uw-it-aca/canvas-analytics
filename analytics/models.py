@@ -61,7 +61,9 @@ class WeeklyDataTimePeriod(models.Model):
 
 
 class WeeklyDataDataPoint(models.Model):
-    time_period = models.ForeignKey(WeeklyDataTimePeriod, db_index=True)
+    time_period = models.ForeignKey(WeeklyDataTimePeriod,
+                                    on_delete=models.CASCADE,
+                                    db_index=True)
     course_id = models.CharField(max_length=100, db_index=True, null=True)
     login_name = models.CharField(max_length=100, db_index=True)
     key = models.CharField(max_length=500, db_index=True)
