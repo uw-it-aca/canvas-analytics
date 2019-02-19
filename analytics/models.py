@@ -18,7 +18,7 @@ class Report(models.Model):
 class SubaccountActivity(models.Model):
     """ Represents activity by sub-account and term
     """
-    report = models.ForeignKey(Report)
+    report = models.ForeignKey(Report, on_delete=models.CASCADE)
     term_id = models.CharField(max_length=20)
     subaccount_id = models.CharField(max_length=100)
     subaccount_name = models.CharField(max_length=200)
@@ -61,7 +61,9 @@ class WeeklyDataTimePeriod(models.Model):
 
 
 class WeeklyDataDataPoint(models.Model):
-    time_period = models.ForeignKey(WeeklyDataTimePeriod, db_index=True)
+    time_period = models.ForeignKey(WeeklyDataTimePeriod,
+                                    on_delete=models.CASCADE,
+                                    db_index=True)
     course_id = models.CharField(max_length=100, db_index=True, null=True)
     login_name = models.CharField(max_length=100, db_index=True)
     key = models.CharField(max_length=500, db_index=True)
