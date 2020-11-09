@@ -1,5 +1,6 @@
 from django.urls import re_path
 from analytics.views import data, courses, weeks, manage, home
+from analytics.views.activity import ActivityReports
 
 urlpatterns = [
     re_path((
@@ -9,5 +10,7 @@ urlpatterns = [
             courses, name="courses_list"),
     re_path(r'^term/(?P<term>[a-z0-9\-]+)/', weeks, name="week_list"),
     re_path(r'^manage$', manage, name="manage"),
+    re_path(r'^activity-reports$', ActivityReports.as_view(),
+            name="ActivityReports"),
     re_path(r'^$', home, name="home"),
 ]

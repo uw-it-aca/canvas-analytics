@@ -1,0 +1,19 @@
+{% extends 'canvas_admin/base.html' %}
+
+{% block admin_content %}
+<h2>Canvas Course Groups <span id="group-count" class="badge">0</span></h2>
+
+<div class="clearfix">
+  <table id="group-table" class="group-table table table-striped">
+    <thead>
+        <tr>
+            <th>Term</th>
+            <th>Created</th>
+            <th>Download</th>
+      </tr>
+   </thead>
+   <tbody class="scrollable"><tr><td colspan="7" class="waiting"><i class="fa fa-spin"></i></td></tr></tbody>
+</table>
+</div>
+{% endblock %}
+
