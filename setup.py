@@ -14,7 +14,7 @@ setup(
     packages=['analytics'],
     include_package_data=True,
     install_requires = [
-        'Django>=2.1',
+        'Django>=2.0.13,<2.1',
         'UW-RestClients-SWS>=2.2.1,<3.0',
         'UW-RestClients-Canvas>=1.1.12,<2.0',
         'UW-Django-SAML2>=1.4,<2.0',
