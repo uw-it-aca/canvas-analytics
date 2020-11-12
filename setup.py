@@ -15,9 +15,9 @@ setup(
     include_package_data=True,
     install_requires = [
         'Django>=2.1',
-        'UW-RestClients-SWS>=2.0.3,<3.0',
-        'UW-RestClients-Canvas>=1.0.3,<2.0',
-        'UW-Django-SAML2>=1.2.1,<2.0',
+        'UW-RestClients-SWS>=2.2.1,<3.0',
+        'UW-RestClients-Canvas>=1.1.12,<2.0',
+        'UW-Django-SAML2>=1.4,<2.0',
     ],
     license='Apache License, Version 2.0',
     description='Builds reports about UW Canvas usage',
