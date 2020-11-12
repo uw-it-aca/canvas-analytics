@@ -72,13 +72,13 @@ class ReportBuilder():
 
         # Create xlist lookup
         xlist_courses = set()
-        xlist_prov_report - self._reports.create_xlist_provisioning_report(
+        xlist_prov_report = self._reports.create_xlist_provisioning_report(
             root_account.account_id, term.term_id,
             params={"include_deleted": True})
 
         xlist_data = self._reports.get_report_data(xlist_prov_report)
-        header = course_data.pop(0)
-        for row in csv.reader(course_data):
+        header = xlist_data.pop(0)
+        for row in csv.reader(xlist_data):
             if not len(row):
                 continue
 
