@@ -14,6 +14,9 @@ class Report(models.Model):
     started_date = models.DateTimeField()
     finished_date = models.DateTimeField(null=True)
 
+    class Meta:
+        managed = False
+
 
 class SubaccountActivity(models.Model):
     """ Represents activity by sub-account and term
@@ -26,6 +29,8 @@ class SubaccountActivity(models.Model):
     active_courses = models.PositiveIntegerField(default=0)
     ind_study_courses = models.PositiveIntegerField(default=0)
     active_ind_study_courses = models.PositiveIntegerField(default=0)
+    xlist_courses = models.PositiveIntegerField(default=0)
+    xlist_ind_study_courses = models.PositiveIntegerField(default=0)
     teachers = models.PositiveIntegerField(default=0)
     unique_teachers = models.PositiveIntegerField(default=0)
     students = models.PositiveIntegerField(default=0)
@@ -50,6 +55,9 @@ class SubaccountActivity(models.Model):
     pages_views = models.PositiveIntegerField(default=0)
     quizzes_views = models.PositiveIntegerField(default=0)
 
+    class Meta:
+        managed = False
+
 
 class WeeklyDataTimePeriod(models.Model):
     """ Tracks period of time for a weekly report.  Should be... weekly...
@@ -58,6 +66,9 @@ class WeeklyDataTimePeriod(models.Model):
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
     term = models.CharField(max_length=50, db_index=True)
+
+    class Meta:
+        managed = False
 
 
 class WeeklyDataDataPoint(models.Model):
@@ -68,6 +79,9 @@ class WeeklyDataDataPoint(models.Model):
     login_name = models.CharField(max_length=100, db_index=True)
     key = models.CharField(max_length=500, db_index=True)
     value = models.TextField(null=True)
+
+    class Meta:
+        managed = False
 
 
 class ManagedCurrentTerm(models.Model):
@@ -80,6 +94,9 @@ class ManagedCurrentTerm(models.Model):
     quarter = models.CharField(max_length=50)
     year = models.PositiveIntegerField()
 
+    class Meta:
+        managed = False
+
 
 class ManagedCourseSISIDs(models.Model):
     """
@@ -87,3 +104,6 @@ class ManagedCourseSISIDs(models.Model):
     except any data that may have been stored!
     """
     sis_id = models.CharField(max_length=200)
+
+    class Meta:
+        managed = False

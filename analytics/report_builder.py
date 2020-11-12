@@ -40,6 +40,8 @@ class ReportBuilder():
                 "active_courses": 0,
                 "ind_study_courses": 0,
                 "active_ind_study_courses": 0,
+                "xlist_courses": 0,
+                "xlist_ind_study_courses": 0,
             }
 
             activity = SubaccountActivity(report=report,
@@ -66,8 +68,25 @@ class ReportBuilder():
 
             activity.save()
 
-        # Generate course totals
         term = CanvasTerms().get_term_by_sis_id(sis_term_id)
+
+        # Create xlist lookup
+        xlist_courses = set()
+        xlist_prov_report - self._reports.create_xlist_provisioning_report(
+            root_account.account_id, term.term_id,
+            params={"include_deleted": True})
+
+        xlist_data = self._reports.get_report_data(xlist_prov_report)
+        header = course_data.pop(0)
+        for row in csv.reader(course_data):
+            if not len(row):
+                continue
+
+            sis_course_id = row[6]
+            if sis_course_id:
+                xlist_courses.add(sis_course_id)
+
+        # Generate course totals
         course_prov_report = self._reports.create_course_provisioning_report(
             root_account.account_id, term.term_id,
             params={"include_deleted": True})
@@ -85,16 +104,22 @@ class ReportBuilder():
                 continue
 
             status = row[9]
-            ind_study = True if len(sis_course_id.split("-")) == 6 else False
-            is_active = True if status == "active" else False
+            ind_study = (len(sis_course_id.split("-")) == 6)
+            is_xlist = (sis_course_id in xlist_courses)
+            is_active = (status == "active")
             for sis_id in account_courses:
                 if sis_account_id.find(sis_id) == 0:
                     account_courses[sis_id]["courses"] += 1
-                    if is_active:
+                    if is_xlist:
+                        account_courses[sis_id]["xlist_courses"] += 1
+                    elif is_active:
                         account_courses[sis_id]["active_courses"] += 1
+
                     if ind_study:
                         account_courses[sis_id]["ind_study_courses"] += 1
-                        if is_active:
+                        if is_xlist:
+                            account_courses[sis_id]["xlist_ind_study_courses"] += 1
+                        elif is_active:
                             account_courses[sis_id]["active_ind_study_courses"] += 1
 
         # Save course totals
@@ -108,9 +133,14 @@ class ReportBuilder():
                 activity.active_courses = totals["active_courses"]
                 activity.ind_study_courses = totals["ind_study_courses"]
                 activity.active_ind_study_courses = totals["active_ind_study_courses"]
+                activity.xlist_courses = totals["xlist_courses"]
+                activity.xlist_ind_study_courses = totals["xlist_ind_study_courses"]
                 activity.save()
             except SubaccountActivity.DoesNotExist:
                 continue
 
         report.finished_date = datetime.utcnow().replace(tzinfo=utc)
         report.save()
+
+        self._reports.delete_report(xlist_prov_report)
+        self._reports.delete_report(course_prov_report)
