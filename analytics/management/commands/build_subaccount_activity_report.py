@@ -6,8 +6,12 @@ class Command(BaseCommand):
     help = "Create report of subaccount activity."
 
     def add_arguments(self, parser):
-        parser.add_argument('subaccount_id')
-        parser.add_argument('term_id')
+        parser.add_argument(
+            '-a', '--account', action='store', dest='subaccount_id',
+            default='uwcourse', help='Subaccount sis_id for the report')
+        parser.add_argument(
+            '-t', '--term', action='store', dest='term_id', default='',
+            help='Term sis_id for the report')
 
     def handle(self, *args, **options):
         report_builder = ReportBuilder()
