@@ -13,6 +13,8 @@ class Report(models.Model):
     report_type = models.CharField(max_length=80, choices=TYPE_CHOICES)
     started_date = models.DateTimeField()
     finished_date = models.DateTimeField(null=True)
+    term_id = models.CharField(max_length=20)
+    term_week = models.PositiveIntegerField(null=True)
 
     class Meta:
         managed = False

@@ -1,34 +1,42 @@
-from django.conf import settings
 from django.utils.timezone import utc
 from uw_canvas.accounts import Accounts as CanvasAccounts
 from uw_canvas.analytics import Analytics as CanvasAnalytics
 from uw_canvas.reports import Reports as CanvasReports
 from uw_canvas.terms import Terms as CanvasTerms
-from restclients_core.exceptions import DataFailureException
+from uw_sws.term import get_current_term
 from analytics.models import Report, SubaccountActivity
 from datetime import datetime
-from time import sleep
-import json
 import csv
 
 
 class ReportBuilder():
     def __init__(self):
-        self._accounts = CanvasAccounts(per_page=50)
+        self._accounts = CanvasAccounts(per_page=100)
         self._analytics = CanvasAnalytics()
         self._reports = CanvasReports()
 
     def build_subaccount_activity_report(self, root_account_id, sis_term_id):
         report = Report(report_type=Report.SUBACCOUNT_ACTIVITY,
                         started_date=datetime.utcnow().replace(tzinfo=utc))
-        report.save()
-
         accounts = []
         account_courses = {}
 
+        week_of_term = None
+        if not sis_term_id:
+            current_term = get_current_term()
+            sis_term_id = current_term.canvas_sis_id()
+            week_of_term = current_term.get_week_of_term()
+            if week_of_term < 1:
+                return
+
+        report.term_id = sis_term_id
+        report.term_week = week_of_term
+        report.save()
+
         root_account = self._accounts.get_account_by_sis_id(root_account_id)
         accounts.append(root_account)
-        accounts.extend(self._accounts.get_all_sub_accounts_by_sis_id(root_account_id))
+        accounts.extend(
+            self._accounts.get_all_sub_accounts_by_sis_id(root_account_id))
 
         for account in accounts:
             sis_account_id = account.sis_account_id
