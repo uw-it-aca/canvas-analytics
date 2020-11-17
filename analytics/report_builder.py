@@ -4,9 +4,18 @@ from uw_canvas.analytics import Analytics as CanvasAnalytics
 from uw_canvas.reports import Reports as CanvasReports
 from uw_canvas.terms import Terms as CanvasTerms
 from uw_sws.term import get_current_term
+from restclients_core.util.retry import retry
+from restclients_core.exceptions import DataFailureException
 from analytics.models import Report, SubaccountActivity
 from datetime import datetime
+from logging import getLogger
 import csv
+
+logger = getLogger(__name__)
+
+RETRY_STATUS_CODES = [0, 408, 500, 502, 503, 504]
+RETRY_MAX = 5
+RETRY_DELAY = 3
 
 
 class ReportBuilder():
@@ -14,6 +23,18 @@ class ReportBuilder():
         self._accounts = CanvasAccounts(per_page=100)
         self._analytics = CanvasAnalytics()
         self._reports = CanvasReports()
+
+    @retry(DataFailureException, status_codes=RETRY_STATUS_CODES,
+           tries=RETRY_MAX, delay=RETRY_DELAY, logger=logger)
+    def get_statistics_by_account(self, sis_account_id, sis_term_id):
+        return self._analytics.get_statistics_by_account(
+            sis_account_id, sis_term_id)
+
+    @retry(DataFailureException, status_codes=RETRY_STATUS_CODES,
+           tries=RETRY_MAX, delay=RETRY_DELAY, logger=logger)
+    def get_activity_by_account(self, sis_account_id, sis_term_id):
+        return self._analytics.get_activity_by_account(
+            sis_account_id, sis_term_id)
 
     def build_subaccount_activity_report(self, root_account_id, sis_term_id):
         report = Report(report_type=Report.SUBACCOUNT_ACTIVITY,
@@ -57,8 +78,7 @@ class ReportBuilder():
                                           subaccount_id=sis_account_id,
                                           subaccount_name=account.name)
 
-            data = self._analytics.get_statistics_by_account(sis_account_id,
-                                                             sis_term_id)
+            data = self.get_statistics_by_account(sis_account_id, sis_term_id)
 
             for key, val in data.items():
                 if key == "courses":
@@ -66,8 +86,7 @@ class ReportBuilder():
 
                 setattr(activity, key, val)
 
-            data = self._analytics.get_activity_by_account(sis_account_id,
-                                                           sis_term_id)
+            data = self.get_activity_by_account(sis_account_id, sis_term_id)
 
             for item in data["by_category"]:
                 setattr(activity,
