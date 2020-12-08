@@ -15,7 +15,7 @@ logger = getLogger(__name__)
 
 RETRY_STATUS_CODES = [0, 408, 500, 502, 503, 504]
 RETRY_MAX = 5
-RETRY_DELAY = 3
+RETRY_DELAY = 5
 
 
 class ReportBuilder():
@@ -86,12 +86,18 @@ class ReportBuilder():
 
                 setattr(activity, key, val)
 
-            data = self.get_activity_by_account(sis_account_id, sis_term_id)
+            try:
+                data = self.get_activity_by_account(sis_account_id,
+                                                    sis_term_id)
 
-            for item in data["by_category"]:
-                setattr(activity,
-                        "{}_views".format(item["category"]),
-                        item["views"])
+                for item in data["by_category"]:
+                    setattr(activity,
+                            "{}_views".format(item["category"]),
+                            item["views"])
+
+            except DataFailureException as ex:
+                if ex.status != 504:
+                    raise
 
             activity.save()
 
