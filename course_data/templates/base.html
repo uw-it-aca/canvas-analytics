@@ -1,0 +1,26 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  {% load json_script %}
+  {{ jobtypes|json_script:'jobtypes' }}
+  {{ weeks|json_script:'weeks' }}
+  <style>
+   body {
+     padding: 30px;
+   }
+  </style>
+</head>
+<body>
+  {% csrf_token %}
+  <div id="vue_root" hidden>
+      {% block body_content %}
+      {% endblock body_content %}
+  </div>
+
+  {% block vue_script %}
+  {% endblock vue_script %}
+
+</body>
+</html>
