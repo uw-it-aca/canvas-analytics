@@ -1,0 +1,8 @@
+[run]
+source = course_data
+parallel = True
+
+[paths]
+source =
+  course_data/
+  /app/course_data/
