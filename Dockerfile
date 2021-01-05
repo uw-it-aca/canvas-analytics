@@ -15,6 +15,9 @@ RUN . /app/bin/activate && pip install mysqlclient
 ADD --chown=acait:acait . /app/
 ADD --chown=acait:acait docker/ project/
 
+RUN . /app/bin/activate && pip install nodeenv && nodeenv -p &&\
+    npm install -g npm
+
 FROM acait/django-test-container:1.2.5 as app-test-container
 
 COPY --from=app-container /app/ /app/
