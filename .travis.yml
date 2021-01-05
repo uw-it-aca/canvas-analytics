@@ -1,0 +1,37 @@
+sudo: required
+language: python
+python:
+- '3.6'
+services:
+- docker
+env:
+  global:
+  - RELEASE_NAME="canvas-analytics"
+  - DJANGO_APP="course_data"
+  - COMMIT_HASH="$(git rev-parse --short=7 HEAD)"
+  - IMAGE_TAG="${RELEASE_NAME}:${COMMIT_HASH}"
+  - DEPLOY_SCRIPT=https://raw.githubusercontent.com/uw-it-aca/gcp-app-deploy/master/travis-ci/deploy.sh
+  - GCP_JSON_KEY=gcp.json
+  - secure: p3L3smXlX11XH9heDEBWtlP17d7HSfS0YTRa4IEGBXbc+ha2uJj/9fyuoKFIH5A8JwxxZ3BJNaPb3Y/oWVezW632GJ9kLfQj2bAI3RCUWTFXGnW53e9v7thR/3vs4AXBglITQw6B1EH1KXvz1TJsxjTdkFxpWdm+MkPBCqNt2F7QX5e1ioN3kr4Y+E63dNPW4lASpApLJcmVZsbUPXz0EZ/silDDcZaMK7hvm5GGNBHBUMzjLRSXUMlTrNgWlUSx/i9IGImO6MOYkmJzIx0yCZLp0TM1qk42h4re5WGcOT8VVSc8VYzvW8VzOSxpUynqIpsJg16SPTFlKWvVUc6UGoLgyr0dVvziYcRjoL9+MWwCT1yZ715N5HNzZVqf/XdqtEgEr7WR9fAjBxfy/7iCqahInc7yUo5bfbgXcQEfMZGYknxawAiyYNpFX8msWG/e+fyXLVgAWBSTcD0SPgRvw5uv4UB95p1PrUKUteus/55paUeIMVCLHQBar4Z8qu2qgkG0DI6cFK3c8D2/EBa/8N2qciKHlxwt9/7YT8XxP5JPRHtMz0QvDc8EX+7YIzWS92SeyDvZqhiQem9AgqX7xqFqMwDJIY+FHwEi59mRtdRPjuqHrrsLs3ZxdidTSy2AVjL/9+Qwy+caVtwikHAVOCyTC+wI4/nT5+1Xqfy/JYQ=
+install:
+- docker build --target app-container -t "$IMAGE_TAG" .
+- docker build -t app-test-container .
+before_script:
+- pip install coverage
+- pip install coveralls
+script:
+- docker run -u root -it -v /tmp:/coverage -e DJANGO_APP="$DJANGO_APP" -e "ENV=localdev"
+  -e "AUTH=SAML_MOCK" app-test-container bash -c ". ./travis-ci/test.sh"
+after_success:
+- cp /tmp/.coverage.* .
+- coverage combine
+- coveralls
+- openssl aes-256-cbc -K $encrypted_0e718fcdeb51_key -iv $encrypted_0e718fcdeb51_iv
+  -in gcp.json.enc -out gcp.json -d
+#deploy:
+#- provider: script
+#  skip_cleanup: true
+#  script: curl -Ls "$DEPLOY_SCRIPT" | bash
+#  on:
+#    all_branches: true
+#    condition: $TRAVIS_PULL_REQUEST == "false" && $TRAVIS_BRANCH =~ ^(main|develop)$

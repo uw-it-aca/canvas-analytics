@@ -3,14 +3,21 @@
 import os
 from setuptools import setup
 
-README = open(os.path.join(os.path.dirname(__file__), 'README.md')).read()
+README = """
+See the README on `GitHub
+<https://github.com/uw-it-aca/canvas-analytics>`_.
+"""
+
+version_path = 'course_data/VERSION'
+VERSION = open(os.path.join(os.path.dirname(__file__), version_path)).read()
+VERSION = VERSION.replace("\n", "")
 
 # allow setup.py to be run from any path
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
     name='canvas-analytics',
-    version='1.0',
+    version=VERSION,
     packages=['course_data'],
     include_package_data=True,
     install_requires = [
