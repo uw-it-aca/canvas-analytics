@@ -1,16 +1,18 @@
 <template>
-  <div class="mb-4">
-    <b-form inline>
-      <label class="mr-2">Week</label>
-      <b-form-select class="mr-2" id="weeks" name="week" v-model="selected_week" @change="changeWeek($event)">
-        <option v-for="week in weeks" :key="week.id" :value="week.id">{{week.quarter}} {{week.year}}, week {{week.week}}</option>
-      </b-form-select>
-      <label class="mr-2">Job Type</label>
-      <b-form-select class="mr-2" id="jobtypes" name="jobtype"  v-model="filters.job_type">
-        <option :value="'all'" selected>all</option>
-        <option v-for="jobtype in jobtypes" :key="jobtype.id" :value="jobtype.type">{{jobtype.type}}</option>
-      </b-form-select>
-    </b-form>
+  <div class="mt-4 mb-4"> 
+    <b-card class="p-3 bg-light mb-4">
+      <b-form inline>
+        <label class="mr-2">Week</label>
+        <b-form-select class="mr-2" id="weeks" name="week" v-model="selected_week" @change="changeWeek($event)">
+          <b-form-select-option v-for="week in weeks" :key="week.id" :value="week.id">{{week.quarter}} {{week.year}}, week {{week.week}}</b-form-select-option>
+        </b-form-select>
+        <label class="mr-2">Job Type</label>
+        <b-form-select class="mr-2" id="jobtypes" name="jobtype"  v-model="filters.job_type">
+          <b-form-select-option :value="'all'" selected>all</b-form-select-option>
+          <b-form-select-option v-for="jobtype in jobtypes" :key="jobtype.id" :value="jobtype.type">{{jobtype.type}}</b-form-select-option>
+        </b-form-select>
+      </b-form>
+    </b-card>
   </div>
 </template>
 

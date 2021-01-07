@@ -21,27 +21,55 @@
       bordered
       small
       >
+
+      <template slot="top-row" slot-scope="{ fields }">
+        <td v-for="field in fields" :key="field.key">
+          <b-form v-if="field.key == 'message'" class="d-flex flex-nowrap" inline>
+            <b-form-select v-model="selected_restart_option" id="restart-select" name="restart-select" class="small-select">
+              <b-form-select-option :value="'all'">restart all</b-form-select-option>
+              <b-form-select-option :value="'failed'">restart failed</b-form-select-option>
+              <b-form-select-option :value="'completed'">restart completed</b-form-select-option>
+            </b-form-select>
+            <b-button v-show="field.key=='message'" size="sm" class="mr-2 pill-button">
+              <b-icon icon="arrow-clockwise"></b-icon>
+            </b-button>
+          </b-form>
+        </td>
+      </template>
+
+      <template #table-colgroup="scope">
+        <col
+          v-for="field in scope.fields"
+          :key="field.key"
+          :style="{ width: field.key === 'message' ? '125%' : '100%' }"
+        >
+      </template>
+
       <template #table-busy>
         <div class="text-center text-danger my-2">
           <b-spinner class="align-middle"></b-spinner>
           <strong>Loading...</strong>
         </div>
       </template>
+  
+      <template #cell(message)="row">
+          {{getStatus(row.item)}}
+          <b-button v-show="getStatus(row.item) == 'error' || getStatus(row.item) == 'complete'" size="sm" @click="restartJobs([row.item.id])" class="mr-2 pill-button ">
+            <b-icon icon="arrow-clockwise"></b-icon>
+          </b-button>
+      </template>
 
       <template #cell(actions)="row">
-        <b-button v-show="getStatus(row.item) == 'error' || getStatus(row.item) == 'complete'" size="sm" @click="restartJobs([row.item.id])" class="mr-2">
-          <b-icon icon="arrow-clockwise"></b-icon>
-        </b-button>
-        <b-button size="sm" @click="setPending(row)" class="mr-2">
+        <b-button size="sm" @click="setPending(row)" class="mr-2 pill-button ">
           set pending
         </b-button>
-        <b-button size="sm" @click="setRunning(row)" class="mr-2">
+        <b-button size="sm" @click="setRunning(row)" class="mr-2 pill-button ">
           set running
         </b-button>
-        <b-button size="sm" @click="setComplete(row)" class="mr-2">
+        <b-button size="sm" @click="setComplete(row)" class="mr-2 pill-button ">
           set complete
         </b-button>
-        <b-button size="sm" @click="setError(row)" class="mr-2">
+        <b-button size="sm" @click="setError(row)" class="mr-2 pill-button ">
           set error
         </b-button>
       </template>
@@ -68,27 +96,27 @@ export default {
           label: 'Job Type',
           sortable: true,
         },
-        { key: 'start',
-          label: 'Start',
-          sortable: true,
-        },
-        { key: 'end',
-          label: 'End',
-          sortable: true,
-        },
         { key: 'message',
-          label: 'Status',
+          label: 'Job Status',
           tdClass: (value, key, item) => {
               return 'table-' + this.getStatus(item);
           },
-          formatter: 'statusFormatter'
+        },
+        { key: 'start',
+          label: 'Job Start',
+          sortable: true,
+        },
+        { key: 'end',
+          label: 'Job End',
+          sortable: true,
         },
         { key: 'actions',
-          label: 'Actions'
+          label: 'Test Actions'
         },
       ],
+      selected_restart_option: 'all',
       perPage: 500,
-      currentPage: 1
+      currentPage: 1,
     }
   },
   computed: {
@@ -134,9 +162,6 @@ export default {
       else if (item.message)
         return "error";
     },
-    statusFormatter: function(value, key, item) {
-      return this.getStatus(item);
-    },
     ...mapMutations([
       'addVarToState',
     ]),
@@ -167,6 +192,28 @@ export default {
     color: #721c24;
     background-color: #f8d7da;
     border-color: #f5c6cb;
+  }
+
+  .small-select {
+    height: 25px;
+    padding: 0px 5px;
+    width: 100% !important;
+  }
+
+  .pill-button {
+    background-color: #ddd;
+    border-style: solid;
+    border-width: 1px;
+    border-radius: 4px;
+    border-color: darkgray;
+    color: black;
+    padding: 3px 5px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    margin: 2px 1px;
+    cursor: pointer;
+    font-size: 10px;
   }
 </style>
 
