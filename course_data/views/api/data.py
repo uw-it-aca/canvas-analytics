@@ -30,3 +30,18 @@ class JobFilter(RESTDispatch):
                            "course_week", "course_code", "job_type", "pid",
                            "start", "end", "message", "created", "show")
         return self.json_response(content={"jobs": list(jobs)})
+
+
+class JobReset(RESTDispatch):
+
+    def post(self, request, *args, **kwargs):
+        data = json.loads(request.body.decode('utf-8'))
+        job_ids = data["job_ids"]
+        for job_id in job_ids:
+            job = Job.objects.get(id=job_id)
+            job.pid = None
+            job.start = None
+            job.end = None
+            job.message = ""
+            job.save()
+        return self.json_response(content={"reset": True})

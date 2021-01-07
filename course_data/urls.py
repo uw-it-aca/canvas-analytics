@@ -15,10 +15,11 @@ Including another URLconf
 """
 from django.urls import re_path, include
 from course_data.views.pages import HomeView
-from course_data.views.api.data import JobFilter
+from course_data.views.api.data import JobFilter, JobReset
 
 urlpatterns = [
     re_path(r'^$', HomeView.as_view()),
     re_path(r'^api/filterjobs/$', JobFilter.as_view()),
+    re_path(r'^api/resetjobs/$', JobReset.as_view()),
     re_path(r'^saml/', include('uw_saml.urls')),
 ]

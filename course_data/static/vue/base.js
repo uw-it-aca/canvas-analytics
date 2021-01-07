@@ -16,35 +16,4 @@ Vue.use(Vuex);
 
 Vue.config.devtools = true;
 
-const store = new Vuex.Store({
-  state: {
-    csrfToken: document.getElementsByName('csrfmiddlewaretoken')[0].value,
-    weeks: JSON.parse(document.getElementById('weeks').innerHTML),
-    jobtypes: JSON.parse(document.getElementById('jobtypes').innerHTML),
-    isLoading: false,
-    jobs: [],
-    filteredJobs: [],
-    selected_week: null,
-    filters: {
-      job_type: "all",
-    }
-  },
-  mutations: {
-    addVarToState(state, {name, value}) {
-      state[name] = value;
-    },
-  },
-});
-
-Vue.config.devtools = true;
-
-const vueConf = {
-  el: '#vue_root',
-  created: function() {
-    document.title = 'Course-Data: ' + store.state['pageTitle'];
-    document.getElementById('vue_root').hidden = false;
-  },
-  store: store,
-};
-
-export {Vue, vueConf};
+export {Vue};
