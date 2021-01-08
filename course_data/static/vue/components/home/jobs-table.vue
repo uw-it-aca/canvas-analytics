@@ -54,7 +54,7 @@
   
       <template #cell(message)="row">
           {{getStatus(row.item)}}
-          <b-button v-show="getStatus(row.item) == 'error' || getStatus(row.item) == 'complete'" size="sm" @click="restartJobs([row.item.id])" class="mr-2 pill-button ">
+          <b-button v-show="getStatus(row.item) == 'failed' || getStatus(row.item) == 'completed'" size="sm" @click="restartJobs([row.item.id])" class="mr-2 pill-button ">
             <b-icon icon="arrow-clockwise"></b-icon>
           </b-button>
       </template>
@@ -69,8 +69,8 @@
         <b-button size="sm" @click="setComplete(row)" class="mr-2 pill-button ">
           set complete
         </b-button>
-        <b-button size="sm" @click="setError(row)" class="mr-2 pill-button ">
-          set error
+        <b-button size="sm" @click="setFailed(row)" class="mr-2 pill-button ">
+          set failed
         </b-button>
       </template>
     </b-table>
@@ -80,10 +80,11 @@
 <script>
 import {mapState, mapMutations} from 'vuex';
 import dataMixin from '../../mixins/data_mixin';
+import utilitiesMixin from '../../mixins/utilities_mixin';
 
 export default {
   name: 'jobs-table',
-  mixins: [dataMixin],
+  mixins: [dataMixin, utilitiesMixin],
   props: ['jobs'],
   data: function() {
     return {
@@ -146,21 +147,11 @@ export default {
       row.item.end = "2021-01-01"
       row.item.message = ""
     },
-    setError: function(row) {
+    setFailed: function(row) {
       row.item.pid = "1234";
       row.item.start = "2021-01-01"
       row.item.end = ""
-      row.item.message = "MOCK ERROR OCCURED"
-    },
-    getStatus: function(item) {
-      if (!item.pid && !item.start && !item.end && !item.message)
-        return "pending";
-      else if (item.pid && item.start && !item.end && !item.message)
-        return "running";
-      else if (item.pid && item.start && item.end && !item.message)
-        return "complete";
-      else if (item.message)
-        return "error";
+      row.item.message = "MOCK FAILURE OCCURED"
     },
     ...mapMutations([
       'addVarToState',
@@ -182,13 +173,13 @@ export default {
     border-color: #bee5eb;
   }
 
-  .table-complete {
+  .table-completed {
     color: #155724;
     background-color: #d4edda;
     border-color: #c3e6cb;
   }
 
-  .table-error {
+  .table-failed {
     color: #721c24;
     background-color: #f8d7da;
     border-color: #f5c6cb;

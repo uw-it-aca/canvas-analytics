@@ -11,6 +11,14 @@
           <b-form-select-option :value="'all'" selected>all</b-form-select-option>
           <b-form-select-option v-for="jobtype in jobtypes" :key="jobtype.id" :value="jobtype.type">{{jobtype.type}}</b-form-select-option>
         </b-form-select>
+        <label class="mr-2">Job Status</label>
+        <b-form-select class="mr-2" id="jobstatuses" name="jobstatus"  v-model="filters.job_status">
+          <b-form-select-option :value="'all'" selected>all</b-form-select-option>
+          <b-form-select-option :value="'pending'">pending</b-form-select-option>
+          <b-form-select-option :value="'running'">running</b-form-select-option>
+          <b-form-select-option :value="'completed'">completed</b-form-select-option>
+          <b-form-select-option :value="'failed'">failed</b-form-select-option>
+        </b-form-select>
       </b-form>
     </b-card>
   </div>
@@ -39,6 +47,8 @@ export default {
     }
     // default to all job types
     this.$store.state.filters.job_type = "all";
+    // default to all job statuses
+    this.$store.state.filters.job_status = "all";
   },
   methods: {
     ...mapMutations([

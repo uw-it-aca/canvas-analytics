@@ -22,6 +22,7 @@ const store = new Vuex.Store({
     selected_week: null, // selected week to load
     filters: {
       job_type: "",
+      job_status: "",
     }
   },
   mutations: {
@@ -36,14 +37,15 @@ const store = new Vuex.Store({
 
 // initializae root component 
 import dataMixin from './mixins/data_mixin';
+import utilitiesMixin from './mixins/utilities_mixin';
 import {mapState, mapMutations} from 'vuex';
 
 new Vue({
   el: '#vue_root',
   store: store,
-  mixins: [dataMixin],
+  mixins: [dataMixin, utilitiesMixin],
   created: function() {
-    document.title = 'Course-Data: ' + store.state['pageTitle'];
+    document.title = 'Canvas Analytics Jobs: ' + store.state['pageTitle'];
     document.getElementById('vue_root').hidden = false;
   },
   computed: {
@@ -55,7 +57,9 @@ new Vue({
       let _this = this;
       let filteredJobs = [];
       this.$store.state.jobs.forEach(function (job, index) {
-        if (_this._filterEqual(job.job_type, _this.$store.state.filters.job_type)) {
+        if (_this._filterEqual(job.job_type, _this.$store.state.filters.job_type) &&
+          _this._filterEqual(_this.getStatus(job), _this.$store.state.filters.job_status)
+        ) {
           filteredJobs.push(job);
         }
       });
