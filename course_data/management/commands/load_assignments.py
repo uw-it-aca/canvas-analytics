@@ -27,6 +27,7 @@ class Command(BaseCommand):
         jobs = Job.objects.start_batch_of_assignment_jobs()
         if jobs:
             for job in jobs:
+                job.mark_start()
                 assignments = CanvasDAO().get_assignments(job.course.course_id)
                 for assign in assignments:
                     assign.course = job.course

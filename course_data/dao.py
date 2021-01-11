@@ -6,6 +6,8 @@ from uw_canvas.analytics import Analytics
 from restclients_core.exceptions import DataFailureException
 from course_data.logger import Logger
 from course_data.models import Assignment, Participation
+from course_data import utilities
+from uw_sws.term import get_current_term
 
 
 class CanvasDAO():
@@ -39,6 +41,8 @@ class CanvasDAO():
         analytics = Analytics()
         course = self.get_course(course_id)
         students_ids = self._get_student_ids_for_course(course)
+        term_obj = get_current_term()
+        week = utilities.get_week_of_term(term_obj.first_day_quarter)
         assignments = []
         for user_id in students_ids:
             try:
@@ -46,6 +50,7 @@ class CanvasDAO():
                         user_id, course.course_id)
                 for i in res:
                     assignment = Assignment()
+                    assignment.week = week
                     assignment.assignment_id = i.get('assignment_id')
                     assignment.student_id = user_id
                     if i.get('submission'):
@@ -66,6 +71,8 @@ class CanvasDAO():
         analytics = Analytics()
         course = self.get_course(course_id)
         students_ids = self._get_student_ids_for_course(course)
+        term_obj = get_current_term()
+        week = utilities.get_week_of_term(term_obj.first_day_quarter)
         participations = []
         for user_id in students_ids:
             try:
@@ -73,6 +80,7 @@ class CanvasDAO():
                         course.course_id, student_id=user_id)
                 for i in res:
                     partic = Participation()
+                    partic.week = week
                     partic.page_views = i.get('page_views')
                     partic.page_views_level = \
                         i.get('page_views_level')

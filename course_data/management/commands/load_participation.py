@@ -27,6 +27,7 @@ class Command(BaseCommand):
         jobs = Job.objects.start_batch_of_participation_jobs()
         if jobs:
             for job in jobs:
+                job.mark_start()
                 partics = CanvasDAO().get_participation(
                     job.course.course_id)
                 for partic in partics:

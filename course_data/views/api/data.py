@@ -8,23 +8,23 @@ class JobFilter(RESTDispatch):
 
     def post(self, request, *args, **kwargs):
         filters = json.loads(request.body.decode('utf-8'))
+        print(filters)
         jobs = (Job.objects
                 .select_related('course')
                 .annotate(
-                    course_year=F('course__week__year'),
-                    course_quarter=F('course__week__quarter'),
-                    course_week=F('course__week__week'),
-                    course_code=F('course__code'),
+                    course_year=F('course__year'),
+                    course_quarter=F('course__quarter'),
+                    course_week=F('week'),
+                    course_code=F('course__course_id'),
                     job_type=F('type__type'),
                     show=Value(True, BooleanField())
                 ))
 
-        if 'job_type_id' in filters:
-            if filters["job_type_id"] != -1:  # if not all types
-                jobs = jobs.filter(type=filters["job_type_id"])
-
-        if 'week_id' in filters:
-            jobs = jobs.filter(course__week=filters["week_id"])
+        if 'week' in filters:
+            jobs = jobs.filter(week=filters["week"])
+        if 'term' in filters:
+            jobs = (jobs.filter(course_year=filters["term"]["year"])
+                        .filter(course_quarter=filters["term"]["quarter"]))
 
         jobs = jobs.values("id", "course_year", "course_quarter",
                            "course_week", "course_code", "job_type", "pid",

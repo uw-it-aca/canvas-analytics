@@ -2,9 +2,13 @@
   <div class="mt-4 mb-4"> 
     <b-card class="p-3 bg-light mb-4">
       <b-form inline>
+        <label class="mr-2">Term</label>
+        <b-form-select class="mr-2" id="terms" name="term" v-model="selected_term">
+          <b-form-select-option v-for="term in terms" :key="term" :value="term">{{term.quarter}} {{term.year}}</b-form-select-option>
+        </b-form-select>
         <label class="mr-2">Week</label>
-        <b-form-select class="mr-2" id="weeks" name="week" v-model="selected_week" @change="changeWeek($event)">
-          <b-form-select-option v-for="week in weeks" :key="week.id" :value="week.id">{{week.quarter}} {{week.year}}, week {{week.week}}</b-form-select-option>
+        <b-form-select class="mr-2" id="weeks" name="week" v-model="selected_week">
+          <b-form-select-option v-for="week in weeks" :key="week.week" :value="week.week">{{week.week}}</b-form-select-option>
         </b-form-select>
         <label class="mr-2">Job Type</label>
         <b-form-select class="mr-2" id="jobtypes" name="jobtype"  v-model="filters.job_type">
@@ -33,17 +37,21 @@ export default {
   mixins: [dataMixin],
   computed: {
     ...mapState({
+      terms: (state) => state.terms,
       weeks: (state) => state.weeks,
       jobtypes: (state) => state.jobtypes,
+      selected_term: (state) => state.selected_term,
       selected_week: (state) => state.selected_week,
       filters: (state) => state.filters,
     }),
   },
   async created() {
-    // load all jobs for specified week
+    if (!this.selected_term) {
+      this.$store.state.selected_term = this.terms[0];
+    }
     if (!this.selected_week) {
       // default to first week option if no filter is specified
-      this.$store.state.selected_week = this.weeks[0].id;
+      this.$store.state.selected_week = this.weeks[0].week;
     }
     // default to all job types
     this.$store.state.filters.job_type = "all";

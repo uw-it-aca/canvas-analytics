@@ -5,6 +5,7 @@
 <head>
   {% load json_script %}
   {{ jobtypes|json_script:'jobtypes' }}
+  {{ terms|json_script:'terms' }}
   {{ weeks|json_script:'weeks' }}
   <style>
    body {

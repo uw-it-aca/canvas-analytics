@@ -16,9 +16,11 @@ const store = new Vuex.Store({
     pageTitle: "Home",
     csrfToken: document.getElementsByName('csrfmiddlewaretoken')[0].value,
     jobs: [], // master list of jobs
+    terms: JSON.parse(document.getElementById('terms').innerHTML), // job terms loaded on page load
     weeks: JSON.parse(document.getElementById('weeks').innerHTML), // job weeks loaded on page load
     jobtypes: JSON.parse(document.getElementById('jobtypes').innerHTML), // job types loaded on page load
     isLoading: false, // toggles table loading indicator
+    selected_term: null, // selected term to load
     selected_week: null, // selected week to load
     filters: {
       job_type: "",
@@ -50,6 +52,7 @@ new Vue({
   },
   computed: {
     ...mapState({
+      selected_term: (state) => state.selected_term,
       selected_week: (state) => state.selected_week,
     }),
     filteredJobs: function() {
@@ -71,8 +74,11 @@ new Vue({
     }
   },
   watch: {
+    selected_term: function() {
+      this.changeSelection();
+    },
     selected_week: function() {
-      this.changeWeek();
+      this.changeSelection();
     }
   },
   methods: {
@@ -85,10 +91,12 @@ new Vue({
           return true;
         }
     },
-    changeWeek: function() {
+    changeSelection: function() {
       // load a new week
       this.$store.state.isLoading = true;
-      this.getJobs({"week_id": this.selected_week})
+      this.getJobs({
+        "term": this.selected_term,
+        "week": this.selected_week})
         .then(response => {
             if (response.data) {
               this.$store.state.jobs = response.data.jobs;
