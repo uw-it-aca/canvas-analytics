@@ -83,7 +83,7 @@ new Vue({
   },
   methods: {
     _filterEqual: function(field_value, filter_value) {
-        if (filter_value== "all") {
+        if (filter_value == "all") {
           return true;
         } else if (field_value != filter_value) {
           return false;

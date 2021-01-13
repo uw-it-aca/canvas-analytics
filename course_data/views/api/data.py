@@ -12,8 +12,8 @@ class JobFilter(RESTDispatch):
         jobs = (Job.objects
                 .select_related('course')
                 .annotate(
-                    course_year=F('course__year'),
-                    course_quarter=F('course__quarter'),
+                    course_year=F('course__term__year'),
+                    course_quarter=F('course__term__quarter'),
                     course_week=F('week'),
                     course_code=F('course__course_id'),
                     job_type=F('type__type'),

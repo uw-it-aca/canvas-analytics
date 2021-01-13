@@ -26,7 +26,7 @@ setup(
         'UW-RestClients-PWS>=2.1.2,<3.0',
         'UW-RestClients-Canvas>=1.1.12,<2.0',
         'UW-Django-SAML2>=1.5.1,<2.0',
-        'django-webpack-loader>=0.7.0'
+        'django-webpack-loader>=0.7.0',
     ],
     license='Apache License, Version 2.0',
     description='Collects data about UW Canvas usage',

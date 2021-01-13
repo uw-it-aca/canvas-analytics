@@ -4,20 +4,41 @@ from django.utils import timezone
 from course_data import utilities
 
 
-class Course(models.Model):
-    course_id = models.IntegerField()
+class Term(models.Model):
     year = models.IntegerField()
     quarter = models.TextField()
+    label = models.TextField()
+    last_day_add = models.DateField()
+    last_day_drop = models.DateField()
+    first_day_quarter = models.DateField()
+    census_day = models.DateField()
+    last_day_instruction = models.DateField()
+    grading_period_open = models.DateTimeField()
+    aterm_grading_period_open = models.DateTimeField()
+    grade_submission_deadline = models.DateTimeField()
+    last_final_exam_date = models.DateTimeField()
 
     @property
     def term_number(self):
         return utilities.get_term_number(self.quarter)
 
     @property
-    def session_text(self):
+    def term_text(self):
         return ("{} {}"
                 .format(self.quarter.capitalize(),
                         self.year))
+
+
+class Week(models.Model):
+    term = models.ForeignKey(Term,
+                             on_delete=models.CASCADE)
+    week = models.IntegerField()
+
+
+class Course(models.Model):
+    course_id = models.IntegerField()
+    term = models.ForeignKey(Term,
+                             on_delete=models.CASCADE)
 
 
 class JobManager(models.Manager):
@@ -47,17 +68,12 @@ class JobType(models.Model):
 
 
 class Job(models.Model):
-    JOB_CHOICES = (
-        ('assignment', 'AssignmentJob'),
-        ('participation', 'ParticipationJob'),
-    )
-
     objects = JobManager()
-    course = models.ForeignKey(Course,
-                               on_delete=models.CASCADE)
     type = models.ForeignKey(JobType,
                              on_delete=models.CASCADE)
-    week = models.IntegerField()
+    target_date_start = models.DateTimeField()
+    target_date_end = models.DateTimeField()
+    context = models.JSONField()
     pid = models.IntegerField(null=True)
     start = models.DateTimeField(null=True)
     end = models.DateTimeField(null=True)
@@ -79,7 +95,8 @@ class Assignment(models.Model):
                                on_delete=models.CASCADE)
     job = models.ForeignKey(Job,
                             on_delete=models.CASCADE)
-    week = models.IntegerField()
+    week = models.ForeignKey(Week,
+                             on_delete=models.CASCADE)
     assignment_id = models.IntegerField(null=True)
     student_id = models.IntegerField(null=True)
     score = models.IntegerField(null=True)
@@ -87,18 +104,15 @@ class Assignment(models.Model):
     points_possible = models.IntegerField(null=True)
     status = models.TextField()
 
-    class Meta:
-        indexes = [
-            models.Index(fields=['week']),
-        ]
-
 
 class Participation(models.Model):
     course = models.ForeignKey(Course,
                                on_delete=models.CASCADE)
     job = models.ForeignKey(Job,
                             on_delete=models.CASCADE)
-    week = models.IntegerField()
+    week = models.ForeignKey(Week,
+                             on_delete=models.CASCADE)
+    student_id = models.IntegerField(null=True)
     page_views = models.IntegerField(null=True)
     page_views_level = models.IntegerField(null=True)
     participations = models.IntegerField(null=True)
@@ -108,8 +122,3 @@ class Participation(models.Model):
     time_late = models.IntegerField(null=True)
     time_missing = models.IntegerField(null=True)
     time_floating = models.IntegerField(null=True)
-
-    class Meta:
-        indexes = [
-            models.Index(fields=['week']),
-        ]

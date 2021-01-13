@@ -27,11 +27,15 @@ class Command(BaseCommand):
         jobs = Job.objects.start_batch_of_participation_jobs()
         if jobs:
             for job in jobs:
-                job.mark_start()
-                partics = CanvasDAO().get_participation(
-                    job.course.course_id)
-                for partic in partics:
-                    partic.course = job.course
-                    partic.job = job
-                    partic.save()
-                job.mark_end()
+                try:
+                    job.mark_start()
+                    course_id = job.context["course_id"]
+                    partics = CanvasDAO().get_participation(course_id)
+                    for partic in partics:
+                        partic.job = job
+                        partic.save()
+                    job.mark_end()
+                except Exception as e:
+                    # save error message if one occurs
+                    job.message = e.message
+                    job.save()

@@ -27,10 +27,15 @@ class Command(BaseCommand):
         jobs = Job.objects.start_batch_of_assignment_jobs()
         if jobs:
             for job in jobs:
-                job.mark_start()
-                assignments = CanvasDAO().get_assignments(job.course.course_id)
-                for assign in assignments:
-                    assign.course = job.course
-                    assign.job = job
-                    assign.save()
-                job.mark_end()
+                try:
+                    job.mark_start()
+                    course_id = job.context["course_id"]
+                    assignments = (CanvasDAO().get_assignments(course_id))
+                    for assign in assignments:
+                        assign.job = job
+                        assign.save()
+                    job.mark_end()
+                except Exception as e:
+                    # save error message if one occurs
+                    job.message = e.message
+                    job.save()

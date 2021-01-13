@@ -4,11 +4,11 @@
       <b-form inline>
         <label class="mr-2">Term</label>
         <b-form-select class="mr-2" id="terms" name="term" v-model="selected_term">
-          <b-form-select-option v-for="term in terms" :key="term" :value="term">{{term.quarter}} {{term.year}}</b-form-select-option>
+          <b-form-select-option v-for="term in terms" :key="term.id" :value="term">{{term.quarter}} {{term.year}}</b-form-select-option>
         </b-form-select>
         <label class="mr-2">Week</label>
         <b-form-select class="mr-2" id="weeks" name="week" v-model="selected_week">
-          <b-form-select-option v-for="week in weeks" :key="week.week" :value="week.week">{{week.week}}</b-form-select-option>
+          <b-form-select-option v-for="week in weeks" :key="week.id" :value="week.week">{{week.week}}</b-form-select-option>
         </b-form-select>
         <label class="mr-2">Job Type</label>
         <b-form-select class="mr-2" id="jobtypes" name="jobtype"  v-model="filters.job_type">
@@ -51,7 +51,7 @@ export default {
     }
     if (!this.selected_week) {
       // default to first week option if no filter is specified
-      this.$store.state.selected_week = this.weeks[0].week;
+      this.$store.state.selected_week = this.weeks[0].id;
     }
     // default to all job types
     this.$store.state.filters.job_type = "all";
