@@ -89,12 +89,12 @@ export default {
   data: function() {
     return {
       fields: [
-        { key: 'course_code',
-          label: 'Course',
-          sortable: true,
-        },
         { key: 'job_type',
           label: 'Job Type',
+          sortable: true,
+        },
+        { key: 'context',
+          label: 'Job Context',
           sortable: true,
         },
         { key: 'message',

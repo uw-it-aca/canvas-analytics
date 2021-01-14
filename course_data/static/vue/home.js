@@ -1,12 +1,19 @@
 import {Vue} from './base.js';
 import Vuex from 'vuex';
 
-// components
+// custom components
 import JobsTable from './components/home/jobs-table.vue';
 import JobsFilter from './components/home/jobs-filter.vue';
+import JobsRangePicker from './components/home/jobs-range-picker.vue';
 
 Vue.component('jobs-table', JobsTable);
 Vue.component('jobs-filter', JobsFilter);
+Vue.component('jobs-range-picker', JobsRangePicker);
+
+// date range picker component - https://innologica.github.io/vue2-daterange-picker/
+import DateRangePicker from 'vue2-daterange-picker';
+import 'vue2-daterange-picker/dist/vue2-daterange-picker.css'
+Vue.component('date-range-picker', DateRangePicker);
 
 // stores
 import home_store from './vuex/store/home_store.js';
@@ -20,14 +27,31 @@ const store = new Vuex.Store({
     weeks: JSON.parse(document.getElementById('weeks').innerHTML), // job weeks loaded on page load
     jobtypes: JSON.parse(document.getElementById('jobtypes').innerHTML), // job types loaded on page load
     isLoading: false, // toggles table loading indicator
-    selected_term: null, // selected term to load
-    selected_week: null, // selected week to load
+    selected_date_range: {
+      startDate: null,
+      endDate: null
+    },
     filters: {
       job_type: "",
       job_status: "",
     }
   },
   mutations: {
+    setJobs(state, value) {
+      state.jobs = value;
+    },
+    setJobType(state, value) {
+      state.filters.job_type = value;
+    },
+    setJobStatus(state, value) {
+      state.filters.job_status = value;
+    },
+    setLoading(state, value) {
+      state.isLoading = value;
+    },
+    setSelectedDateRange(state, value) {
+      state.selected_date_range = value;
+    },
     addVarToState(state, {name, value}) {
       state[name] = value;
     },
@@ -52,34 +76,29 @@ new Vue({
   },
   computed: {
     ...mapState({
-      selected_term: (state) => state.selected_term,
-      selected_week: (state) => state.selected_week,
+      selected_date_range: (state) => state.selected_date_range,
+      jobs: (state) => state.jobs,
+      filters: (state) => state.filters,
     }),
     filteredJobs: function() {
-      this.$store.state.isLoading = true;
-      let _this = this;
+      this.$store.commit('setLoading', true);
       let filteredJobs = [];
-      this.$store.state.jobs.forEach(function (job, index) {
-        if (_this._filterEqual(job.job_type, _this.$store.state.filters.job_type) &&
-          _this._filterEqual(_this.getStatus(job), _this.$store.state.filters.job_status)
+      let _this = this;
+      this.jobs.forEach(function (job, index) {
+        if (_this._filterEqual(job.job_type, _this.filters.job_type) &&
+          _this._filterEqual(_this.getStatus(job), _this.filters.job_status)
         ) {
           filteredJobs.push(job);
         }
       });
-      setTimeout(function () {
-        // timeout needed for bootstrap to display loading icon while filtering
-        _this.$store.state.isLoading = false;
-      }, 0);
+      this.$store.commit('setLoading', false);
       return filteredJobs;
     }
   },
   watch: {
-    selected_term: function() {
+    selected_date_range: function() {
       this.changeSelection();
     },
-    selected_week: function() {
-      this.changeSelection();
-    }
   },
   methods: {
     _filterEqual: function(field_value, filter_value) {
@@ -93,14 +112,14 @@ new Vue({
     },
     changeSelection: function() {
       // load a new week
-      this.$store.state.isLoading = true;
+      this.$store.commit('setLoading', true);
       this.getJobs({
-        "term": this.selected_term,
-        "week": this.selected_week})
+          "date_range": this.selected_date_range,
+        })
         .then(response => {
             if (response.data) {
-              this.$store.state.jobs = response.data.jobs;
-              this.$store.state.isLoading = false;
+              this.$store.commit('setJobs', response.data.jobs);
+              this.$store.commit('setLoading', false);
             }
       })
     },

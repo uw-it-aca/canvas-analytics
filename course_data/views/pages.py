@@ -1,8 +1,7 @@
 from django.views.generic import TemplateView
 from uw_saml.utils import get_user
 from django.conf import settings
-from course_data.models import Term, JobType, Job, Course
-from django.db.models import F
+from course_data.models import Term, JobType
 
 
 class PageView(TemplateView):
@@ -18,23 +17,10 @@ class HomeView(PageView):
 
     def get_context_data(self, **kwargs):
         terms = Term.objects.values()
-        default_term = terms.first()
-        '''weeks = (Job.objects
-                 .annotate(
-                    course_year=F('course__term__year'),
-                    course_quarter=F('course__term__quarter'),
-                    week_pkid=F('week__id'),
-                    week_number=F('week__week'),
-                 )
-                 .filter(course_year=default_term["year"])
-                 .filter(course_quarter=default_term["quarter"])
-                 .values('week_pkid', 'week_number')
-                 .distinct())'''
+        print(terms)
         jobtypes = (JobType.objects.all().values())
         context = {}
         context['terms'] = list(terms)
-        #context['weeks'] = list(weeks)
-        context['weeks'] = []
         context['jobtypes'] = list(jobtypes)
         context['debug'] = settings.DEBUG
         return context
