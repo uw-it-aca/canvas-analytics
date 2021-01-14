@@ -11,6 +11,7 @@
       last-number
       >
     </b-pagination>
+    <p>Refresh: {{refreshTimerCount}}</p>
     <b-table id="jobs-table"
       :items="jobs"
       :fields="fields"
@@ -70,7 +71,7 @@
   
       <template #cell(message)="row">
         {{getStatus(row.item)}}
-        <b-button v-show="getStatus(row.item) == 'failed' || getStatus(row.item) == 'completed'" size="sm" @click="restartJobs([row.item.id])" class="mr-2 pill-button ">
+        <b-button v-show="getStatus(row.item) == 'failed' || getStatus(row.item) == 'completed'" size="sm" @click="restartSingleJob(row.item)" class="mr-2 pill-button ">
           <b-icon icon="arrow-clockwise"></b-icon>
         </b-button>
       </template>
@@ -121,12 +122,27 @@ export default {
   computed: {
     ...mapState({
       isLoading: (state) => state.isLoading,
+      refreshTimerCount: (state) => state.refreshTimerCount,
       totalRows() {
         return this.jobs.length
       }
     }),
   },
   methods: {
+    restartSingleJob: function(job) {
+      console.log(job);
+      console.log(job.id);
+      let _this = this;
+      this.restartJobs([job.id]).then(function() {
+        _this.setLocalPending(job);
+      });
+    },
+    setLocalPending: function(job) {
+      job.pid = "";
+      job.start = ""
+      job.end = ""
+      job.message = ""
+    },
     ...mapMutations([
       'addVarToState',
     ]),

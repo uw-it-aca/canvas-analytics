@@ -26,6 +26,7 @@ const store = new Vuex.Store({
     terms: JSON.parse(document.getElementById('terms').innerHTML), // job terms loaded on page load
     jobtypes: JSON.parse(document.getElementById('jobtypes').innerHTML), // job types loaded on page load
     isLoading: false, // toggles table loading indicator
+    refreshTimerCount: null,
     selected_date_range: {
       startDate: null,
       endDate: null,
@@ -48,6 +49,9 @@ const store = new Vuex.Store({
     setLoading(state, value) {
       state.isLoading = value;
     },
+    setRefreshTimerCount(state, value) {
+      state.refreshTimerCount = value;
+    },
     setSelectedDateRange(state, value) {
       state.selected_date_range = value;
     },
@@ -69,15 +73,23 @@ new Vue({
   el: '#vue_root',
   store: store,
   mixins: [dataMixin, utilitiesMixin],
+  data: function() {
+    return {
+      refreshTime: 15,
+      refreshTimer: null,
+    }
+  },
   created: function() {
     document.title = 'Canvas Analytics Jobs: ' + store.state['pageTitle'];
     document.getElementById('vue_root').hidden = false;
+    this.refreshTimer = setInterval(this.refreshJobs, this.refreshTime * 1000);
   },
   computed: {
     ...mapState({
       selected_date_range: (state) => state.selected_date_range,
       jobs: (state) => state.jobs,
       filters: (state) => state.filters,
+      refreshTimerCount: (state) => state.refreshTimerCount,
     }),
     filteredJobs: function() {
       this.$store.commit('setLoading', true);
@@ -98,6 +110,17 @@ new Vue({
     selected_date_range: function() {
       this.changeSelection();
     },
+    refreshTimerCount: {
+        handler(value) {
+            if (value > 0) {
+              let _this = this;
+              setTimeout(() => {
+                _this.$store.commit('setRefreshTimerCount', _this.refreshTimerCount - 1);
+              }, 1000);
+            }
+        },
+        immediate: true // This ensures the watcher is triggered upon creation
+    }
   },
   methods: {
     _filterEqual: function(field_value, filter_value) {
@@ -109,21 +132,30 @@ new Vue({
           return true;
         }
     },
+    refreshJobs: function() {
+      this.$store.commit('setRefreshTimerCount', this.refreshTime);
+      let promise = this.getJobs({
+        "date_range": this.selected_date_range,
+      })
+      .then(response => {
+        if (response.data) {
+          this.$store.commit('setJobs', response.data.jobs);
+        }
+      });
+      return promise;
+    },
     changeSelection: function() {
       // load a new week
       this.$store.commit('setLoading', true);
-      this.getJobs({
-          "date_range": this.selected_date_range,
-        })
-        .then(response => {
-            if (response.data) {
-              this.$store.commit('setJobs', response.data.jobs);
-              this.$store.commit('setLoading', false);
-            }
+      this.refreshJobs().then(response => {
+        this.$store.commit('setLoading', false);
       })
     },
     ...mapMutations([
       'addVarToState',
     ]),
+  },
+  beforeDestroy () {
+    clearInterval(this.refreshTimer);
   },
 })
