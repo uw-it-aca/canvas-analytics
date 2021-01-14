@@ -11,7 +11,6 @@
       last-number
       >
     </b-pagination>
-    <p>Refresh: {{refreshTimerCount}}</p>
     <b-table id="jobs-table"
       :items="jobs"
       :fields="fields"
@@ -115,14 +114,13 @@ export default {
         },
       ],
       selected_restart_option: 'all',
-      perPage: 500,
+      perPage: 250,
       currentPage: 1,
     }
   },
   computed: {
     ...mapState({
       isLoading: (state) => state.isLoading,
-      refreshTimerCount: (state) => state.refreshTimerCount,
       totalRows() {
         return this.jobs.length
       }

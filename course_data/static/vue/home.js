@@ -26,7 +26,6 @@ const store = new Vuex.Store({
     terms: JSON.parse(document.getElementById('terms').innerHTML), // job terms loaded on page load
     jobtypes: JSON.parse(document.getElementById('jobtypes').innerHTML), // job types loaded on page load
     isLoading: false, // toggles table loading indicator
-    refreshTimerCount: null,
     selected_date_range: {
       startDate: null,
       endDate: null,
@@ -48,9 +47,6 @@ const store = new Vuex.Store({
     },
     setLoading(state, value) {
       state.isLoading = value;
-    },
-    setRefreshTimerCount(state, value) {
-      state.refreshTimerCount = value;
     },
     setSelectedDateRange(state, value) {
       state.selected_date_range = value;
@@ -89,9 +85,9 @@ new Vue({
       selected_date_range: (state) => state.selected_date_range,
       jobs: (state) => state.jobs,
       filters: (state) => state.filters,
-      refreshTimerCount: (state) => state.refreshTimerCount,
     }),
     filteredJobs: function() {
+      console.log("FILTERED JOBS");
       this.$store.commit('setLoading', true);
       let filteredJobs = [];
       let _this = this;
@@ -110,17 +106,6 @@ new Vue({
     selected_date_range: function() {
       this.changeSelection();
     },
-    refreshTimerCount: {
-        handler(value) {
-            if (value > 0) {
-              let _this = this;
-              setTimeout(() => {
-                _this.$store.commit('setRefreshTimerCount', _this.refreshTimerCount - 1);
-              }, 1000);
-            }
-        },
-        immediate: true // This ensures the watcher is triggered upon creation
-    }
   },
   methods: {
     _filterEqual: function(field_value, filter_value) {
@@ -133,7 +118,6 @@ new Vue({
         }
     },
     refreshJobs: function() {
-      this.$store.commit('setRefreshTimerCount', this.refreshTime);
       let promise = this.getJobs({
         "date_range": this.selected_date_range,
       })
@@ -146,6 +130,7 @@ new Vue({
     },
     changeSelection: function() {
       // load a new week
+      console.log("CHANGE SELECTION");
       this.$store.commit('setLoading', true);
       this.refreshJobs().then(response => {
         this.$store.commit('setLoading', false);
