@@ -11,6 +11,16 @@ const utilitiesMixin = {
               return "failed";
         },
     },
+    filters: {
+        date: function(value) {
+          var options = {
+              year: "numeric",
+              month: "2-digit",
+              day: "numeric"
+          };
+          return value ? new Date(value).toLocaleString('en-US', options) : '';
+        }
+    },
 }
 
 export default utilitiesMixin;

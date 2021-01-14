@@ -24,12 +24,11 @@ const store = new Vuex.Store({
     csrfToken: document.getElementsByName('csrfmiddlewaretoken')[0].value,
     jobs: [], // master list of jobs
     terms: JSON.parse(document.getElementById('terms').innerHTML), // job terms loaded on page load
-    weeks: JSON.parse(document.getElementById('weeks').innerHTML), // job weeks loaded on page load
     jobtypes: JSON.parse(document.getElementById('jobtypes').innerHTML), // job types loaded on page load
     isLoading: false, // toggles table loading indicator
     selected_date_range: {
       startDate: null,
-      endDate: null
+      endDate: null,
     },
     filters: {
       job_type: "",

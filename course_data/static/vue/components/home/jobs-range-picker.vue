@@ -33,10 +33,11 @@
 <script>
 import {mapState, mapMutations} from 'vuex';
 import dataMixin from '../../mixins/data_mixin';
+import utilitiesMixin from '../../mixins/utilities_mixin';
 
 export default {
   name: 'jobs-range-picker',
-  mixins: [dataMixin],
+  mixins: [dataMixin, utilitiesMixin],
   data: function() {
     return {
       dateLocale: {
@@ -51,16 +52,6 @@ export default {
         monthNames: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
         firstDay: 0
       }
-    }
-  },
-  filters: {
-    date(val) {
-      var options = {
-          year: "numeric",
-          month: "2-digit",
-          day: "numeric"
-      };
-      return val ? val.toLocaleString('en-US', options) : '';
     }
   },
   computed: {

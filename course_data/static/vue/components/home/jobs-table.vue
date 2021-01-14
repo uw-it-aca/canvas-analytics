@@ -51,26 +51,27 @@
           <strong>Loading...</strong>
         </div>
       </template>
-  
-      <template #cell(message)="row">
-          {{getStatus(row.item)}}
-          <b-button v-show="getStatus(row.item) == 'failed' || getStatus(row.item) == 'completed'" size="sm" @click="restartJobs([row.item.id])" class="mr-2 pill-button ">
-            <b-icon icon="arrow-clockwise"></b-icon>
-          </b-button>
+
+      <template #cell(context)="row">
+        <ul class="list-unstyled m-0">
+          <li v-for="(value, name) in row.item.context" :key="value">
+            {{name}} : {{ value }}
+          </li>
+        </ul>
       </template>
 
-      <template #cell(actions)="row">
-        <b-button size="sm" @click="setPending(row)" class="mr-2 pill-button ">
-          set pending
-        </b-button>
-        <b-button size="sm" @click="setRunning(row)" class="mr-2 pill-button ">
-          set running
-        </b-button>
-        <b-button size="sm" @click="setComplete(row)" class="mr-2 pill-button ">
-          set complete
-        </b-button>
-        <b-button size="sm" @click="setFailed(row)" class="mr-2 pill-button ">
-          set failed
+      <template #cell(start)="row">
+        {{row.item.start | date}}
+      </template>
+
+      <template #cell(end)="row">
+        {{row.item.end | date}}
+      </template>
+  
+      <template #cell(message)="row">
+        {{getStatus(row.item)}}
+        <b-button v-show="getStatus(row.item) == 'failed' || getStatus(row.item) == 'completed'" size="sm" @click="restartJobs([row.item.id])" class="mr-2 pill-button ">
+          <b-icon icon="arrow-clockwise"></b-icon>
         </b-button>
       </template>
     </b-table>
@@ -111,9 +112,6 @@ export default {
           label: 'Job End',
           sortable: true,
         },
-        { key: 'actions',
-          label: 'Test Actions'
-        },
       ],
       selected_restart_option: 'all',
       perPage: 500,
@@ -129,30 +127,6 @@ export default {
     }),
   },
   methods: {
-    setPending: function(row) {
-      row.item.pid = "";
-      row.item.start = ""
-      row.item.end = ""
-      row.item.message = ""
-    },
-    setRunning: function(row) {
-      row.item.pid = "1234";
-      row.item.start = "2021-01-01"
-      row.item.end = ""
-      row.item.message = ""
-    },
-    setComplete: function(row) {
-      row.item.pid = "1234";
-      row.item.start = "2021-01-01"
-      row.item.end = "2021-01-01"
-      row.item.message = ""
-    },
-    setFailed: function(row) {
-      row.item.pid = "1234";
-      row.item.start = "2021-01-01"
-      row.item.end = ""
-      row.item.message = "MOCK FAILURE OCCURED"
-    },
     ...mapMutations([
       'addVarToState',
     ]),
