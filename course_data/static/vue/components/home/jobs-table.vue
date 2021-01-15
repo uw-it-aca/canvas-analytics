@@ -1,81 +1,108 @@
 <template>
-  <div class="overflow-auto">
-    <b-pagination
-      v-model="currentPage"
-      :total-rows="totalRows"
-      :per-page="perPage"
-      aria-controls="jobs-table"
-      size="sm"
-      limit="10"
-      first-number
-      last-number
-      >
-    </b-pagination>
-    <b-table id="jobs-table"
-      :items="jobs"
-      :fields="fields"
-      :per-page="perPage"
-      :busy="isLoading"
-      :current-page="currentPage"
-      fixed
-      bordered
-      small
-      >
+  <b-container fluid>
+    <b-row align-h="between">
+      <b-col xs="12" md="6">
+        <b-pagination
+          v-model="currentPage"
+          :total-rows="totalRows"
+          :per-page="perPage"
+          aria-controls="jobs-table"
+          size="sm"
+          limit="10"
+          first-number
+          last-number
+          >
+        </b-pagination>
+      </b-col>
+      <b-col xs="12" md="6">
+        <b-form class="d-flex flex-nowrap" inline>
+          <label class="mr-2">Action</label>
+          <b-form-select v-model="selectedAction" id="action-select" name="action-select">
+            <b-form-select-option :value="'restart'">restart selected</b-form-select-option>
+          </b-form-select>
+          <b-button @click="handleAction()" variant="primary" size="md" class="mr-2">
+            Run
+          </b-button>
+        </b-form>
+      </b-col>
+    </b-row>
+    <b-row>
+      <b-col xs="12">
+        <b-table id="jobs-table"
+          :items="jobs"
+          :fields="fields"
+          :per-page="perPage"
+          :busy="isLoading"
+          :current-page="currentPage"
+          stacked="sm"
+          fixed
+          bordered
+          small
+          >
 
-      <template slot="top-row" slot-scope="{ fields }">
-        <td v-for="field in fields" :key="field.key">
-          <b-form v-if="field.key == 'message'" class="d-flex flex-nowrap" inline>
-            <b-form-select v-model="selected_restart_option" id="restart-select" name="restart-select" class="small-select">
-              <b-form-select-option :value="'all'">restart all</b-form-select-option>
-              <b-form-select-option :value="'failed'">restart failed</b-form-select-option>
-              <b-form-select-option :value="'completed'">restart completed</b-form-select-option>
-            </b-form-select>
-            <b-button v-show="field.key=='message'" size="sm" class="mr-2 pill-button">
-              <b-icon icon="arrow-clockwise"></b-icon>
-            </b-button>
-          </b-form>
-        </td>
-      </template>
+          <template #table-busy>
+            <div class="text-center text-danger my-2">
+              <b-spinner class="align-middle"></b-spinner>
+              <strong>Loading...</strong>
+            </div>
+          </template>
 
-      <template #table-colgroup="scope">
-        <col
-          v-for="field in scope.fields"
-          :key="field.key"
-          :style="{ width: field.key === 'message' ? '125%' : '100%' }"
-        >
-      </template>
+          <template #table-colgroup="scope">
+            <col
+              v-for="field in scope.fields"
+              :key="field.key"
+              :style="{ width: _getColumnWidth(field.key) }"
+            >
+          </template>
 
-      <template #table-busy>
-        <div class="text-center text-danger my-2">
-          <b-spinner class="align-middle"></b-spinner>
-          <strong>Loading...</strong>
-        </div>
-      </template>
+          <template slot="thead-top" slot-scope="{ fields }">
+            <td v-for="field in fields" :key="field.key">
+              <b-form-select v-if="field.key == 'message'" class="small-select" id="jobstatuses" name="jobstatus" v-model="filters.job_status">
+                <b-form-select-option :value="'all'" selected>all</b-form-select-option>
+                <b-form-select-option :value="'pending'">pending</b-form-select-option>
+                <b-form-select-option :value="'running'">running</b-form-select-option>
+                <b-form-select-option :value="'completed'">completed</b-form-select-option>
+                <b-form-select-option :value="'failed'">failed</b-form-select-option>
+              </b-form-select>
 
-      <template #cell(context)="row">
-        <ul class="list-unstyled m-0">
-          <li v-for="(value, name) in row.item.context" :key="value">
-            {{name}} : {{ value }}
-          </li>
-        </ul>
-      </template>
+              <b-form-select v-if="field.key == 'job_type'" class="small-select" id="jobtypes" name="jobtype"  v-model="filters.job_type">
+                <b-form-select-option :value="'all'" selected>all</b-form-select-option>
+                <b-form-select-option v-for="jobtype in jobtypes" :key="jobtype.id" :value="jobtype.type">{{jobtype.type}}</b-form-select-option>
+              </b-form-select>
+            </td>
+          </template>
 
-      <template #cell(start)="row">
-        {{row.item.start | date}}
-      </template>
+          <template #head(selected)="">
+            <input type="checkbox" id="checkbox" @click="selectAll" v-model="allSelected">
+          </template>
 
-      <template #cell(end)="row">
-        {{row.item.end | date}}
-      </template>
-  
-      <template #cell(message)="row">
-        {{getStatus(row.item)}}
-        <b-button v-show="getStatus(row.item) == 'failed' || getStatus(row.item) == 'completed'" size="sm" @click="restartSingleJob(row.item)" class="mr-2 pill-button ">
-          <b-icon icon="arrow-clockwise"></b-icon>
-        </b-button>
-      </template>
-    </b-table>
-  </div>
+          <template #cell(selected)="row">
+            <input type="checkbox" id="checkbox" @click="select" v-model="selectedJobs" :value="row.item">
+          </template>
+
+          <template #cell(context)="row">
+            <ul class="list-unstyled m-0">
+              <li v-for="(value, name) in row.item.context" :key="value">
+                {{name}} : {{ value }}
+              </li>
+            </ul>
+          </template>
+
+          <template #cell(start)="row">
+            {{row.item.start | date}}
+          </template>
+
+          <template #cell(end)="row">
+            {{row.item.end | date}}
+          </template>
+      
+          <template #cell(message)="row">
+            {{getStatus(row.item)}}
+          </template>
+        </b-table>
+      </b-col>
+    </b-row>
+  </b-container>
 </template>
 
 <script>
@@ -87,9 +114,19 @@ export default {
   name: 'jobs-table',
   mixins: [dataMixin, utilitiesMixin],
   props: ['jobs'],
+  created: function() {
+    // default to all job types
+    this.$store.commit('setJobType', "all");
+    // default to all job statuses
+    this.$store.commit('setJobStatus', "all");
+  },
   data: function() {
     return {
       fields: [
+        { key: 'selected',
+          label: '',
+          sortable: false,
+        },
         { key: 'job_type',
           label: 'Job Type',
           sortable: true,
@@ -113,13 +150,17 @@ export default {
           sortable: true,
         },
       ],
-      selected_restart_option: 'all',
       perPage: 250,
       currentPage: 1,
+      selectedJobs: [],
+      selectedAction: 'restart',
+      allSelected: false,
     }
   },
   computed: {
     ...mapState({
+      filters: (state) => state.filters,
+      jobtypes: (state) => state.jobtypes,
       isLoading: (state) => state.isLoading,
       totalRows() {
         return this.jobs.length
@@ -127,15 +168,37 @@ export default {
     }),
   },
   methods: {
-    restartSingleJob: function(job) {
-      console.log(job);
-      console.log(job.id);
-      let _this = this;
-      this.restartJobs([job.id]).then(function() {
-        _this.setLocalPending(job);
-      });
+    handleAction: function() {
+      if (this.selectedAction == 'restart') {
+        let _this = this;
+        let jobsToRestart = this.selectedJobs.filter(
+          job => (this.getStatus(job) == "completed" ||  this.getStatus(job) == "failed"));
+        this.restartJobs(jobsToRestart).then(function() {
+          jobsToRestart.forEach(function (job, index) {
+            _this._setLocalPendingStatus(job);
+          });
+        });
+      }
     },
-    setLocalPending: function(job) {
+    selectAll: function() {
+      if(!this.allSelected) {
+        this.selectedJobs = this.jobs;
+      } else {
+        this.selectedJobs = []
+      }
+    },
+    select: function() {
+      this.allSelected = false;
+    },
+    _getColumnWidth: function(field_key) {
+      if(field_key == "message")
+        return "120%";
+      else if (field_key == "selected")
+        return "25px";
+      else
+        return "100%";
+    },
+    _setLocalPendingStatus: function(job) {
       job.pid = "";
       job.start = ""
       job.end = ""

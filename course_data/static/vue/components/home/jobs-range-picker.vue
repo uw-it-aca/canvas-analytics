@@ -9,6 +9,7 @@
           :showWeekNumbers="true"
           :autoApply="true"
           :ranges="dateRanges"
+          :date-format="dateFormat"
           v-model="selected_date_range"
           class="mr-2"
   >
@@ -51,11 +52,12 @@ export default {
         daysOfWeek: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
         monthNames: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
         firstDay: 0
-      }
+      },
     }
   },
   computed: {
     ...mapState({
+      job_ranges: (state) => state.job_ranges,
       terms: (state) => state.terms,
     }),
     selected_date_range: {
@@ -76,17 +78,41 @@ export default {
     },
   },
   created: function() {
-    // default to first pre-set range
-    if (this.dateRanges) {
-      let key = Object.keys(this.dateRanges)[0];
-      let default_range = {
-        startDate: this.dateRanges[key][0],
-        endDate: this.dateRanges[key][1]
-      };
-      this.selected_date_range = default_range;
-    }
+    // default to current month
+    let today = new Date();
+    let firstDayMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    let lastDayMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    let default_range = {
+      startDate: firstDayMonth,
+      endDate: lastDayMonth
+    };
+    this.selected_date_range = default_range;
   },
   methods: {
+    dateFormat (classes, date) {
+      classes['contains-jobs'] = this.doesDateHaveJobs(date);
+      return classes;
+      
+    },
+    doesDateHaveJobs: function(date) {
+      console.log(this.job_ranges);
+      for (var idx in this.job_ranges) {
+        var job_range = this.job_ranges[idx];
+        var calDay = new Date(new Date(date).getFullYear(),
+                              new Date(date).getMonth(),
+                              new Date(date).getDate());
+        var targetStartDay = new Date(new Date(job_range.target_day_start).getFullYear(),
+                                      new Date(job_range.target_day_start).getMonth(),
+                                      new Date(job_range.target_day_start).getDate());
+        var targetEndDay = new Date(new Date(job_range.target_day_end).getFullYear(),
+                                    new Date(job_range.target_day_end).getMonth(),
+                                    new Date(job_range.target_day_end).getDate());
+        if (calDay >= targetStartDay && calDay <= targetEndDay) {
+          return true;
+        }
+      }
+      return false;
+    },
     ...mapMutations([
       'setSelectedDateRange',
     ]),
@@ -94,10 +120,13 @@ export default {
 };
 </script>
 
-<style scoped>
+<style>
   .ranges-ul {
     height: 250px;
     overflow-y: scroll;
+  }
+  .contains-jobs {
+    background-color: lightgreen !important;
   }
 </style>
 

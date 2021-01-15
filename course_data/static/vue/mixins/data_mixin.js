@@ -20,7 +20,7 @@ const dataMixin = {
                 axiosConfig
             );
         },
-        restartJobs: async function(job_ids) {
+        restartJobs: async function(jobs) {
             const csrfToken = this.$store.state.csrfToken;
             const axiosConfig = {
             headers: {
@@ -31,7 +31,7 @@ const dataMixin = {
             };
             return axios.post(
                 `api/resetjobs/`,
-                {"job_ids": job_ids},
+                {"job_ids": jobs.map(job => job.id)},
                 axiosConfig
             );
         },

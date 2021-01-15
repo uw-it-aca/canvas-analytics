@@ -25,6 +25,7 @@ const store = new Vuex.Store({
     jobs: [], // master list of jobs
     terms: JSON.parse(document.getElementById('terms').innerHTML), // job terms loaded on page load
     jobtypes: JSON.parse(document.getElementById('jobtypes').innerHTML), // job types loaded on page load
+    job_ranges: JSON.parse(document.getElementById('job_ranges').innerHTML),
     isLoading: false, // toggles table loading indicator
     selected_date_range: {
       startDate: null,
@@ -87,7 +88,6 @@ new Vue({
       filters: (state) => state.filters,
     }),
     filteredJobs: function() {
-      console.log("FILTERED JOBS");
       this.$store.commit('setLoading', true);
       let filteredJobs = [];
       let _this = this;

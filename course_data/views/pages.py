@@ -1,7 +1,9 @@
 from django.views.generic import TemplateView
 from uw_saml.utils import get_user
 from django.conf import settings
-from course_data.models import Term, JobType
+from course_data.models import Term, JobType, Job
+from django.db import models
+from django.db.models.functions import Cast
 
 
 class PageView(TemplateView):
@@ -17,10 +19,14 @@ class HomeView(PageView):
 
     def get_context_data(self, **kwargs):
         terms = Term.objects.values()
-        print(terms)
         jobtypes = (JobType.objects.all().values())
+        job_ranges = Job.objects.annotate(
+            target_day_start=Cast('target_date_start', models.DateField()),
+            target_day_end=Cast('target_date_end', models.DateField()),
+        ).values('target_day_start', 'target_day_end').distinct()
         context = {}
         context['terms'] = list(terms)
         context['jobtypes'] = list(jobtypes)
+        context['job_ranges'] = list(job_ranges)
         context['debug'] = settings.DEBUG
         return context
