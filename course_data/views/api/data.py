@@ -1,7 +1,7 @@
 import json
 from course_data.models import Job
 from course_data.views.api import RESTDispatch
-from django.db.models import F
+from django.db.models import F, BooleanField, Value
 
 
 class JobFilter(RESTDispatch):
@@ -11,6 +11,7 @@ class JobFilter(RESTDispatch):
         jobs = (Job.objects
                 .annotate(
                     job_type=F('type__type'),
+                    selected=Value(False, BooleanField())
                 ))
 
         if 'date_range' in filters:
@@ -20,7 +21,8 @@ class JobFilter(RESTDispatch):
                 target_date_end__gte=filters["date_range"]["startDate"])
 
         jobs = jobs.values("id", "context", "job_type", "pid",
-                           "start", "end", "message", "created")
+                           "start", "end", "message", "created",
+                           "selected")
         return self.json_response(content={"jobs": list(jobs)})
 
 

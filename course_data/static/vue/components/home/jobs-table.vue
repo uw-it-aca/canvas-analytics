@@ -34,6 +34,7 @@
           :per-page="perPage"
           :busy="isLoading"
           :current-page="currentPage"
+          :primary-key="'id'"
           stacked="sm"
           fixed
           bordered
@@ -77,7 +78,7 @@
           </template>
 
           <template #cell(selected)="row">
-            <input type="checkbox" id="checkbox" @click="select" v-model="selectedJobs" :value="row.item">
+            <input type="checkbox" id="checkbox" @click="select" v-model="row.item.selected">
           </template>
 
           <template #cell(context)="row">
@@ -113,7 +114,7 @@ import utilitiesMixin from '../../mixins/utilities_mixin';
 export default {
   name: 'jobs-table',
   mixins: [dataMixin, utilitiesMixin],
-  props: ['jobs'],
+  props: ['jobs', 'selectedJobs'],
   created: function() {
     // default to all job types
     this.$store.commit('setJobType', "all");
@@ -152,7 +153,6 @@ export default {
       ],
       perPage: 250,
       currentPage: 1,
-      selectedJobs: [],
       selectedAction: 'restart',
       allSelected: false,
     }
@@ -181,11 +181,10 @@ export default {
       }
     },
     selectAll: function() {
-      if(!this.allSelected) {
-        this.selectedJobs = this.jobs;
-      } else {
-        this.selectedJobs = []
-      }
+      let _this = this;
+      this.jobs.forEach(function (job, index) {
+        job.selected = !_this.allSelected;
+      });
     },
     select: function() {
       this.allSelected = false;

@@ -87,6 +87,11 @@ new Vue({
       jobs: (state) => state.jobs,
       filters: (state) => state.filters,
     }),
+    selectedJobs: function() {
+      return this.jobs.filter(
+          job => (job.selected == true)
+      );
+    },
     filteredJobs: function() {
       this.$store.commit('setLoading', true);
       let filteredJobs = [];
@@ -123,6 +128,14 @@ new Vue({
       })
       .then(response => {
         if (response.data) {
+          // we need to reset all selected ids on every refresh
+          let _this = this;
+          let selectedJobIds = this.selectedJobs.map(job => job.id)
+          response.data.jobs.forEach(function (job, index) {
+            if(selectedJobIds.includes(job.id)) {
+              job.selected = true;
+            }
+          });
           this.$store.commit('setJobs', response.data.jobs);
         }
       });
@@ -130,7 +143,6 @@ new Vue({
     },
     changeSelection: function() {
       // load a new week
-      console.log("CHANGE SELECTION");
       this.$store.commit('setLoading', true);
       this.refreshJobs().then(response => {
         this.$store.commit('setLoading', false);
