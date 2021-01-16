@@ -90,11 +90,11 @@
           </template>
 
           <template #cell(start)="row">
-            {{row.item.start | date}}
+            {{row.item.start | iso_date}}
           </template>
 
           <template #cell(end)="row">
-            {{row.item.end | date}}
+            {{row.item.end | iso_date}}
           </template>
       
           <template #cell(message)="row">
@@ -190,10 +190,16 @@ export default {
       this.allSelected = false;
     },
     _getColumnWidth: function(field_key) {
-      if(field_key == "message")
-        return "120%";
-      else if (field_key == "selected")
+      if (field_key == "selected")
         return "25px";
+      else if(field_key == "context")
+        return "125%";
+      else if(field_key == "message")
+        return "125%";
+      else if (field_key == "start")
+        return "125%";
+      else if (field_key == "end")
+        return "125%";
       else
         return "100%";
     },

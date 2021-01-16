@@ -19,6 +19,11 @@ const utilitiesMixin = {
               day: "numeric"
           };
           return value ? new Date(value).toLocaleString('en-US', options) : '';
+        },
+        iso_date: function(value) {
+            let iso_date = new Date(new Date(value).toString().split('GMT')[0]+' UTC')
+                                    .toISOString().split('.')[0]+'Z';
+            return value ? iso_date : '';
         }
     },
 }
