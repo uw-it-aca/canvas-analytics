@@ -1,9 +1,12 @@
+from uw_canvas.reports import Reports
+from uw_canvas.terms import Terms
 from django.core.management.base import BaseCommand
 from course_data.logger import Logger
 from course_data.models import Term, Course, Job, JobType
 from course_data import utilities
 from uw_sws.term import get_current_term
-from datetime import datetime, timedelta
+from django.utils import timezone
+from datetime import timedelta
 
 
 class Command(BaseCommand):
@@ -13,8 +16,9 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("--infile",
                             type=str,
-                            help="List of course codes",
-                            required=True)
+                            help=("List of course ids. If not supplied, "
+                                  "uses course provising report."),
+                            required=False)
         parser.add_argument("--log_file",
                             type=str,
                             help=("Path of log file. If no log path is "
@@ -47,11 +51,25 @@ class Command(BaseCommand):
         assignment_type, _ = JobType.objects.get_or_create(type="assignment")
         partic_type, _ = JobType.objects.get_or_create(type="participation")
         # set target bounds from monday to sunday (work week)
-        today = datetime.now().date()
+        today = timezone.now().date()
         target_date_start = today - timedelta(days=today.weekday())
         target_date_end = target_date_start + timedelta(days=6)
 
-        courses = utilities.read_courses(self.in_file)
+        if self.in_file:
+            courses = utilities.read_courses(self.in_file)
+        else:
+            # get courses from provisioning report
+            curr_term = get_current_term()
+            sis_term_id = "{}-{}".format(curr_term.year, curr_term.quarter)
+            terms_obj = Terms()
+            canvas_term = terms_obj.get_term_by_sis_id(sis_term_id)
+            report_client = Reports()
+            user_report = report_client.create_course_provisioning_report(
+                        84378,
+                        term_id=canvas_term.sis_term_id,
+                        params={'courses': True})
+            sis_data = report_client.get_report_data(user_report)
+            print(sis_data)
         for course_id in courses:
             print("Adding jobs for course {}".format(course_id))
             # create course record if it doesn't exist for the given term
