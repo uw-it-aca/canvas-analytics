@@ -29,8 +29,9 @@ class Command(BaseCommand):
             for job in jobs:
                 try:
                     job.mark_start()
-                    course_id = job.context["course_id"]
-                    partics = CanvasDAO().get_participation(course_id)
+                    canvas_course_id = job.context["canvas_course_id"]
+                    partics = (
+                        CanvasDAO().get_participation(canvas_course_id))
                     for partic in partics:
                         partic.job = job
                         partic.save()

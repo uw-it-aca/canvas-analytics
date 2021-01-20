@@ -8,6 +8,9 @@ from course_data.logger import Logger
 from course_data.models import Assignment, Participation, Week, Term, Course
 from course_data import utilities
 from uw_sws.term import get_current_term
+from course_data import settings
+from uw_canvas.reports import Reports
+from uw_canvas.terms import Terms
 
 
 class CanvasDAO():
@@ -119,3 +122,15 @@ class CanvasDAO():
                 self.logger.error(e)
                 continue
         return participations
+
+    def get_canvas_course_provisioning_report(self, sis_term_id):
+        # get canvas term using sis-term-id
+        canvas_term = Terms().get_term_by_sis_id(sis_term_id)
+        # get courses provisioning report for canvas term
+        report_client = Reports()
+        user_report = report_client.create_course_provisioning_report(
+                    settings.RESTCLIENTS_CANVAS_ACCOUNT_ID,
+                    term_id=canvas_term.term_id)
+        sis_data = report_client.get_report_data(user_report)
+        report_client.delete_report(user_report)
+        return sis_data

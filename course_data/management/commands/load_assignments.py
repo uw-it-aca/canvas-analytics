@@ -29,8 +29,9 @@ class Command(BaseCommand):
             for job in jobs:
                 try:
                     job.mark_start()
-                    course_id = job.context["course_id"]
-                    assignments = (CanvasDAO().get_assignments(course_id))
+                    canvas_course_id = job.context["canvas_course_id"]
+                    assignments = (
+                        CanvasDAO().get_assignments(canvas_course_id))
                     for assign in assignments:
                         assign.job = job
                         assign.save()

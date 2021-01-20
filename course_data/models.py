@@ -2,31 +2,56 @@ import os
 from django.db import models
 from django.utils import timezone
 from course_data import utilities
+from uw_sws.term import get_current_term
+
+
+class TermManager(models.Manager):
+    def get_create_current_term(self, canvas_term_id, sws_term=None):
+        # get/create model for the term
+        term, created = Term.objects.get_or_create(
+            canvas_term_id=canvas_term_id)
+        if created:
+            if not sws_term:
+                sws_term = get_current_term()
+            # add current term info for course
+            term.sis_term_id = sws_term.canvas_sis_id()
+            term.year = sws_term.year,
+            term.quarter = sws_term.quarter,
+            term.label = sws_term.term_label(),
+            term.last_day_add = sws_term.last_day_add,
+            term.last_day_drop = sws_term.last_day_drop,
+            term.first_day_quarter = sws_term.first_day_quarter,
+            term.census_day = sws_term.census_day,
+            term.last_day_instruction = sws_term.last_day_instruction,
+            term.grading_period_open = sws_term.grading_period_open,
+            term.aterm_grading_period_open = \
+                sws_term.aterm_grading_period_open,
+            term.grade_submission_deadline = \
+                sws_term.grade_submission_deadline,
+            term.last_final_exam_date = sws_term.last_final_exam_date,
+        return term, created
 
 
 class Term(models.Model):
-    year = models.IntegerField()
-    quarter = models.TextField()
-    label = models.TextField()
-    last_day_add = models.DateField()
-    last_day_drop = models.DateField()
-    first_day_quarter = models.DateField()
-    census_day = models.DateField()
-    last_day_instruction = models.DateField()
-    grading_period_open = models.DateTimeField()
-    aterm_grading_period_open = models.DateTimeField()
-    grade_submission_deadline = models.DateTimeField()
-    last_final_exam_date = models.DateTimeField()
+    objects = TermManager()
+    canvas_term_id = models.IntegerField()
+    sis_term_id = models.TextField(null=True)
+    year = models.IntegerField(null=True)
+    quarter = models.TextField(null=True)
+    label = models.TextField(null=True)
+    last_day_add = models.DateField(null=True)
+    last_day_drop = models.DateField(null=True)
+    first_day_quarter = models.DateField(null=True)
+    census_day = models.DateField(null=True)
+    last_day_instruction = models.DateField(null=True)
+    grading_period_open = models.DateTimeField(null=True)
+    aterm_grading_period_open = models.DateTimeField(null=True)
+    grade_submission_deadline = models.DateTimeField(null=True)
+    last_final_exam_date = models.DateTimeField(null=True)
 
     @property
     def term_number(self):
         return utilities.get_term_number(self.quarter)
-
-    @property
-    def term_text(self):
-        return ("{} {}"
-                .format(self.quarter.capitalize(),
-                        self.year))
 
 
 class Week(models.Model):
@@ -36,7 +61,13 @@ class Week(models.Model):
 
 
 class Course(models.Model):
-    course_id = models.IntegerField()
+    canvas_course_id = models.IntegerField()
+    sis_course_id = models.TextField(null=True)
+    short_name = models.TextField(null=True)
+    long_name = models.TextField(null=True)
+    canvas_account_id = models.IntegerField(null=True)
+    sis_account_id = models.TextField(null=True)
+    status = models.TextField(null=True)
     term = models.ForeignKey(Term,
                              on_delete=models.CASCADE)
 

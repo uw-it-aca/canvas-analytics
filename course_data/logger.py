@@ -10,19 +10,22 @@ class Logger():
         # set log level
         logger.setLevel(level)
 
-        formatter = logging.Formatter('%(asctime)s : %(levelname)s : '
-                                      '%(message)s')
+        formatter = logging.Formatter(
+            '%(asctime)s : %(levelname)s : %(message)s')
 
         handler = None
-        if logpath:
-            # setup logging to file
-            handler = logging.FileHandler(logpath)
-            handler.setFormatter(formatter)
-            logger.addHandler(handler)
-        # setup logging to stdout stream
-        handler = logging.StreamHandler()
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
+        if not logger.handlers:
+            if logpath is not None:
+                # setup logging to file
+                handler = logging.FileHandler(logpath)
+                handler.setFormatter(formatter)
+                logger.addHandler(handler)
+            else:
+                # setup logging to stdout stream
+                handler = logging.StreamHandler()
+                handler.setFormatter(formatter)
+                logger.addHandler(handler)
+
         self.logger = logger
 
     def debug(self, msg, extra=None):
