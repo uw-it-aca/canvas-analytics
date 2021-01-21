@@ -4,8 +4,7 @@ if [ "$ENV"  = "localdev" ]
 then
 
   python manage.py migrate
-  python manage.py create_or_update_courses
-  python manage.py create_assignment_jobs
-  python manage.py create_participation_jobs
+  python manage.py loaddata mock_courses.json
+  python manage.py loaddata mock_jobs.json
 
 fi
