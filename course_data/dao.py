@@ -22,10 +22,10 @@ class CanvasDAO():
         self.logger = Logger()
         self.canvas = Canvas()
 
-    def _get_student_ids_for_course(self, course_id):
+    def _get_student_ids_for_course(self, canvas_course_id):
         enrollments = Enrollments()
         stus = enrollments.get_enrollments_for_course(
-                    course_id,
+                    canvas_course_id,
                     params={
                         "type": ['StudentEnrollment'],
                         "state": ['active', 'deleted', 'inactive']
@@ -33,21 +33,21 @@ class CanvasDAO():
         res = [stu.user_id for stu in stus]
         return(res)
 
-    def get_course(self, course_id):
+    def get_course(self, canvas_course_id):
         try:
             canvas = Courses()
-            return canvas.get_course(course_id)
+            return canvas.get_course(canvas_course_id)
         except Exception as e:
             self.logger.error(e)
 
-    def get_assignments(self, course_id):
+    def get_assignments(self, canvas_course_id):
         analytics = Analytics()
-        students_ids = self._get_student_ids_for_course(course_id)
+        students_ids = self._get_student_ids_for_course(canvas_course_id)
         curr_term = get_current_term()
         term = Term.objects.get(year=curr_term.year,
                                 quarter=curr_term.quarter)
         course = (Course.objects.get(
-                    course_id=course_id,
+                    canvas_course_id=canvas_course_id,
                     term=term))
         week, _ = Week.objects.get_or_create(
             week=utilities.get_week_of_term(curr_term.first_day_quarter),
@@ -56,7 +56,7 @@ class CanvasDAO():
         for user_id in students_ids:
             try:
                 res = analytics.get_student_assignments_for_course(
-                        user_id, course_id)
+                        user_id, canvas_course_id)
                 for i in res:
                     assignment = Assignment()
                     assignment.week = week
@@ -77,14 +77,14 @@ class CanvasDAO():
                 continue
         return assignments
 
-    def get_participation(self, course_id):
+    def get_participation(self, canvas_course_id):
         analytics = Analytics()
-        students_ids = self._get_student_ids_for_course(course_id)
+        students_ids = self._get_student_ids_for_course(canvas_course_id)
         curr_term = get_current_term()
         term = Term.objects.get(year=curr_term.year,
                                 quarter=curr_term.quarter)
         course = (Course.objects.get(
-                    course_id=course_id,
+                    canvas_course_id=canvas_course_id,
                     term=term))
         week, _ = Week.objects.get_or_create(
             week=utilities.get_week_of_term(curr_term.first_day_quarter),
@@ -93,7 +93,7 @@ class CanvasDAO():
         for user_id in students_ids:
             try:
                 res = analytics.get_student_summaries_by_course(
-                        course_id, student_id=user_id)
+                        canvas_course_id, student_id=user_id)
                 for i in res:
                     partic = Participation()
                     partic.student_id = user_id

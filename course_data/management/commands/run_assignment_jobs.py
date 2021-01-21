@@ -1,3 +1,4 @@
+import traceback
 from django.core.management.base import BaseCommand
 from course_data.logger import Logger
 from course_data.dao import CanvasDAO
@@ -36,7 +37,7 @@ class Command(BaseCommand):
                         assign.job = job
                         assign.save()
                     job.mark_end()
-                except Exception as e:
+                except Exception:
                     # save error message if one occurs
-                    job.message = e.message
+                    job.message = traceback.format_exc()
                     job.save()
