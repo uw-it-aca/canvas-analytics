@@ -15,20 +15,21 @@ class TermManager(models.Manager):
                 sws_term = get_current_term()
             # add current term info for course
             term.sis_term_id = sws_term.canvas_sis_id()
-            term.year = sws_term.year,
-            term.quarter = sws_term.quarter,
-            term.label = sws_term.term_label(),
-            term.last_day_add = sws_term.last_day_add,
-            term.last_day_drop = sws_term.last_day_drop,
-            term.first_day_quarter = sws_term.first_day_quarter,
-            term.census_day = sws_term.census_day,
-            term.last_day_instruction = sws_term.last_day_instruction,
-            term.grading_period_open = sws_term.grading_period_open,
+            term.year = sws_term.year
+            term.quarter = sws_term.quarter
+            term.label = sws_term.term_label()
+            term.last_day_add = sws_term.last_day_add
+            term.last_day_drop = sws_term.last_day_drop
+            term.first_day_quarter = sws_term.first_day_quarter
+            term.census_day = sws_term.census_day
+            term.last_day_instruction = sws_term.last_day_instruction
+            term.grading_period_open = sws_term.grading_period_open
             term.aterm_grading_period_open = \
-                sws_term.aterm_grading_period_open,
+                sws_term.aterm_grading_period_open
             term.grade_submission_deadline = \
-                sws_term.grade_submission_deadline,
-            term.last_final_exam_date = sws_term.last_final_exam_date,
+                sws_term.grade_submission_deadline
+            term.last_final_exam_date = sws_term.last_final_exam_date
+            term.save()
         return term, created
 
 

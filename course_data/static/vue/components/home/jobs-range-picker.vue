@@ -95,7 +95,6 @@ export default {
       
     },
     doesDateHaveJobs: function(date) {
-      console.log(this.job_ranges);
       for (var idx in this.job_ranges) {
         var job_range = this.job_ranges[idx];
         var calDay = new Date(new Date(date).getFullYear(),

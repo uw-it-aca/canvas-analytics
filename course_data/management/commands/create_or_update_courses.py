@@ -2,16 +2,14 @@
 from csv import DictReader
 from django.core.management.base import BaseCommand
 from course_data.logger import Logger
-from course_data.models import Term, Course, Job, JobType
+from course_data.models import Term, Course
 from course_data.dao import CanvasDAO
-from django.utils import timezone
-from datetime import timedelta
 from uw_sws.term import get_current_term
 
 
 class Command(BaseCommand):
 
-    help = ("Loads the list of courses to process from SWS.")
+    help = ("Loads or updates list of courses for the current term.")
 
     def add_arguments(self, parser):
         parser.add_argument("--log_file",
@@ -21,19 +19,7 @@ class Command(BaseCommand):
                             required=False)
 
     def handle(self, *args, **options):
-        """
-        Load assignments and participation for the list of courses
-        """
         self.logger = Logger(logpath=options["log_file"])
-
-        # get job types
-        assignment_type, _ = JobType.objects.get_or_create(type="assignment")
-        partic_type, _ = JobType.objects.get_or_create(type="participation")
-
-        # set target bounds from monday to sunday (work week)
-        today = timezone.now().date()
-        target_date_start = today - timedelta(days=today.weekday())
-        target_date_end = target_date_start + timedelta(days=6)
 
         # get the current term object from sws
         sws_term = get_current_term()
@@ -76,20 +62,4 @@ class Command(BaseCommand):
                 course.status = status
                 course.save()
                 course_count += 1
-                if status == 'active':
-                    # create assignment and participation jobs
-                    self.logger.info(
-                        f"Adding jobs for course {canvas_course_id}")
-                    job = Job()
-                    job.type = assignment_type
-                    job.target_date_start = target_date_start
-                    job.target_date_end = target_date_end
-                    job.context = {'canvas_course_id': canvas_course_id}
-                    job.save()
-                    job = Job()
-                    job.type = partic_type
-                    job.target_date_start = target_date_start
-                    job.target_date_end = target_date_end
-                    job.context = {'canvas_course_id': canvas_course_id}
-                    job.save()
         self.logger.info(f'Created and/or updated {course_count} courses.')

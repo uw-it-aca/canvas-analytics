@@ -193,13 +193,13 @@ export default {
       if (field_key == "selected")
         return "25px";
       else if(field_key == "context")
-        return "125%";
+        return "200%";
       else if(field_key == "message")
-        return "125%";
+        return "100%";
       else if (field_key == "start")
-        return "125%";
+        return "150%";
       else if (field_key == "end")
-        return "125%";
+        return "150%";
       else
         return "100%";
     },
