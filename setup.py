@@ -8,7 +8,7 @@ See the README on `GitHub
 <https://github.com/uw-it-aca/canvas-analytics>`_.
 """
 
-version_path = 'course_data/VERSION'
+version_path = 'data_aggregator/VERSION'
 VERSION = open(os.path.join(os.path.dirname(__file__), version_path)).read()
 VERSION = VERSION.replace("\n", "")
 
@@ -18,10 +18,10 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 setup(
     name='canvas-analytics',
     version=VERSION,
-    packages=['course_data'],
+    packages=['data_aggregator'],
     include_package_data=True,
     install_requires = [
-        'Django>=2.2.13,<3.0',
+        'Django>=3.0',
         'UW-RestClients-SWS>=2.3.3,<3.0',
         'UW-RestClients-PWS>=2.1.2,<3.0',
         'UW-RestClients-Canvas>=1.1.12,<2.0',

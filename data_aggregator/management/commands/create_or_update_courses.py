@@ -1,9 +1,9 @@
 
 from csv import DictReader
 from django.core.management.base import BaseCommand
-from course_data.logger import Logger
-from course_data.models import Term, Course
-from course_data.dao import CanvasDAO
+from data_aggregator.logger import Logger
+from data_aggregator.models import Term, Course
+from data_aggregator.dao import CanvasDAO
 from uw_sws.term import get_current_term
 
 

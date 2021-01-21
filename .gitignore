@@ -8,4 +8,4 @@ webpack-stats.json
 settings.py
 package-lock.json
 node_modules/
-course_data/static/course_data/bundles/
+data_aggregator/static/data_aggregator/bundles/

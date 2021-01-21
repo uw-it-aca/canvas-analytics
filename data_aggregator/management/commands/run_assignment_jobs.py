@@ -1,8 +1,8 @@
 import traceback
 from django.core.management.base import BaseCommand
-from course_data.logger import Logger
-from course_data.dao import CanvasDAO
-from course_data.models import Job
+from data_aggregator.logger import Logger
+from data_aggregator.dao import CanvasDAO
+from data_aggregator.models import Job
 
 
 class Command(BaseCommand):

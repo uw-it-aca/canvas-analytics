@@ -1,0 +1,121 @@
+ingress:
+  enabled: true
+  type: nginx
+  tls:
+    retention-dashboard:
+      secretName: retention.uw.edu-ingress-cert
+      hosts:
+        - retention.uw.edu
+  hosts:
+    retention-dashboard:
+      host: retention.uw.edu
+      paths:
+        - "/"
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "500"
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 4
+targetAverageUtilization: 100
+resources:
+  limits:
+    cpu: 1.0
+    memory: 768Mi
+  requests:
+    cpu: 100m
+    memory: 700Mi
+lifecycle:
+  enabled: true
+  preStop:
+    enabled: true
+affinity:
+   podsSpanNodes: true
+readiness:
+  enabled: true
+database:
+  engine: postgres
+  secretName: retention.uw.edu-sql-secrets
+  hostname: retention-db
+  name: retention-prod
+externalService:
+  enabled: true
+  name: retention-db
+  type: ClusterIP
+  serviceAddress: 172.18.1.39
+  servicePort: 5432
+externalSecrets:
+  enabled: true
+  secrets:
+    - name: retention.uw.edu-secrets
+      externalKey: axdd/kv/data/retention/prod/secrets
+      data:
+        - name: django-secret
+          property: django-secret
+        - name: ga-key
+          property: ga-key
+    - name: retention.uw.edu-sql-secrets
+      externalKey: axdd/kv/data/retention/prod/sql-secrets
+      data:
+        - name: username
+          property: username
+        - name: password
+          property: password
+    - name: retention.uw.edu-uwca-certs
+      externalKey: axdd/kv/data/retention/prod/uwca-certs
+      data:
+        - name: retention.uw.edu-uwca.cert
+          property: retention.uw.edu-uwca.cert
+        - name: retention.uw.edu-uwca.key
+          property: retention.uw.edu-uwca.key
+    - name: retention.uw.edu-ic-certs
+      externalKey: axdd/kv/data/retention/prod/ic-certs
+      data:
+        - name: retention.uw.edu-ic.cert
+          property: retention.uw.edu-ic.cert
+    - name: retention.uw.edu-uw-idp-cert
+      externalKey: axdd/kv/data/idp-cert
+      data:
+        - name: uw-idp-cert
+          property: cert
+repo: retention-dashboard
+instance: prod
+branch: develop
+certs:
+  mounted: true
+  certPath: /certs/retention.uw.edu-uwca.cert
+  keyPath: /certs/retention.uw.edu-uwca.key
+  secretName: retention.uw.edu-uwca-certs
+image:
+  repository: registry.hub.docker.com/acait/retention-dashboard
+  tag: IMAGE_TAG
+environmentVariables:
+  - name: ENV
+    value: prod
+  - name: AUTH
+    value: SAML
+  - name: CLUSTER_CNAME
+    value: retention.uw.edu
+  - name: SAML_FORCE_AUTHN
+    value: "True"
+  - name: SP_USE_2FA
+    value: "True"
+environmentVariablesSecrets:
+  gaKey:
+    name: GA_KEY
+    secretName: retention.uw.edu-secrets
+    secretKey: ga-key
+  djangoSecret:
+    name: DJANGO_SECRET
+    secretName: retention.uw.edu-secrets
+    secretKey: django-secret
+  samlSPCert:
+    name: SP_CERT
+    secretName: retention.uw.edu-ic-certs
+    secretKey: retention.uw.edu-ic.cert
+  samlIDPCert:
+    name: IDP_CERT
+    secretName: retention.uw.edu-uw-idp-cert
+    secretKey: uw-idp-cert

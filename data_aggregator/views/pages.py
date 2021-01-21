@@ -1,7 +1,7 @@
 from django.views.generic import TemplateView
 from uw_saml.utils import get_user
 from django.conf import settings
-from course_data.models import Term, JobType, Job
+from data_aggregator.models import Term, JobType, Job
 from django.db import models
 from django.db.models.functions import Cast
 

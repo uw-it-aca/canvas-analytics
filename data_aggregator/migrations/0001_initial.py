@@ -71,7 +71,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('week', models.IntegerField()),
-                ('term', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='course_data.term')),
+                ('term', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='data_aggregator.term')),
             ],
         ),
         migrations.CreateModel(
@@ -88,20 +88,20 @@ class Migration(migrations.Migration):
                 ('time_late', models.IntegerField(null=True)),
                 ('time_missing', models.IntegerField(null=True)),
                 ('time_floating', models.IntegerField(null=True)),
-                ('course', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='course_data.course')),
-                ('job', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='course_data.job')),
-                ('week', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='course_data.week')),
+                ('course', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='data_aggregator.course')),
+                ('job', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='data_aggregator.job')),
+                ('week', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='data_aggregator.week')),
             ],
         ),
         migrations.AddField(
             model_name='job',
             name='type',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='course_data.jobtype'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='data_aggregator.jobtype'),
         ),
         migrations.AddField(
             model_name='course',
             name='term',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='course_data.term'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='data_aggregator.term'),
         ),
         migrations.CreateModel(
             name='Assignment',
@@ -113,9 +113,9 @@ class Migration(migrations.Migration):
                 ('due_at', models.DateField(null=True)),
                 ('points_possible', models.IntegerField(null=True)),
                 ('status', models.TextField()),
-                ('course', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='course_data.course')),
-                ('job', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='course_data.job')),
-                ('week', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='course_data.week')),
+                ('course', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='data_aggregator.course')),
+                ('job', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='data_aggregator.job')),
+                ('week', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='data_aggregator.week')),
             ],
         ),
     ]

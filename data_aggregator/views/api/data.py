@@ -1,6 +1,6 @@
 import json
-from course_data.models import Job
-from course_data.views.api import RESTDispatch
+from data_aggregator.models import Job
+from data_aggregator.views.api import RESTDispatch
 from django.db.models import F, BooleanField, Value
 
 

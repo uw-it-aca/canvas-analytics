@@ -4,11 +4,11 @@ from uw_canvas.courses import Courses
 from uw_canvas.enrollments import Enrollments
 from uw_canvas.analytics import Analytics
 from restclients_core.exceptions import DataFailureException
-from course_data.logger import Logger
-from course_data.models import Assignment, Participation, Week, Term, Course
-from course_data import utilities
+from data_aggregator.logger import Logger
+from data_aggregator.models import Assignment, Participation, Week, Term, Course
+from data_aggregator import utilities
+from data_aggregator import settings
 from uw_sws.term import get_current_term
-from course_data import settings
 from uw_canvas.reports import Reports
 from uw_canvas.terms import Terms
 

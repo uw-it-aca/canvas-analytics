@@ -1,7 +1,7 @@
 import os
 from django.db import models
 from django.utils import timezone
-from course_data import utilities
+from data_aggregator import utilities
 from uw_sws.term import get_current_term
 
 

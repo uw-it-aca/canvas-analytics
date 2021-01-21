@@ -77,7 +77,7 @@ new Vue({
     }
   },
   created: function() {
-    document.title = 'Canvas Analytics Jobs: ' + store.state['pageTitle'];
+    document.title = 'Canvas Data Aggregator Jobs: ' + store.state['pageTitle'];
     document.getElementById('vue_root').hidden = false;
     this.refreshTimer = setInterval(this.refreshJobs, this.refreshTime * 1000);
   },

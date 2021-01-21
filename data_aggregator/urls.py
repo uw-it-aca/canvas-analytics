@@ -1,4 +1,4 @@
-"""course_data URL Configuration
+"""data_aggregator URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/2.2/topics/http/urls/
@@ -14,8 +14,8 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.urls import re_path, include
-from course_data.views.pages import HomeView
-from course_data.views.api.data import JobFilter, JobReset
+from data_aggregator.views.pages import HomeView
+from data_aggregator.views.api.data import JobFilter, JobReset
 
 urlpatterns = [
     re_path(r'^$', HomeView.as_view()),

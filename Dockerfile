@@ -6,7 +6,7 @@ RUN apt-get update && apt-get install mysql-client libmysqlclient-dev -y
 
 USER acait
 
-ADD --chown=acait:acait course_data/VERSION /app/course_data/
+ADD --chown=acait:acait data_aggregator/VERSION /app/data_aggregator/
 ADD --chown=acait:acait setup.py /app/
 ADD --chown=acait:acait requirements.txt /app/
 RUN . /app/bin/activate && pip install -r requirements.txt
