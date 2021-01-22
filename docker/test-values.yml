@@ -115,7 +115,7 @@ externalSecrets:
           property: test-apps.canvas.uw.edu-uwca.key
 
     - name: test-analytics.apps.canvas.uw.edu-ic-certs
-      externalKey: axdd/kv/data/canvas/test/ic-certs
+      externalKey: axdd/kv/data/canvas/analytics/test/ic-certs
       data:
         - name: test-analytics.apps.canvas.uw.edu-ic.cert
           property: test-analytics.apps.canvas.uw.edu-ic.cert
