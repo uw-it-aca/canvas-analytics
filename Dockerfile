@@ -25,3 +25,10 @@ FROM acait/django-test-container:1.2.5 as app-test-container
 
 COPY --from=app-container /app/ /app/
 COPY --from=app-container /static/ /static/
+
+FROM app-container
+
+COPY --chown=acait:acait --from=wpack /app/data_aggregator/static/data_aggregator/bundles/* /app/data_aggregator/static/data_aggregator/bundles/
+COPY --chown=acait:acait --from=wpack /app/data_aggregator/static/ /static/
+COPY --chown=acait:acait --from=wpack /app/data_aggregator/static/webpack-stats.json /app/data_aggregator/static/webpack-stats.json
+
