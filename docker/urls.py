@@ -2,5 +2,5 @@ from .base_urls import *
 from django.urls import include, re_path
 
 urlpatterns += [
-    re_path(r'^', include('course_data.urls')),
+    re_path(r'^', include('data_aggregator.urls')),
 ]

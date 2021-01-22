@@ -11,16 +11,16 @@ module.exports = {
     mode: 'development',
     context: __dirname,
     entry: {
-        home: './course_data/static/vue/home.js',
+        home: './data_aggregator/static/vue/home.js',
     },
     output: {
-        path: path.resolve('./course_data/static/course_data/bundles/'),
+        path: path.resolve('./data_aggregator/static/data_aggregator/bundles/'),
         filename: "[name]-[hash].js",
     },
     plugins: [
         new CleanWebpackPlugin(),
         new BundleTracker({
-            filename: './course_data/static/webpack-stats.json'
+            filename: './data_aggregator/static/webpack-stats.json'
         }),
         new VueLoaderPlugin(),
         new MiniCssExtractPlugin({

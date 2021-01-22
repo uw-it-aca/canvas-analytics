@@ -12,6 +12,6 @@ services:
       context: .
       target: app-container
     volumes:
-      - ./course_data:/app/course_data
+      - ./data_aggregator:/app/data_aggregator
     ports:
       - "8000:8000"

@@ -7,7 +7,7 @@ services:
 env:
   global:
   - RELEASE_NAME="canvas-analytics"
-  - DJANGO_APP="course_data"
+  - DJANGO_APP="data_aggregator"
   - COMMIT_HASH="$(git rev-parse --short=7 HEAD)"
   - IMAGE_TAG="${RELEASE_NAME}:${COMMIT_HASH}"
   - DEPLOY_SCRIPT=https://raw.githubusercontent.com/uw-it-aca/gcp-app-deploy/master/travis-ci/deploy.sh
