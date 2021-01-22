@@ -131,10 +131,23 @@ class Assignment(models.Model):
                              on_delete=models.CASCADE)
     assignment_id = models.IntegerField(null=True)
     student_id = models.IntegerField(null=True)
-    score = models.IntegerField(null=True)
-    due_at = models.DateField(null=True)
-    points_possible = models.IntegerField(null=True)
-    status = models.TextField()
+    title = models.TextField(null=True)
+    unlock_at = models.DateTimeField(null=True)
+    points_possible = \
+        models.DecimalField(null=True, max_digits=7, decimal_places=2)
+    non_digital_submission = models.BooleanField(null=True)
+    due_at = models.DateTimeField(null=True)
+    status = models.TextField(null=True)
+    muted = models.BooleanField(null=True)
+    min_score = models.DecimalField(null=True, max_digits=7, decimal_places=2)
+    max_score = models.DecimalField(null=True, max_digits=7, decimal_places=2)
+    first_quartile = models.IntegerField(null=True)
+    median = models.IntegerField(null=True)
+    third_quartile = models.IntegerField(null=True)
+    excused = models.BooleanField(null=True)
+    score = models.DecimalField(null=True, max_digits=7, decimal_places=2)
+    posted_at = models.DateTimeField(null=True)
+    submitted_at = models.DateTimeField(null=True)
 
 
 class Participation(models.Model):
