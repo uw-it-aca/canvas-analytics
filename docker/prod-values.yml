@@ -108,10 +108,10 @@ daemon:
   daemons:
     - name: run-assignment-jobs
       command: ["/scripts/management_daemon.sh"]
-      args: ['--cron', '* * * * 6,0', 'run_assignment_jobs'] # Every minute Saturday and Sunday
+      args: ['--cron', '* * * * 6', '--delay', '30', 'run_assignment_jobs']
     - name: run-participation-jobs
       command: ["/scripts/management_daemon.sh"]
-      args: ['--cron', '* * * * 6,0', 'run_participation_jobs'] # Every minute Saturday and Sunday
+      args: ['--cron', '* * * * 6', '--delay', '30', 'run_participation_jobs']
 image:
   repository: registry.hub.docker.com/acait/retention-dashboard
   tag: IMAGE_TAG
