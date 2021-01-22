@@ -1,11 +1,15 @@
 from django.views.generic import TemplateView
 from uw_saml.utils import get_user
+from uw_saml.decorators import group_required
+from django.utils.decorators import method_decorator
 from django.conf import settings
 from data_aggregator.models import Term, JobType, Job
 from django.db import models
 from django.db.models.functions import Cast
 
 
+@method_decorator(group_required(settings.DATA_AGGREGATOR_ACCESS_GROUP),
+                  name='dispatch')
 class PageView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
