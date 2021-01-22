@@ -95,6 +95,8 @@ externalSecrets:
       data:
         - name: canvas-api-token
           property: canvas-api-token
+        - name: access-group-id
+          property: access-group-id
 
     - name: test-analytics.apps.canvas.uw.edu-sql-secrets
       externalKey: axdd/kv/data/canvas/analytics/shared/sql-secrets
@@ -137,6 +139,10 @@ environmentVariablesSecrets:
     name: CANVAS_ACCOUNT_ID
     secretName: test-analytics.apps.canvas.uw.edu-canvas-secrets
     secretKey: canvas-account-id
+  accessGroup:
+    name: ACCESS_GROUP
+    secretName: test-analytics.apps.canvas.uw.edu-shared-secrets
+    secretKey: access-group-id
   samlSPCert:
     name: SP_CERT
     secretName: test-analytics.apps.canvas.uw.edu-ic-certs
