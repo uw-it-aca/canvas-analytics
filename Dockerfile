@@ -1,4 +1,4 @@
-FROM acait/django-container:1.2.5 as app-container
+FROM acait/django-container:1.2.5 as app-prewebpack-container
 
 USER root
 
@@ -14,13 +14,11 @@ RUN . /app/bin/activate && pip install mysqlclient
 
 ADD --chown=acait:acait . /app/
 ADD --chown=acait:acait docker/ project/
-RUN . /app/bin/activate && python manage.py collectstatic
-
-RUN . /app/bin/activate && pip install nodeenv && nodeenv -p &&\
-    npm install -g npm
-
 ADD --chown=acait:acait docker/app_start.sh /scripts
 RUN chmod u+x /scripts/app_start.sh
+
+RUN . /app/bin/activate && pip install django-webpack-loader
+RUN . /app/bin/activate && python manage.py collectstatic
 
 FROM node:8.15.1-jessie AS wpack
 ADD . /app/
@@ -28,7 +26,7 @@ WORKDIR /app/
 RUN npm install .
 RUN npx webpack --mode=production
 
-FROM app-container
+FROM app-prewebpack-container as app-container
 
 COPY --chown=acait:acait --from=wpack /app/data_aggregator/static/data_aggregator/bundles/* /app/data_aggregator/static/data_aggregator/bundles/
 COPY --chown=acait:acait --from=wpack /app/data_aggregator/static/ /static/
