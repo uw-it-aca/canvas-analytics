@@ -88,6 +88,30 @@ certs:
   certPath: /certs/retention.uw.edu-uwca.cert
   keyPath: /certs/retention.uw.edu-uwca.key
   secretName: retention.uw.edu-uwca-certs
+cronjob:
+  enabled: true
+  jobs:
+    - name: create-update-courses
+      schedule: "0 15 * * *" # At 7:00am PST
+      command: ["/scripts/management_command.sh"]
+      args: ["create_update_courses"]
+    - name: create-assignment-jobs
+      schedule: "0 17 * * 6" # At 9:00am PST on Saturday
+      command: ["/scripts/management_command.sh"]
+      args: ["create_assignment_jobs"]
+    - name: create-participation-jobs
+      schedule: "0 17 * * 6" # At 9:00am PST on Saturday
+      command: ["/scripts/management_command.sh"]
+      args: ["create_participation_jobs"]
+daemon:
+  enabled: true
+  daemons:
+    - name: run-assignment-jobs
+      command: ["/scripts/management_daemon.sh"]
+      args: ['--cron', '* * * * 6,0', 'run_assignment_jobs'] # Every minute Saturday and Sunday
+    - name: run-participation-jobs
+      command: ["/scripts/management_daemon.sh"]
+      args: ['--cron', '* * * * 6,0', 'run_participation_jobs'] # Every minute Saturday and Sunday
 image:
   repository: registry.hub.docker.com/acait/retention-dashboard
   tag: IMAGE_TAG
