@@ -21,11 +21,6 @@ RUN . /app/bin/activate && pip install nodeenv && nodeenv -p &&\
 ADD --chown=acait:acait docker/app_start.sh /scripts
 RUN chmod u+x /scripts/app_start.sh
 
-FROM acait/django-test-container:1.2.5 as app-test-container
-
-COPY --from=app-container /app/ /app/
-COPY --from=app-container /static/ /static/
-
 FROM node:8.15.1-jessie AS wpack
 ADD . /app/
 WORKDIR /app/
@@ -38,3 +33,7 @@ COPY --chown=acait:acait --from=wpack /app/data_aggregator/static/data_aggregato
 COPY --chown=acait:acait --from=wpack /app/data_aggregator/static/ /static/
 COPY --chown=acait:acait --from=wpack /app/data_aggregator/static/webpack-stats.json /app/data_aggregator/static/webpack-stats.json
 
+FROM acait/django-test-container:1.2.5 as app-test-container
+
+COPY --from=app-container /app/ /app/
+COPY --from=app-container /static/ /static/
