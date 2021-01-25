@@ -39,16 +39,13 @@ image:
   repository: gcr.io/uwit-mci-axdd/canvas-analytics
   tag: IMAGE_TAG
 memcached:
-  enabled: true
-  replicaCount: 1
-  updateStrategy:
-    type: RollingUpdate
+  enabled: false
 cronjob:
   enabled: false
 certs:
   mounted: true
-  certPath: /certs/test-analytics.apps.canvas.uw.edu-uwca.cert
-  keyPath: /certs/test-analytics.apps.canvas.uw.edu-uwca.key
+  certPath: /certs/test-apps.canvas.uw.edu-uwca.cert
+  keyPath: /certs/test-apps.canvas.uw.edu-uwca.key
   secretName: test-analytics.apps.canvas.uw.edu-uwca-certs
 environmentVariables:
   - name: ENV
