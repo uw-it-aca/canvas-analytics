@@ -11,6 +11,11 @@ class Command(BaseCommand):
             "be run as a cron that is constantly checking for new jobs.")
 
     def add_arguments(self, parser):
+        parser.add_argument("--job_batch_size",
+                            type=int,
+                            help=("Number of jobs to process"),
+                            default=10,
+                            required=False)
         parser.add_argument("--log_file",
                             type=str,
                             help=("Path of log file. If no log path is "
@@ -25,7 +30,10 @@ class Command(BaseCommand):
         the returned data as Participation model instances.
         """
         self.logger = Logger(logpath=options["log_file"])
-        jobs = Job.objects.start_batch_of_participation_jobs()
+        self.job_batch_size = options["job_batch_size"]
+        jobs = Job.objects.start_batch_of_participation_jobs(
+            batchsize=self.job_batch_size
+        )
         if jobs:
             for job in jobs:
                 try:
@@ -41,3 +49,5 @@ class Command(BaseCommand):
                     # save error message if one occurs
                     job.message = traceback.format_exc()
                     job.save()
+        else:
+            self.logger.info("No active participation jobs.")
