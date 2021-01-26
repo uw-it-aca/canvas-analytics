@@ -65,33 +65,33 @@ class CanvasDAO():
                     assignment.title = i.get('title')
                     if i.get('unlock_at'):
                         assignment.due_at = \
-                            datetime.strptime(i.get('unlock_at'),
-                                                "%Y-%m-%dT%H:%M:%S%z")
+                            datetime.strptime(i['unlock_at'],
+                                              "%Y-%m-%dT%H:%M:%S%z")
                     assignment.points_possible = i.get('points_possible')
                     if i.get('non_digital_submission'):
                         assignment.non_digital_submission = \
-                            bool(i.get('non_digital_submission'))
+                            bool(i['non_digital_submission'])
                     if i.get('due_at'):
                         assignment.due_at = \
-                            datetime.strptime(i.get('due_at'),
-                                                "%Y-%m-%dT%H:%M:%S%z")
+                            datetime.strptime(i['due_at'],
+                                              "%Y-%m-%dT%H:%M:%S%z")
                     assignment.status = i.get('status')
                     if i.get('muted'):
-                        assignment.muted = bool(i.get('muted'))
+                        assignment.muted = bool(i['muted'])
                     assignment.max_score = i.get('max_score')
                     assignment.min_score = i.get('min_score')
                     assignment.first_quartile = i.get('first_quartile')
                     assignment.median = i.get('median')
                     assignment.third_quartile = i.get('third_quartile')
                     if i.get('excused'):
-                        assignment.excused = bool(i.get('excused'))
+                        assignment.excused = bool(i['excused'])
                     submission = i.get('submission')
                     if submission:
                         assignment.score = submission['score']
                         if submission.get('posted_at'):
                             assignment.posted_at = \
                                 datetime.strptime(submission['posted_at'],
-                                                    "%Y-%m-%dT%H:%M:%S%z")
+                                                  "%Y-%m-%dT%H:%M:%S%z")
                         if submission.get('submitted_at'):
                             assignment.submitted_at = \
                                 datetime.strptime(
