@@ -1,15 +1,15 @@
 from datetime import datetime
-from uw_canvas import Canvas
-from uw_canvas.courses import Courses
-from uw_canvas.enrollments import Enrollments
-from uw_canvas.analytics import Analytics
-from restclients_core.exceptions import DataFailureException
+from django.conf import settings
 from data_aggregator.logger import Logger
 from data_aggregator.models import Assignment, Participation, Week, Term, \
     Course
 from data_aggregator import utilities
-from django.conf import settings
+from restclients_core.exceptions import DataFailureException
 from uw_sws.term import get_current_term
+from uw_canvas import Canvas
+from uw_canvas.courses import Courses
+from uw_canvas.enrollments import Enrollments
+from uw_canvas.analytics import Analytics
 from uw_canvas.reports import Reports
 from uw_canvas.terms import Terms
 
@@ -60,18 +60,45 @@ class CanvasDAO():
                         user_id, canvas_course_id)
                 for i in res:
                     assignment = Assignment()
-                    assignment.week = week
-                    assignment.course = course
-                    assignment.assignment_id = i.get('assignment_id')
                     assignment.student_id = user_id
-                    if i.get('submission'):
-                        assignment.score = i.get('submission').get('score')
-                    if i.get('due_at'):
+                    assignment.assignment_id = i.get('assignment_id')
+                    assignment.title = i.get('title')
+                    if i.get('unlock_at'):
                         assignment.due_at = \
-                            datetime.strptime(i.get('due_at'),
+                            datetime.strptime(i['unlock_at'],
                                               "%Y-%m-%dT%H:%M:%S%z")
                     assignment.points_possible = i.get('points_possible')
+                    if i.get('non_digital_submission'):
+                        assignment.non_digital_submission = \
+                            bool(i['non_digital_submission'])
+                    if i.get('due_at'):
+                        assignment.due_at = \
+                            datetime.strptime(i['due_at'],
+                                              "%Y-%m-%dT%H:%M:%S%z")
                     assignment.status = i.get('status')
+                    if i.get('muted'):
+                        assignment.muted = bool(i['muted'])
+                    assignment.max_score = i.get('max_score')
+                    assignment.min_score = i.get('min_score')
+                    assignment.first_quartile = i.get('first_quartile')
+                    assignment.median = i.get('median')
+                    assignment.third_quartile = i.get('third_quartile')
+                    if i.get('excused'):
+                        assignment.excused = bool(i['excused'])
+                    submission = i.get('submission')
+                    if submission:
+                        assignment.score = submission['score']
+                        if submission.get('posted_at'):
+                            assignment.posted_at = \
+                                datetime.strptime(submission['posted_at'],
+                                                  "%Y-%m-%dT%H:%M:%S%z")
+                        if submission.get('submitted_at'):
+                            assignment.submitted_at = \
+                                datetime.strptime(
+                                    submission['submitted_at'],
+                                    "%Y-%m-%dT%H:%M:%S%z")
+                    assignment.week = week
+                    assignment.course = course
                     assignments.append(assignment)
             except DataFailureException as e:
                 self.logger.error(e)
