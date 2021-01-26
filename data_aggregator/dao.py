@@ -1,6 +1,6 @@
+import logging
 from datetime import datetime
 from django.conf import settings
-from data_aggregator.logger import Logger
 from data_aggregator.models import Assignment, Participation, Week, Term, \
     Course
 from data_aggregator import utilities
@@ -20,7 +20,7 @@ class CanvasDAO():
     """
 
     def __init__(self):
-        self.logger = Logger()
+        self.logger = logging.getLogger(__name__)
         self.canvas = Canvas()
 
     def _get_student_ids_for_course(self, canvas_course_id):

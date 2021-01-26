@@ -1,7 +1,7 @@
 
+import logging
 from csv import DictReader
 from django.core.management.base import BaseCommand
-from data_aggregator.logger import Logger
 from data_aggregator.models import Term, Course
 from data_aggregator.dao import CanvasDAO
 from uw_sws.term import get_current_term
@@ -11,15 +11,8 @@ class Command(BaseCommand):
 
     help = ("Loads or updates list of courses for the current term.")
 
-    def add_arguments(self, parser):
-        parser.add_argument("--log_file",
-                            type=str,
-                            help=("Path of log file. If no log path is "
-                                  "supplied then stdout is used"),
-                            required=False)
-
     def handle(self, *args, **options):
-        self.logger = Logger(logpath=options["log_file"])
+        logger = logging.getLogger(__name__)
 
         # get the current term object from sws
         sws_term = get_current_term()
@@ -44,15 +37,15 @@ class Command(BaseCommand):
                 term, created_term = Term.objects.get_create_current_term(
                     canvas_term_id, sws_term=sws_term)
                 if created_term:
-                    self.logger.info(f"Created term - {canvas_term_id}")
+                    logger.info(f"Created term - {canvas_term_id}")
                 # create / update course
                 course, created_course = Course.objects.get_or_create(
                     canvas_course_id=canvas_course_id,
                     term=term)
                 if created_course:
-                    self.logger.info(f"Created course - {canvas_course_id}")
+                    logger.info(f"Created course - {canvas_course_id}")
                 else:
-                    self.logger.info(f"Updated course - {canvas_course_id}")
+                    logger.info(f"Updated course - {canvas_course_id}")
                 # we always update the course regardless if it is new or not
                 course.sis_course_id = sis_course_id
                 course.short_name = short_name
@@ -62,4 +55,4 @@ class Command(BaseCommand):
                 course.status = status
                 course.save()
                 course_count += 1
-        self.logger.info(f'Created and/or updated {course_count} courses.')
+        logger.info(f'Created and/or updated {course_count} courses.')
