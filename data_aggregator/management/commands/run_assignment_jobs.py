@@ -1,6 +1,6 @@
+import logging
 import traceback
 from django.core.management.base import BaseCommand
-from data_aggregator.logger import Logger
 from data_aggregator.dao import CanvasDAO
 from data_aggregator.models import Job
 
@@ -16,11 +16,6 @@ class Command(BaseCommand):
                             help=("Number of jobs to process"),
                             default=10,
                             required=False)
-        parser.add_argument("--log_file",
-                            type=str,
-                            help=("Path of log file. If no log path is "
-                                  "supplied then stdout is used"),
-                            required=False)
 
     def handle(self, *args, **options):
         """
@@ -29,10 +24,10 @@ class Command(BaseCommand):
         (default 10), queries the Canvas API for assignment data and stores
         the returned data as Assignment model instances.
         """
-        self.logger = Logger(logpath=options["log_file"])
-        self.job_batch_size = options["job_batch_size"]
+        logger = logging.getLogger(__name__)
+        job_batch_size = options["job_batch_size"]
         jobs = Job.objects.start_batch_of_assignment_jobs(
-            batchsize=self.job_batch_size
+            batchsize=job_batch_size
         )
         if jobs:
             for job in jobs:
@@ -50,4 +45,4 @@ class Command(BaseCommand):
                     job.message = traceback.format_exc()
                     job.save()
         else:
-            self.logger.info("No active assignment jobs.")
+            logger.info("No active assignment jobs.")

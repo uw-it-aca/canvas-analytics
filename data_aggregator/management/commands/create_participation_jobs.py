@@ -1,6 +1,6 @@
 
+import logging
 from django.core.management.base import BaseCommand
-from data_aggregator.logger import Logger
 from data_aggregator.models import Course, Job, JobType
 from django.db.models import Q
 from django.utils import timezone
@@ -12,18 +12,11 @@ class Command(BaseCommand):
 
     help = ("Creates participation jobs for active courses in current term.")
 
-    def add_arguments(self, parser):
-        parser.add_argument("--log_file",
-                            type=str,
-                            help=("Path of log file. If no log path is "
-                                  "supplied then stdout is used"),
-                            required=False)
-
     def handle(self, *args, **options):
         """
         Load assignments jobs for all active courses in the current term
         """
-        self.logger = Logger(logpath=options["log_file"])
+        logger = logging.getLogger(__name__)
 
         # get participation job type
         partic_type, _ = JobType.objects.get_or_create(type="participation")
@@ -40,13 +33,13 @@ class Command(BaseCommand):
         )
         course_count = courses.count()
         if course_count == 0:
-            self.logger.info(
+            logger.info(
                 f'No active courses in term {sws_term.canvas_sis_id()} to '
                 f'create participation jobs for.')
         else:
             for course in courses:
                 # create participation jobs
-                self.logger.info(
+                logger.info(
                     f"Adding participation jobs for course "
                     f"{course.canvas_course_id}")
                 job = Job()
@@ -56,4 +49,4 @@ class Command(BaseCommand):
                 job.context = {'canvas_course_id': course.canvas_course_id}
                 job.save()
                 jobs_count += 1
-        self.logger.info(f'Created {jobs_count} participation jobs.')
+        logger.info(f'Created {jobs_count} participation jobs.')
