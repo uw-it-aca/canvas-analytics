@@ -1,8 +1,9 @@
 import logging
 import traceback
 from django.core.management.base import BaseCommand
+from django.db import transaction
 from data_aggregator.dao import CanvasDAO
-from data_aggregator.models import Job
+from data_aggregator.models import Job, Assignment
 
 
 class Command(BaseCommand):
@@ -16,6 +17,26 @@ class Command(BaseCommand):
                             help=("Number of jobs to process"),
                             default=10,
                             required=False)
+
+    @transaction.atomic
+    def run_job(self, job):
+        try:
+            # delete existing assignment data in case of a job restart
+            old_assignments = Assignment.objects.filter(job=job)
+            old_assignments.delete()
+            # load assignment data
+            job.mark_start()
+            canvas_course_id = job.context["canvas_course_id"]
+            assignments = (
+                CanvasDAO().get_assignments(canvas_course_id))
+            for assign in assignments:
+                assign.job = job
+            Assignment.objects.bulk_create(assignments)
+            job.mark_end()
+        except Exception:
+            # save error message if one occurs
+            job.message = traceback.format_exc()
+            job.save()
 
     def handle(self, *args, **options):
         """
@@ -31,18 +52,6 @@ class Command(BaseCommand):
         )
         if jobs:
             for job in jobs:
-                try:
-                    job.mark_start()
-                    canvas_course_id = job.context["canvas_course_id"]
-                    assignments = (
-                        CanvasDAO().get_assignments(canvas_course_id))
-                    for assign in assignments:
-                        assign.job = job
-                        assign.save()
-                    job.mark_end()
-                except Exception:
-                    # save error message if one occurs
-                    job.message = traceback.format_exc()
-                    job.save()
+                self.run_job(job)
         else:
             logger.info("No active assignment jobs.")
