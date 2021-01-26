@@ -40,7 +40,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         """
-        Queries the ParticipationJob model to check for unstarted jobs (jobs
+        Queries the Job model to check for unstarted jobs (jobs
         where pid=None and start=None). For a batch of unstarted jobs
         (default 10), queries the Canvas API for participation data and stores
         the returned data as Participation model instances.

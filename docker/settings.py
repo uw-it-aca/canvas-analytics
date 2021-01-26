@@ -19,3 +19,5 @@ WEBPACK_LOADER = {
         'STATS_FILE': os.path.join(BASE_DIR, 'data_aggregator', 'static', 'webpack-stats.json'),
     }
 }
+
+ACADEMIC_CANVAS_ACCOUNT_ID = '84378'
