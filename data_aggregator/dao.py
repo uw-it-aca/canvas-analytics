@@ -8,7 +8,7 @@ from data_aggregator.logger import Logger
 from data_aggregator.models import Assignment, Participation, Week, Term, \
     Course
 from data_aggregator import utilities
-from data_aggregator import settings
+from django.conf import settings
 from uw_sws.term import get_current_term
 from uw_canvas.reports import Reports
 from uw_canvas.terms import Terms
