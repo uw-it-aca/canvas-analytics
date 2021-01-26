@@ -195,7 +195,7 @@ class CanvasDAO():
         # get courses provisioning report for canvas term
         report_client = Reports()
         user_report = report_client.create_course_provisioning_report(
-                    settings.RESTCLIENTS_CANVAS_ACCOUNT_ID,
+                    settings.ACADEMIC_CANVAS_ACCOUNT_ID,
                     term_id=canvas_term.term_id)
         sis_data = report_client.get_report_data(user_report)
         report_client.delete_report(user_report)
