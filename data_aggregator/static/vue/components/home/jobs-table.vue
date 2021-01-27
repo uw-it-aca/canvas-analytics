@@ -222,9 +222,10 @@ export default {
     },
     _setLocalPendingStatus: function(job) {
       job.pid = "";
-      job.start = ""
-      job.end = ""
-      job.message = ""
+      job.start = "";
+      job.end = "";
+      job.message = "";
+      job.status = "pending";
     },
     ...mapMutations([
       'addVarToState',
