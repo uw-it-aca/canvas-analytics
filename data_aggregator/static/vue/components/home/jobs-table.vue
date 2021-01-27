@@ -18,7 +18,7 @@
         <b-form class="d-flex flex-nowrap" inline>
           <label class="mr-2">Action</label>
           <b-form-select v-model="selectedAction" id="action-select" name="action-select">
-            <b-form-select-option :value="'restart'">restart selected</b-form-select-option>
+            <b-form-select-option :value="'restart'">Restart selected (completed/failed)</b-form-select-option>
           </b-form-select>
           <b-button @click="handleAction()" variant="primary" size="md" class="mr-2">
             Run
@@ -59,29 +59,29 @@
           <template slot="thead-top" slot-scope="{ fields }">
             <td v-for="field in fields" :key="field.key">
               <multiselect
-              id="jobstatuses"
-              name="jobstatus"
-              v-if="field.key == 'status'"
-              v-model="filters.job_status"
-              :multiple="true"
-              :options="job_status_options"
-              :searchable="false"
-              :close-on-select="false"
-              :show-labels="false"
-              placeholder="All">
+                id="jobstatuses"
+                name="jobstatus"
+                v-if="field.key == 'status'"
+                v-model="filters.job_status"
+                :multiple="true"
+                :options="job_status_options"
+                :searchable="false"
+                :close-on-select="false"
+                :show-labels="false"
+                placeholder="All">
               </multiselect>
 
               <multiselect
-              id="jobtypes"
-              name="jobtype"
-              v-if="field.key == 'job_type'"
-              v-model="filters.job_type"
-              :multiple="true"
-              :options="jobtypes"
-              :searchable="false"
-              :close-on-select="false"
-              :show-labels="false"
-              placeholder="All">
+                id="jobtypes"
+                name="jobtype"
+                v-if="field.key == 'job_type'"
+                v-model="filters.job_type"
+                :multiple="true"
+                :options="jobtypes"
+                :searchable="false"
+                :close-on-select="false"
+                :show-labels="false"
+                placeholder="All">
               </multiselect>
             </td>
           </template>
@@ -256,28 +256,6 @@ export default {
     color: #721c24;
     background-color: #f8d7da;
     border-color: #f5c6cb;
-  }
-
-  .small-select {
-    height: 25px;
-    padding: 0px 5px;
-    width: 100% !important;
-  }
-
-  .pill-button {
-    background-color: #ddd;
-    border-style: solid;
-    border-width: 1px;
-    border-radius: 4px;
-    border-color: darkgray;
-    color: black;
-    padding: 3px 5px;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    margin: 2px 1px;
-    cursor: pointer;
-    font-size: 10px;
   }
 </style>
 
