@@ -12,8 +12,13 @@ Vue.component('jobs-range-picker', JobsRangePicker);
 
 // date range picker component - https://innologica.github.io/vue2-daterange-picker/
 import DateRangePicker from 'vue2-daterange-picker';
-import 'vue2-daterange-picker/dist/vue2-daterange-picker.css'
+import 'vue2-daterange-picker/dist/vue2-daterange-picker.css';
 Vue.component('date-range-picker', DateRangePicker);
+
+// multiselect component - https://vue-multiselect.js.org/
+import Multiselect from 'vue-multiselect'
+import 'vue-multiselect/dist/vue-multiselect.min.css';
+Vue.component('multiselect', Multiselect)
 
 // stores
 import home_store from './vuex/store/home_store.js';
@@ -32,8 +37,8 @@ const store = new Vuex.Store({
       endDate: null,
     },
     filters: {
-      job_type: "",
-      job_status: "",
+      job_type: [],
+      job_status: [],
     }
   },
   mutations: {
@@ -97,8 +102,8 @@ new Vue({
       let filteredJobs = [];
       let _this = this;
       this.jobs.forEach(function (job, index) {
-        if (_this._filterEqual(job.job_type, _this.filters.job_type) &&
-          _this._filterEqual(_this.getStatus(job), _this.filters.job_status)
+        if (_this._filterList(job.job_type, _this.filters.job_type) &&
+          _this._filterList(_this.getStatus(job), _this.filters.job_status)
         ) {
           filteredJobs.push(job);
         }
@@ -122,6 +127,15 @@ new Vue({
           return true;
         }
     },
+    _filterList: function(field_value, filter_value) {
+      if (filter_value.length == 0) {
+        return true;
+      } else if (!filter_value.includes(field_value)) {
+        return false;
+      }  else {
+        return true;
+      }
+  },
     refreshJobs: function() {
       let promise = this.getJobs({
         "date_range": this.selected_date_range,

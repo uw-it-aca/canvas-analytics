@@ -58,18 +58,31 @@
 
           <template slot="thead-top" slot-scope="{ fields }">
             <td v-for="field in fields" :key="field.key">
-              <b-form-select v-if="field.key == 'message'" class="small-select" id="jobstatuses" name="jobstatus" v-model="filters.job_status">
-                <b-form-select-option :value="'all'" selected>all</b-form-select-option>
-                <b-form-select-option :value="'pending'">pending</b-form-select-option>
-                <b-form-select-option :value="'running'">running</b-form-select-option>
-                <b-form-select-option :value="'completed'">completed</b-form-select-option>
-                <b-form-select-option :value="'failed'">failed</b-form-select-option>
-              </b-form-select>
+              <multiselect
+              id="jobstatuses"
+              name="jobstatus"
+              v-if="field.key == 'message'"
+              v-model="filters.job_status"
+              :multiple="true"
+              :options="job_status_options"
+              :searchable="false"
+              :close-on-select="false"
+              :show-labels="false"
+              placeholder="All">
+              </multiselect>
 
-              <b-form-select v-if="field.key == 'job_type'" class="small-select" id="jobtypes" name="jobtype"  v-model="filters.job_type">
-                <b-form-select-option :value="'all'" selected>all</b-form-select-option>
-                <b-form-select-option v-for="jobtype in jobtypes" :key="jobtype.id" :value="jobtype.type">{{jobtype.type}}</b-form-select-option>
-              </b-form-select>
+              <multiselect
+              id="jobtypes"
+              name="jobtype"
+              v-if="field.key == 'job_type'"
+              v-model="filters.job_type"
+              :multiple="true"
+              :options="jobtypes"
+              :searchable="false"
+              :close-on-select="false"
+              :show-labels="false"
+              placeholder="All">
+              </multiselect>
             </td>
           </template>
 
@@ -117,9 +130,9 @@ export default {
   props: ['jobs', 'selectedJobs'],
   created: function() {
     // default to all job types
-    this.$store.commit('setJobType', "all");
+    this.$store.commit('setJobType', []);
     // default to all job statuses
-    this.$store.commit('setJobStatus', "all");
+    this.$store.commit('setJobStatus', []);
   },
   data: function() {
     return {
@@ -155,6 +168,7 @@ export default {
       currentPage: 1,
       selectedAction: 'restart',
       allSelected: false,
+      job_status_options: ['pending', 'running', 'completed', 'failed']
     }
   },
   computed: {
@@ -192,10 +206,12 @@ export default {
     _getColumnWidth: function(field_key) {
       if (field_key == "selected")
         return "25px";
+      else if(field_key == "job_type")
+        return "125%";
       else if(field_key == "context")
-        return "200%";
+        return "150%";
       else if(field_key == "message")
-        return "100%";
+        return "200%";
       else if (field_key == "start")
         return "150%";
       else if (field_key == "end")
