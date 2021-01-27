@@ -1,9 +1,8 @@
 import logging
-from datetime import datetime
 from django.conf import settings
 from data_aggregator.models import Assignment, Participation, Week, Term, \
     Course
-from data_aggregator import utilities
+from data_aggregator.utilities import get_week_of_term
 from restclients_core.exceptions import DataFailureException
 from restclients_core.util.retry import retry
 from uw_sws.term import get_current_term
@@ -57,7 +56,7 @@ class CanvasDAO():
                     canvas_course_id=canvas_course_id,
                     term=term))
         week, _ = Week.objects.get_or_create(
-            week=utilities.get_week_of_term(curr_term.first_day_quarter),
+            week=get_week_of_term(curr_term.first_day_quarter),
             term=term)
         num_students_in_course = len(students_ids)
         num_students_wo_assignment = 0
@@ -72,40 +71,25 @@ class CanvasDAO():
                     assignment.student_id = student_id
                     assignment.assignment_id = i.get('assignment_id')
                     assignment.title = i.get('title')
-                    if i.get('unlock_at'):
-                        assignment.due_at = \
-                            datetime.strptime(i['unlock_at'],
-                                              "%Y-%m-%dT%H:%M:%S%z")
+                    assignment.due_at = i.get('unlock_at')
                     assignment.points_possible = i.get('points_possible')
-                    if i.get('non_digital_submission'):
-                        assignment.non_digital_submission = \
-                            bool(i['non_digital_submission'])
-                    if i.get('due_at'):
-                        assignment.due_at = \
-                            datetime.strptime(i['due_at'],
-                                              "%Y-%m-%dT%H:%M:%S%z")
+                    assignment.non_digital_submission = \
+                        i.get('non_digital_submission')
+                    assignment.due_at = i.get('due_at')
                     assignment.status = i.get('status')
-                    if i.get('muted'):
-                        assignment.muted = bool(i['muted'])
+                    assignment.muted = i.get('muted')
                     assignment.max_score = i.get('max_score')
                     assignment.min_score = i.get('min_score')
                     assignment.first_quartile = i.get('first_quartile')
                     assignment.median = i.get('median')
                     assignment.third_quartile = i.get('third_quartile')
-                    if i.get('excused'):
-                        assignment.excused = bool(i['excused'])
+                    assignment.excused = i.get('excused')
                     submission = i.get('submission')
                     if submission:
-                        assignment.score = submission['score']
-                        if submission.get('posted_at'):
-                            assignment.posted_at = \
-                                datetime.strptime(submission['posted_at'],
-                                                  "%Y-%m-%dT%H:%M:%S%z")
-                        if submission.get('submitted_at'):
-                            assignment.submitted_at = \
-                                datetime.strptime(
-                                    submission['submitted_at'],
-                                    "%Y-%m-%dT%H:%M:%S%z")
+                        assignment.score = submission.get('score')
+                        assignment.posted_at = submission.get('posted_at')
+                        assignment.submitted_at = \
+                            submission.get('submitted_at')
                     assignment.week = week
                     assignment.course = course
                     assignments.append(assignment)
@@ -138,7 +122,7 @@ class CanvasDAO():
                     canvas_course_id=canvas_course_id,
                     term=term))
         week, _ = Week.objects.get_or_create(
-            week=utilities.get_week_of_term(curr_term.first_day_quarter),
+            week=get_week_of_term(curr_term.first_day_quarter),
             term=term)
         num_students_in_course = len(students_ids)
         num_students_wo_participation = 0

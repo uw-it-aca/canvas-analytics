@@ -35,8 +35,10 @@ class Command(BaseCommand):
             job.mark_end()
         except Exception:
             # save error message if one occurs
-            job.message = traceback.format_exc()
+            tb = traceback.format_exc()
+            job.message = tb
             job.save()
+            self.logger.error(tb)
 
     def handle(self, *args, **options):
         """
@@ -45,7 +47,7 @@ class Command(BaseCommand):
         (default 10), queries the Canvas API for participation data and stores
         the returned data as Participation model instances.
         """
-        logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger(__name__)
         job_batch_size = options["job_batch_size"]
         jobs = Job.objects.start_batch_of_participation_jobs(
             batchsize=job_batch_size
@@ -54,4 +56,4 @@ class Command(BaseCommand):
             for job in jobs:
                 self.run_job(job)
         else:
-            logger.info("No active participation jobs.")
+            self.logger.info("No active participation jobs.")
