@@ -103,7 +103,7 @@ new Vue({
       let _this = this;
       this.jobs.forEach(function (job, index) {
         if (_this._filterList(job.job_type, _this.filters.job_type) &&
-          _this._filterList(_this.getStatus(job), _this.filters.job_status)
+          _this._filterList(job.status, _this.filters.job_status)
         ) {
           filteredJobs.push(job);
         }

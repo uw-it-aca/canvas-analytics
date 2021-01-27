@@ -112,6 +112,18 @@ class Job(models.Model):
     message = models.TextField()
     created = models.DateField(auto_now_add=True)
 
+    @property
+    def status(self):
+        if (not self.pid and not self.start and not self.end and
+                not self.message):
+            return "pending"
+        elif (self.pid and self.start and not self.end and not self.message):
+            return "running"
+        elif (self.pid and self.start and self.end and not self.message):
+            return "completed"
+        elif (self.message):
+            return "failed"
+
     def mark_start(self, *args, **kwargs):
         self.pid = os.getpid()
         self.start = timezone.now()

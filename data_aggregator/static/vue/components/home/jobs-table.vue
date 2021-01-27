@@ -61,7 +61,7 @@
               <multiselect
               id="jobstatuses"
               name="jobstatus"
-              v-if="field.key == 'message'"
+              v-if="field.key == 'status'"
               v-model="filters.job_status"
               :multiple="true"
               :options="job_status_options"
@@ -110,8 +110,8 @@
             {{row.item.end | iso_date}}
           </template>
       
-          <template #cell(message)="row">
-            {{getStatus(row.item)}}
+          <template #cell(status)="row">
+            {{row.item.status}}
           </template>
         </b-table>
       </b-col>
@@ -149,11 +149,12 @@ export default {
           label: 'Job Context',
           sortable: true,
         },
-        { key: 'message',
+        { key: 'status',
           label: 'Job Status',
           tdClass: (value, key, item) => {
-              return 'table-' + this.getStatus(item);
+              return 'table-' + item.status;
           },
+          sortable: true,
         },
         { key: 'start',
           label: 'Job Start',
@@ -186,7 +187,7 @@ export default {
       if (this.selectedAction == 'restart') {
         let _this = this;
         let jobsToRestart = this.selectedJobs.filter(
-          job => (this.getStatus(job) == "completed" ||  this.getStatus(job) == "failed"));
+          job => (job.status == "completed" ||  job.status == "failed"));
         this.restartJobs(jobsToRestart).then(function() {
           jobsToRestart.forEach(function (job, index) {
             _this._setLocalPendingStatus(job);
@@ -210,7 +211,7 @@ export default {
         return "125%";
       else if(field_key == "context")
         return "150%";
-      else if(field_key == "message")
+      else if(field_key == "status")
         return "200%";
       else if (field_key == "start")
         return "150%";
