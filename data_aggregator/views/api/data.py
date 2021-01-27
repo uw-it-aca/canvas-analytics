@@ -20,10 +20,24 @@ class JobFilter(RESTDispatch):
             jobs = jobs.filter(
                 target_date_end__gte=filters["date_range"]["startDate"])
 
-        jobs = jobs.values("id", "context", "job_type", "pid",
-                           "start", "end", "message", "created",
-                           "selected")
-        return self.json_response(content={"jobs": list(jobs)})
+        jobs = jobs.all()
+
+        job_dicts = []
+        for job in jobs:
+            jd = {}
+            jd["id"] = job.id
+            jd["context"] = job.context
+            jd["job_type"] = job.job_type
+            jd["pid"] = job.pid
+            jd["start"] = job.start
+            jd["end"] = job.end
+            jd["message"] = job.message
+            jd["created"] = job.created
+            jd["status"] = job.status
+            jd["selected"] = job.selected
+            job_dicts.append(jd)
+
+        return self.json_response(content={"jobs": job_dicts})
 
 
 class JobReset(RESTDispatch):

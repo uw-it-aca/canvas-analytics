@@ -18,7 +18,7 @@
         <b-form class="d-flex flex-nowrap" inline>
           <label class="mr-2">Action</label>
           <b-form-select v-model="selectedAction" id="action-select" name="action-select">
-            <b-form-select-option :value="'restart'">restart selected</b-form-select-option>
+            <b-form-select-option :value="'restart'">Restart selected (completed/failed)</b-form-select-option>
           </b-form-select>
           <b-button @click="handleAction()" variant="primary" size="md" class="mr-2">
             Run
@@ -58,18 +58,31 @@
 
           <template slot="thead-top" slot-scope="{ fields }">
             <td v-for="field in fields" :key="field.key">
-              <b-form-select v-if="field.key == 'message'" class="small-select" id="jobstatuses" name="jobstatus" v-model="filters.job_status">
-                <b-form-select-option :value="'all'" selected>all</b-form-select-option>
-                <b-form-select-option :value="'pending'">pending</b-form-select-option>
-                <b-form-select-option :value="'running'">running</b-form-select-option>
-                <b-form-select-option :value="'completed'">completed</b-form-select-option>
-                <b-form-select-option :value="'failed'">failed</b-form-select-option>
-              </b-form-select>
+              <multiselect
+                id="jobstatuses"
+                name="jobstatus"
+                v-if="field.key == 'status'"
+                v-model="filters.job_status"
+                :multiple="true"
+                :options="job_status_options"
+                :searchable="false"
+                :close-on-select="false"
+                :show-labels="false"
+                placeholder="All">
+              </multiselect>
 
-              <b-form-select v-if="field.key == 'job_type'" class="small-select" id="jobtypes" name="jobtype"  v-model="filters.job_type">
-                <b-form-select-option :value="'all'" selected>all</b-form-select-option>
-                <b-form-select-option v-for="jobtype in jobtypes" :key="jobtype.id" :value="jobtype.type">{{jobtype.type}}</b-form-select-option>
-              </b-form-select>
+              <multiselect
+                id="jobtypes"
+                name="jobtype"
+                v-if="field.key == 'job_type'"
+                v-model="filters.job_type"
+                :multiple="true"
+                :options="jobtypes"
+                :searchable="false"
+                :close-on-select="false"
+                :show-labels="false"
+                placeholder="All">
+              </multiselect>
             </td>
           </template>
 
@@ -97,8 +110,8 @@
             {{row.item.end | iso_date}}
           </template>
       
-          <template #cell(message)="row">
-            {{getStatus(row.item)}}
+          <template #cell(status)="row">
+            {{row.item.status}}
           </template>
         </b-table>
       </b-col>
@@ -117,9 +130,9 @@ export default {
   props: ['jobs', 'selectedJobs'],
   created: function() {
     // default to all job types
-    this.$store.commit('setJobType', "all");
+    this.$store.commit('setJobType', []);
     // default to all job statuses
-    this.$store.commit('setJobStatus', "all");
+    this.$store.commit('setJobStatus', []);
   },
   data: function() {
     return {
@@ -136,11 +149,12 @@ export default {
           label: 'Job Context',
           sortable: true,
         },
-        { key: 'message',
+        { key: 'status',
           label: 'Job Status',
           tdClass: (value, key, item) => {
-              return 'table-' + this.getStatus(item);
+              return 'table-' + item.status;
           },
+          sortable: true,
         },
         { key: 'start',
           label: 'Job Start',
@@ -155,6 +169,7 @@ export default {
       currentPage: 1,
       selectedAction: 'restart',
       allSelected: false,
+      job_status_options: ['pending', 'running', 'completed', 'failed']
     }
   },
   computed: {
@@ -172,7 +187,7 @@ export default {
       if (this.selectedAction == 'restart') {
         let _this = this;
         let jobsToRestart = this.selectedJobs.filter(
-          job => (this.getStatus(job) == "completed" ||  this.getStatus(job) == "failed"));
+          job => (job.status == "completed" ||  job.status == "failed"));
         this.restartJobs(jobsToRestart).then(function() {
           jobsToRestart.forEach(function (job, index) {
             _this._setLocalPendingStatus(job);
@@ -192,10 +207,12 @@ export default {
     _getColumnWidth: function(field_key) {
       if (field_key == "selected")
         return "25px";
+      else if(field_key == "job_type")
+        return "125%";
       else if(field_key == "context")
+        return "150%";
+      else if(field_key == "status")
         return "200%";
-      else if(field_key == "message")
-        return "100%";
       else if (field_key == "start")
         return "150%";
       else if (field_key == "end")
@@ -239,28 +256,6 @@ export default {
     color: #721c24;
     background-color: #f8d7da;
     border-color: #f5c6cb;
-  }
-
-  .small-select {
-    height: 25px;
-    padding: 0px 5px;
-    width: 100% !important;
-  }
-
-  .pill-button {
-    background-color: #ddd;
-    border-style: solid;
-    border-width: 1px;
-    border-radius: 4px;
-    border-color: darkgray;
-    color: black;
-    padding: 3px 5px;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    margin: 2px 1px;
-    cursor: pointer;
-    font-size: 10px;
   }
 </style>
 
