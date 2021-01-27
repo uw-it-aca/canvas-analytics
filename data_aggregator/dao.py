@@ -117,11 +117,8 @@ class CanvasDAO():
                     continue
                 else:
                     raise
-        self.logger.info("Loaded {} assignments for {} students."
-                         .format(num_assignments,
-                                 num_students_in_course))
         self.logger.info(f"Loaded {num_assignments} assignment records "
-                         f"for {num_students_in_course} students."
+                         f"for {num_students_in_course} students. "
                          f"Skipped {num_students_wo_assignment} "
                          f"students who did not have assignment data.")
         return assignments
@@ -184,7 +181,7 @@ class CanvasDAO():
                 else:
                     raise
         self.logger.info(f"Loaded {num_participation} participation records "
-                         f"for {num_students_in_course} students."
+                         f"for {num_students_in_course} students. "
                          f"Skipped {num_students_wo_participation} "
                          f"students who did not have participation data.")
         return participations
