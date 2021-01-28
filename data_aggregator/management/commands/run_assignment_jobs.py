@@ -12,7 +12,7 @@ class Command(RunJobCommand):
             "be run as a cron that is constantly checking for new jobs.")
 
     @transaction.atomic
-    def run_job(self, job):
+    def work(self, job):
         # delete existing assignment data in case of a job restart
         old_assignments = Assignment.objects.filter(job=job)
         old_assignments.delete()
