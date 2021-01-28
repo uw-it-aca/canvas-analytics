@@ -10,6 +10,7 @@ if os.getenv('ENV') == 'localdev':
     DEBUG = True
     DATA_AGGREGATOR_ACCESS_GROUP = 'u_test_group'
     RESTCLIENTS_DAO_CACHE_CLASS = None
+    DATA_AGGREGATOR_THREADING_ENABLED = False
 else:
     DATA_AGGREGATOR_ACCESS_GROUP = os.getenv('ACCESS_GROUP', '')
 
