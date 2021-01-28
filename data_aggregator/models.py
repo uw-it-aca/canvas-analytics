@@ -74,11 +74,6 @@ class Course(models.Model):
 
 
 class JobManager(models.Manager):
-    def start_batch_of_assignment_jobs(self, batchsize=10):
-        return self.start_batch_of_jobs("assignment", batchsize=batchsize)
-
-    def start_batch_of_participation_jobs(self, batchsize=10):
-        return self.start_batch_of_jobs("participation", batchsize=batchsize)
 
     def start_batch_of_jobs(self, jobtype, batchsize=10):
         jobs = (self.get_queryset()
