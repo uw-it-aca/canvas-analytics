@@ -79,14 +79,16 @@ export default {
   },
   created: function() {
     // default to current month
-    let today = new Date();
-    let firstDayMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    let lastDayMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-    let defaultRange = {
-      startDate: firstDayMonth,
-      endDate: lastDayMonth
-    };
-    this.selectedDateRange = defaultRange;
+    if (!this.selectedDateRange.startDate && !this.selectedDateRange.endDate) {
+      let today = new Date();
+      let firstDayMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      let lastDayMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      let defaultRange = {
+        startDate: firstDayMonth,
+        endDate: lastDayMonth
+      };
+      this.selectedDateRange = defaultRange;
+    }
   },
   methods: {
     dateFormat (classes, date) {

@@ -43,7 +43,7 @@ const store = new Vuex.Store({
     perPage: 250,
     currPage: 1,
     sortBy: 'status',
-    sortDesc: true,
+    sortDesc: null,
     selectedDateRange: {
       startDate: null,
       endDate: null,
@@ -91,6 +91,12 @@ const store = new Vuex.Store({
     setSelectedDateRange(state, value) {
       state.selectedDateRange = value;
     },
+    setStartDate(state, value) {
+      state.selectedDateRange.startDate = value;
+    },
+    setEndDate(state, value) {
+      state.selectedDateRange.endDate = value;
+    },
     addVarToState(state, {name, value}) {
       state[name] = value;
     },
@@ -112,6 +118,44 @@ new Vue({
   data: function() {
     return {
       refreshTimer: null,
+    }
+  },
+  beforeCreate: function () {
+    // parse url arguments when app is loaded 
+    let hash = window.location.hash;
+
+    hash = hash.substring(hash.indexOf("#")+1); // ignore # symbol
+    
+    // convert the hash string into a dictionary
+    try {
+      hash = hash?JSON.parse('{"' + hash.replace(/&/g, '","').replace(/=/g,'":"') + '"}',
+                function(key, value) { return key===""?value:decodeURIComponent(value) }):{};
+    } catch (e) {
+      hash = {}; // invalid hash query string
+    }
+
+    // update store with values from hash
+    if(hash["perPage"]) {
+      this.$store.commit('setPerPage',  parseInt(hash["perPage"]));
+    }
+    if(hash["currPage"]) {
+      this.$store.commit('setCurrPage',  parseInt(hash["currPage"]));
+    }
+    if(hash["sortBy"]) {
+      this.$store.commit('setSortBy',  hash["sortBy"]);
+    }
+    if(hash["sortDesc"]) {
+      this.$store.commit('setSortDesc',
+                         (hash["sortDesc"].toLowerCase() === 'true'));
+    }
+    if(hash["startDate"]) {
+      this.$store.commit('setStartDate',  new Date(hash["startDate"]));
+    }
+    if(hash["endDate"]) {
+      this.$store.commit('setEndDate',  new Date(hash["endDate"]));
+    }
+    if(hash["refreshTime"]) {
+      this.$store.commit('setRefreshTime', parseInt(hash["refreshTime"]))
     }
   },
   created: function() {
@@ -136,16 +180,19 @@ new Vue({
           job => (job.selected == true)
       );
     },
-    refreshTriggers: function() {
+    selectionChangeTriggers: function() {
       // refresh if any of these change 
       return this.selectedDateRange, this.currPage, this.perPage,
         this.sortBy, this.sortDesc, this.jobType, this.jobStatus;
     }
   },
   watch: {
-    refreshTriggers: function() {
-      this.changeSelection()
+    selectionChangeTriggers: function() {
+      this.changeSelection();
     },
+    refreshTime: function() {
+      this.updateURL();
+    }
   },
   methods: {
     refreshJobs: function() {
@@ -183,16 +230,49 @@ new Vue({
       return promise;
     },
     changeSelection: function() {
-      // load a new week
+      this.updateURL()
       this.$store.commit('setLoading', true);
       let _this = this;
       this.refreshJobs().finally(response => {
         _this.$store.commit('setLoading', false);
       })
     },
-    ...mapMutations([
-      'addVarToState',
-    ]),
+    updateURL: function() {
+      let params = {};
+      params['perPage'] = this.$store.state.perPage;
+      params['currPage'] = this.$store.state.currPage;
+      params['sortBy'] = this.$store.state.sortBy;
+      params['sortDesc'] = this.$store.state.sortDesc;
+      params['startDate'] = this.formatDate(
+        this.$store.state.selectedDateRange.startDate);
+      params['endDate'] = this.formatDate(
+        this.$store.state.selectedDateRange.endDate);
+      params['refreshTime'] = this.$store.state.refreshTime;
+      let queryParams = Object.keys(params).map(function(k) {
+        return encodeURIComponent(k) + '=' + encodeURIComponent(params[k])
+      }).join('&')
+      let url = window.location.href.split("#")[0];
+      window.location.replace(url + "#" + decodeURIComponent(queryParams));
+    },
+    formatDate: function(date) {
+      var d = new Date(date),
+          month = "" + (d.getMonth() + 1),
+          day = "" + d.getDate(),
+          year = d.getFullYear();
+
+      if (month.length < 2) month = "0" + month;
+      if (day.length < 2) day = "0" + day;
+
+      return [year, month, day].join("-");
+    },
+    isValidDate: function(datestr) {
+      try {
+            var timestamp = Date.parse(datestr);
+            return !isNaN(timestamp)
+      } catch(error) {
+        return false
+      }
+    }
   },
   beforeDestroy () {
     clearInterval(this.refreshTimer);

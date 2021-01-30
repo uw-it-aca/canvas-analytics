@@ -16,6 +16,7 @@
     <b-row>
       <b-col xs="12" md="5">
         <b-pagination
+          v-if="totalJobs > 0"
           v-model="currPage"
           :total-rows="totalJobs"
           :per-page="perPage"
