@@ -1,20 +1,7 @@
 <template>
   <b-container fluid>
-    <b-row>
-      <b-col xs="12" md="5">
-        <b-pagination
-          v-model="currPage"
-          :total-rows="totalJobs"
-          :per-page="perPage"
-          aria-controls="jobs-table"
-          size="sm"
-          limit="10"
-          first-number
-          last-number
-          >
-        </b-pagination>
-      </b-col>
-      <b-col xs="12" md="7">
+    <b-row class="mb-4">
+      <b-col xs="12">
         <b-form class="d-flex flex-nowrap" inline>
           <label class="mr-2">Action</label>
           <b-form-select v-model="selectedAction" id="action-select" name="action-select">
@@ -23,6 +10,42 @@
           <b-button @click="handleAction()" variant="primary" size="md">
             Run
           </b-button>
+        </b-form>
+      </b-col>
+    </b-row>
+    <b-row>
+      <b-col xs="12" md="5">
+        <b-pagination
+          v-model="currPage"
+          :total-rows="totalJobs"
+          :per-page="perPage"
+          aria-controls="jobs-table"
+          size="sm"
+          limit="7"
+          first-number
+          last-number
+          >
+        </b-pagination>
+      </b-col>
+      <b-col xs="12" md="7">
+        <b-form class="d-flex flex-nowrap" inline>
+          <label class="ml-2 mr-2">Auto Refresh</label>
+          <b-form-select v-model="refreshTime" id="refresh-select" name="refresh-select">
+            <b-form-select-option :value="5">5s</b-form-select-option>
+            <b-form-select-option :value="10">10s</b-form-select-option>
+            <b-form-select-option :value="15">15s</b-form-select-option>
+            <b-form-select-option :value="20">20s</b-form-select-option>
+            <b-form-select-option :value="25">25s</b-form-select-option>
+            <b-form-select-option :value="30">30s</b-form-select-option>
+            <b-form-select-option :value="99999">Off</b-form-select-option>
+          </b-form-select>
+          <label class="ml-2 mr-2">Page Size</label>
+          <b-form-select v-model="perPage" id="page-size" name="page-size">
+            <b-form-select-option :value="100">100</b-form-select-option>
+            <b-form-select-option :value="250">250</b-form-select-option>
+            <b-form-select-option :value="500">500</b-form-select-option>
+            <b-form-select-option :value="1000">1000</b-form-select-option>
+          </b-form-select>
         </b-form>
       </b-col>
     </b-row>
@@ -178,6 +201,14 @@ export default {
       isLoading: (state) => state.isLoading,
       totalJobs: (state) => state.totalJobs,
     }),
+    refreshTime: {
+      get () {
+        return this.$store.state.refreshTime;
+      },
+      set (value) {
+        this.$store.commit('setRefreshTime', value);
+      }
+    },
     sortBy: {
       get () {
         return this.$store.state.sortBy;

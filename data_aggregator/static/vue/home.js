@@ -33,6 +33,7 @@ const store = new Vuex.Store({
     terms: JSON.parse(document.getElementById('terms').innerHTML), // job terms loaded on page load
     jobTypes: JSON.parse(document.getElementById('jobtypes').innerHTML), // job types loaded on page load
     jobRanges: JSON.parse(document.getElementById('job_ranges').innerHTML),
+    refreshTime: 5,
     // loading state
     isLoading: false, // toggles table loading indicator
     // data returned on each refresh
@@ -51,6 +52,9 @@ const store = new Vuex.Store({
     jobStatus: [],
   },
   mutations: {
+    setRefreshTime(state, value) {
+      state.refreshTime = value;
+    },
     setGetJobsAjaxRequest(state, value) {
       state.getJobsAjaxRequest = value;
     },
@@ -107,7 +111,6 @@ new Vue({
   mixins: [dataMixin, utilitiesMixin],
   data: function() {
     return {
-      refreshTime: 5,
       refreshTimer: null,
     }
   },
@@ -118,6 +121,7 @@ new Vue({
   },
   computed: {
     ...mapState({
+      refreshTime: (state) => state.refreshTime,
       selectedDateRange: (state) => state.selectedDateRange,
       perPage: (state) => state.perPage,
       currPage: (state) => state.currPage,
