@@ -137,6 +137,9 @@
     
         <template #cell(status)="row">
           {{row.item.status}}
+          <b-badge href="#" class="error-badge" v-if="row.item.status == 'failed'" @click="showError(row.item)">
+            error
+          </b-badge>
         </template>
       </b-table>
     </b-row>
@@ -271,6 +274,9 @@ export default {
         });
       }
     },
+    showError: function(job) {
+       alert(job.message);
+    },
     selectAll: function() {
       let _this = this;
       this.jobs.forEach(function (job, index) {
@@ -333,6 +339,12 @@ export default {
     color: #721c24;
     background-color: #f8d7da;
     border-color: #f5c6cb;
+  }
+
+  .error-badge {
+    color: #721c24;
+    background-color:  #f5c6cb;
+    border-color: #f8d7da;
   }
 </style>
 
