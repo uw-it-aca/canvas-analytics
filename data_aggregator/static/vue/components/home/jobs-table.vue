@@ -1,120 +1,148 @@
 <template>
   <b-container fluid>
-    <b-row align-h="between">
-      <b-col xs="12" md="6">
-        <b-pagination
-          v-model="currentPage"
-          :total-rows="totalRows"
-          :per-page="perPage"
-          aria-controls="jobs-table"
-          size="sm"
-          limit="10"
-          first-number
-          last-number
-          >
-        </b-pagination>
-      </b-col>
-      <b-col xs="12" md="6">
+    <b-row class="mb-4">
+      <b-col xs="12">
         <b-form class="d-flex flex-nowrap" inline>
           <label class="mr-2">Action</label>
           <b-form-select v-model="selectedAction" id="action-select" name="action-select">
             <b-form-select-option :value="'restart'">Restart selected (completed/failed)</b-form-select-option>
           </b-form-select>
-          <b-button @click="handleAction()" variant="primary" size="md" class="mr-2">
+          <b-button @click="handleAction()" variant="primary" size="md">
             Run
           </b-button>
         </b-form>
       </b-col>
     </b-row>
     <b-row>
-      <b-col xs="12">
-        <b-table id="jobs-table"
-          :items="jobs"
-          :fields="fields"
+      <b-col xs="12" md="5">
+        <b-pagination
+          v-if="totalJobs > 0"
+          v-model="currPage"
+          :total-rows="totalJobs"
           :per-page="perPage"
-          :busy="isLoading"
-          :current-page="currentPage"
-          :primary-key="'id'"
-          stacked="sm"
-          fixed
-          bordered
-          small
+          aria-controls="jobs-table"
+          size="sm"
+          limit="7"
+          first-number
+          last-number
           >
-
-          <template #table-busy>
-            <div class="text-center text-danger my-2">
-              <b-spinner class="align-middle"></b-spinner>
-              <strong>Loading...</strong>
-            </div>
-          </template>
-
-          <template #table-colgroup="scope">
-            <col
-              v-for="field in scope.fields"
-              :key="field.key"
-              :style="{ width: _getColumnWidth(field.key) }"
-            >
-          </template>
-
-          <template slot="thead-top" slot-scope="{ fields }">
-            <td v-for="field in fields" :key="field.key">
-              <multiselect
-                id="jobstatuses"
-                name="jobstatus"
-                v-if="field.key == 'status'"
-                v-model="filters.job_status"
-                :multiple="true"
-                :options="job_status_options"
-                :searchable="false"
-                :close-on-select="false"
-                :show-labels="false"
-                placeholder="All">
-              </multiselect>
-
-              <multiselect
-                id="jobtypes"
-                name="jobtype"
-                v-if="field.key == 'job_type'"
-                v-model="filters.job_type"
-                :multiple="true"
-                :options="jobtypes"
-                :searchable="false"
-                :close-on-select="false"
-                :show-labels="false"
-                placeholder="All">
-              </multiselect>
-            </td>
-          </template>
-
-          <template #head(selected)="">
-            <input type="checkbox" id="checkbox" @click="selectAll" v-model="allSelected">
-          </template>
-
-          <template #cell(selected)="row">
-            <input type="checkbox" id="checkbox" @click="select" v-model="row.item.selected">
-          </template>
-
-          <template #cell(context)="row">
-            <ul class="list-unstyled m-0">
-              <li v-for="(value, name) in row.item.context" :key="value">
-                {{name}} : {{ value }}
-              </li>
-            </ul>
-          </template>
-
-          <template #cell(start)="row">
-            {{row.item.start | iso_date}}
-          </template>
-
-          <template #cell(end)="row">
-            {{row.item.end | iso_date}}
-          </template>
-      
-          <template #cell(status)="row">
-            {{row.item.status}}
-          </template>
-        </b-table>
+        </b-pagination>
       </b-col>
+      <b-col xs="12" md="7">
+        <b-form class="d-flex flex-nowrap" inline>
+          <label class="ml-2 mr-2">Auto Refresh</label>
+          <b-form-select v-model="refreshTime" id="refresh-select" name="refresh-select">
+            <b-form-select-option :value="5">5s</b-form-select-option>
+            <b-form-select-option :value="10">10s</b-form-select-option>
+            <b-form-select-option :value="15">15s</b-form-select-option>
+            <b-form-select-option :value="20">20s</b-form-select-option>
+            <b-form-select-option :value="25">25s</b-form-select-option>
+            <b-form-select-option :value="30">30s</b-form-select-option>
+            <b-form-select-option :value="99999">Off</b-form-select-option>
+          </b-form-select>
+          <label class="ml-2 mr-2">Page Size</label>
+          <b-form-select v-model="perPage" id="page-size" name="page-size">
+            <b-form-select-option :value="100">100</b-form-select-option>
+            <b-form-select-option :value="250">250</b-form-select-option>
+            <b-form-select-option :value="500">500</b-form-select-option>
+            <b-form-select-option :value="1000">1000</b-form-select-option>
+          </b-form-select>
+        </b-form>
+      </b-col>
+    </b-row>
+    <b-row>
+      <b-table id="jobs-table"
+        :items="jobs"
+        :fields="fields"
+        :per-page="0"
+        :busy="isLoading"
+        :current-page="currPage"
+        :primary-key="'id'"
+        :no-local-sorting="true"
+        :sort-by.sync="sortBy"
+        :sort-desc.sync="sortDesc"
+        stacked="sm"
+        fixed
+        bordered
+        small
+        >
+
+        <template #table-busy>
+          <div class="text-center text-danger my-2">
+            <b-spinner class="align-middle"></b-spinner>
+            <strong>Loading...</strong>
+          </div>
+        </template>
+
+        <template #table-colgroup="scope">
+          <col
+            v-for="field in scope.fields"
+            :key="field.key"
+            :style="{ width: _getColumnWidth(field.key) }"
+          >
+        </template>
+
+        <template slot="thead-top" slot-scope="{ fields }">
+          <td v-for="field in fields" :key="field.key">
+            <multiselect
+              id="jobstatuses"
+              name="jobstatus"
+              v-if="field.key == 'status'"
+              v-model="jobStatus"
+              :multiple="true"
+              :options="jobStatusOptions"
+              :searchable="false"
+              :close-on-select="false"
+              :show-labels="false"
+              placeholder="All">
+            </multiselect>
+
+            <multiselect
+              id="jobTypes"
+              name="jobtype"
+              v-if="field.key == 'job_type'"
+              v-model="jobType"
+              :multiple="true"
+              :options="jobTypes"
+              :searchable="false"
+              :close-on-select="false"
+              :show-labels="false"
+              placeholder="All">
+            </multiselect>
+          </td>
+        </template>
+
+        <template #head(selected)="">
+          <input type="checkbox" id="checkbox" @click="selectAll" v-model="allSelected">
+        </template>
+
+        <template #cell(selected)="row">
+          <input type="checkbox" id="checkbox" @click="select" v-model="row.item.selected">
+        </template>
+
+        <template #cell(context)="row">
+          <ul class="list-unstyled m-0">
+            <li v-for="(value, name) in row.item.context" :key="value">
+              {{name}} : {{ value }}
+            </li>
+          </ul>
+        </template>
+
+        <template #cell(start)="row">
+          {{row.item.start | iso_date}}
+        </template>
+
+        <template #cell(end)="row">
+          {{row.item.end | iso_date}}
+        </template>
+    
+        <template #cell(status)="row">
+          {{row.item.status}}
+          <b-badge href="#" class="error-badge" v-if="row.item.status == 'failed'" @click="showError(row.item)">
+            error
+          </b-badge>
+        </template>
+      </b-table>
     </b-row>
   </b-container>
 </template>
@@ -127,7 +155,7 @@ import utilitiesMixin from '../../mixins/utilities_mixin';
 export default {
   name: 'jobs-table',
   mixins: [dataMixin, utilitiesMixin],
-  props: ['jobs', 'selectedJobs'],
+  props: ['selectedJobs'],
   created: function() {
     // default to all job types
     this.$store.commit('setJobType', []);
@@ -147,7 +175,7 @@ export default {
         },
         { key: 'context',
           label: 'Job Context',
-          sortable: true,
+          sortable: false,
         },
         { key: 'status',
           label: 'Job Status',
@@ -165,22 +193,74 @@ export default {
           sortable: true,
         },
       ],
-      perPage: 250,
-      currentPage: 1,
       selectedAction: 'restart',
       allSelected: false,
-      job_status_options: ['pending', 'running', 'completed', 'failed']
+      jobStatusOptions: ['pending', 'running', 'completed', 'failed']
     }
   },
   computed: {
     ...mapState({
-      filters: (state) => state.filters,
-      jobtypes: (state) => state.jobtypes,
+      jobs: (state) => state.jobs,
+      jobTypes: (state) => state.jobTypes,
       isLoading: (state) => state.isLoading,
-      totalRows() {
-        return this.jobs.length
-      }
+      totalJobs: (state) => state.totalJobs,
     }),
+    refreshTime: {
+      get () {
+        return this.$store.state.refreshTime;
+      },
+      set (value) {
+        this.$store.commit('setRefreshTime', value);
+      }
+    },
+    sortBy: {
+      get () {
+        return this.$store.state.sortBy;
+      },
+      set (value) {
+        this.$store.commit('setSortBy', value);
+      }
+    },
+    sortDesc: {
+      get () {
+        return this.$store.state.sortDesc;
+      },
+      set (value) {
+        this.$store.commit('setSortDesc', value);
+      }
+    },
+    jobStatus: {
+      get () {
+        return this.$store.state.jobStatus;
+      },
+      set (value) {
+        this.$store.commit('setJobStatus', value);
+      }
+    },
+    jobType: {
+      get () {
+        return this.$store.state.jobType;
+      },
+      set (value) {
+        this.$store.commit('setJobType', value);
+      }
+    },
+    perPage: {
+      get () {
+        return this.$store.state.perPage;
+      },
+      set (value) {
+        this.$store.commit('setPerPage', value);
+      }
+    },
+    currPage: {
+      get () {
+        return this.$store.state.currPage;
+      },
+      set (value) {
+        this.$store.commit('setCurrPage', value);
+      }
+    },
   },
   methods: {
     handleAction: function() {
@@ -195,6 +275,9 @@ export default {
         });
       }
     },
+    showError: function(job) {
+       alert(job.message);
+    },
     selectAll: function() {
       let _this = this;
       this.jobs.forEach(function (job, index) {
@@ -204,18 +287,18 @@ export default {
     select: function() {
       this.allSelected = false;
     },
-    _getColumnWidth: function(field_key) {
-      if (field_key == "selected")
+    _getColumnWidth: function(fieldKey) {
+      if (fieldKey == "selected")
         return "25px";
-      else if(field_key == "job_type")
+      else if(fieldKey == "job_type")
         return "125%";
-      else if(field_key == "context")
+      else if(fieldKey == "context")
         return "150%";
-      else if(field_key == "status")
+      else if(fieldKey == "status")
         return "200%";
-      else if (field_key == "start")
+      else if (fieldKey == "start")
         return "150%";
-      else if (field_key == "end")
+      else if (fieldKey == "end")
         return "150%";
       else
         return "100%";
@@ -257,6 +340,12 @@ export default {
     color: #721c24;
     background-color: #f8d7da;
     border-color: #f5c6cb;
+  }
+
+  .error-badge {
+    color: #721c24;
+    background-color:  #f5c6cb;
+    border-color: #f8d7da;
   }
 </style>
 
