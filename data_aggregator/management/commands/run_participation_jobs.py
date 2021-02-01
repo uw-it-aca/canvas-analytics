@@ -12,14 +12,18 @@ class Command(RunJobCommand):
             "be run as a cron that is constantly checking for new jobs.")
 
     @transaction.atomic
-    def work(self, job):
+    def write_participations(self, job, partics):
         # delete existing participation data in case of a job restart
         old_participation = Participation.objects.filter(job=job)
         old_participation.delete()
+        # save participation data
+        Participation.objects.bulk_create(partics)
+
+    def work(self, job):
         # load participation data
         canvas_course_id = job.context["canvas_course_id"]
         partics = (
             CanvasDAO().get_participation(canvas_course_id))
         for partic in partics:
             partic.job = job
-        Participation.objects.bulk_create(partics)
+        self.write_participations(job, partics)
