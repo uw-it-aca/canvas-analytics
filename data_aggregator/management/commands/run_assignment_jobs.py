@@ -12,14 +12,18 @@ class Command(RunJobCommand):
             "be run as a cron that is constantly checking for new jobs.")
 
     @transaction.atomic
-    def work(self, job):
+    def write_assignments(self, job, assignments):
         # delete existing assignment data in case of a job restart
         old_assignments = Assignment.objects.filter(job=job)
         old_assignments.delete()
+        # save assignment data
+        Assignment.objects.bulk_create(assignments)
+
+    def work(self, job):
         # load assignment data
         canvas_course_id = job.context["canvas_course_id"]
         assignments = (
             CanvasDAO().get_assignments(canvas_course_id))
         for assign in assignments:
             assign.job = job
-        Assignment.objects.bulk_create(assignments)
+        self.write_assignments(job, assignments)
