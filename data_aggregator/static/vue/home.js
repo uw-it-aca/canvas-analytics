@@ -149,18 +149,33 @@ new Vue({
                          (hash["sortDesc"].toLowerCase() === 'true'));
     }
     if(hash["startDate"]) {
-      this.$store.commit('setStartDate',  new Date(hash["startDate"]));
+      let s = hash["startDate"].match(/\d+/g);
+      this.$store.commit('setStartDate',
+                         new Date(parseInt(s[0]),
+                                  parseInt(s[1])-1,
+                                  parseInt(s[2])));
     }
     if(hash["endDate"]) {
-      this.$store.commit('setEndDate',  new Date(hash["endDate"]));
+      let s = hash["endDate"].match(/\d+/g);
+      this.$store.commit('setEndDate',
+                         new Date(parseInt(s[0]),
+                                  parseInt(s[1])-1,
+                                  parseInt(s[2])));
     }
     if(hash["refreshTime"]) {
       this.$store.commit('setRefreshTime', parseInt(hash["refreshTime"]))
+    }
+    if(hash["jobType"]) {
+      this.$store.commit('setJobType', hash["jobType"].split(','))
+    }
+    if(hash["jobStatus"]) {
+      this.$store.commit('setJobStatus', hash["jobStatus"].split(','))
     }
   },
   created: function() {
     document.title = 'Canvas Data Aggregator Jobs: ' + store.state['pageTitle'];
     document.getElementById('vue_root').hidden = false;
+    this.changeSelection() // run without delay and with loading indicators 
     this.refreshTimer = setInterval(this.refreshJobs, this.refreshTime * 1000);
   },
   computed: {
@@ -248,6 +263,10 @@ new Vue({
       params['endDate'] = this.formatDate(
         this.$store.state.selectedDateRange.endDate);
       params['refreshTime'] = this.$store.state.refreshTime;
+      if(this.$store.state.jobType.length > 0)
+        params['jobType'] = this.$store.state.jobType.join(",");
+      if(this.$store.state.jobStatus.length > 0)
+        params['jobStatus'] = this.$store.state.jobStatus.join(",");
       let queryParams = Object.keys(params).map(function(k) {
         return encodeURIComponent(k) + '=' + encodeURIComponent(params[k])
       }).join('&')
