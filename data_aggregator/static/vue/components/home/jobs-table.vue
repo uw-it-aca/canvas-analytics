@@ -157,12 +157,6 @@ export default {
   name: 'jobs-table',
   mixins: [dataMixin, utilitiesMixin],
   props: ['selectedJobs'],
-  created: function() {
-    // default to all job types
-    this.$store.commit('setJobType', []);
-    // default to all job statuses
-    this.$store.commit('setJobStatus', []);
-  },
   data: function() {
     return {
       fields: [
