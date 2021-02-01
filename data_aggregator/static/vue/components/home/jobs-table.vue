@@ -10,6 +10,7 @@
           <b-button @click="handleAction()" variant="primary" size="md">
             Run
           </b-button>
+          <b-form-checkbox v-show="selectedAction == 'restart'" v-model="ignoreStatus" class="ml-2" switch size="md">Ignore status</b-form-checkbox>
         </b-form>
       </b-col>
     </b-row>
@@ -194,6 +195,7 @@ export default {
         },
       ],
       selectedAction: 'restart',
+      ignoreStatus: false,
       allSelected: false,
       jobStatusOptions: ['pending', 'running', 'completed', 'failed']
     }
@@ -266,8 +268,11 @@ export default {
     handleAction: function() {
       if (this.selectedAction == 'restart') {
         let _this = this;
-        let jobsToRestart = this.selectedJobs.filter(
-          job => (job.status == "completed" ||  job.status == "failed"));
+        let jobsToRestart = this.selectedJobs;
+        if (!this.ignoreStatus) {
+          jobsToRestart = jobsToRestart.filter(
+            job => (job.status == "completed" ||  job.status == "failed"));
+        }
         this.restartJobs(jobsToRestart).then(function() {
           jobsToRestart.forEach(function (job, index) {
             _this._setLocalPendingStatus(job);
