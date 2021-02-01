@@ -12,6 +12,7 @@ ingress:
         - "/"
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt
+    nginx.ingress.kubernetes.io/client-body-buffer-size: "16K"
 lifecycle:
   enabled: true
   preStop:
