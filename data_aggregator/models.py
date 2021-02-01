@@ -110,6 +110,9 @@ class Job(models.Model):
     @property
     def status(self):
         if (not self.pid and not self.start and not self.end and
+                not self.message) and self.target_date_end < timezone.now():
+            return "expired"
+        elif (not self.pid and not self.start and not self.end and
                 not self.message):
             return "pending"
         elif (self.pid and self.start and not self.end and not self.message):

@@ -197,7 +197,7 @@ export default {
       selectedAction: 'restart',
       ignoreStatus: false,
       allSelected: false,
-      jobStatusOptions: ['pending', 'running', 'completed', 'failed']
+      jobStatusOptions: ['pending', 'running', 'completed', 'failed', 'expired']
     }
   },
   computed: {
@@ -345,6 +345,12 @@ export default {
     color: #721c24;
     background-color: #f8d7da;
     border-color: #f5c6cb;
+  }
+
+  .table-expired {
+    color: #721c24;
+    background-color: #f3f8d7;
+    border-color: #eef5c6;
   }
 
   .error-badge {
