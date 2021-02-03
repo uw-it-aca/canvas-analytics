@@ -43,7 +43,7 @@ const store = new Vuex.Store({
     perPage: 250,
     currPage: 1,
     sortBy: 'status',
-    sortDesc: null,
+    sortDesc: false,
     selectedDateRange: {
       startDate: null,
       endDate: null,
