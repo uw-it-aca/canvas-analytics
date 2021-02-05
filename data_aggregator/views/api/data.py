@@ -14,16 +14,58 @@ class JobFilter(RESTDispatch):
                     selected=Value(False, BooleanField())
                 ))
 
-        if 'date_range' in filters:
+        if filters.get('dateRange'):
             jobs = jobs.filter(
-                target_date_start__lte=filters["date_range"]["endDate"])
+                target_date_start__lte=filters["dateRange"]["endDate"])
             jobs = jobs.filter(
-                target_date_end__gte=filters["date_range"]["startDate"])
+                target_date_end__gte=filters["dateRange"]["startDate"])
 
-        jobs = jobs.values("id", "context", "job_type", "pid",
-                           "start", "end", "message", "created",
-                           "selected")
-        return self.json_response(content={"jobs": list(jobs)})
+        if filters.get('jobType'):
+            jobs = jobs.filter(
+                type__type__in=filters["jobType"])
+
+        total_jobs = 0
+        job_dicts = []
+        for job in jobs:
+            jd = {}
+            jd["id"] = job.id
+            jd["context"] = job.context
+            jd["job_type"] = job.job_type
+            jd["pid"] = job.pid
+            jd["start"] = job.start.isoformat() if job.start else None
+            jd["end"] = job.end.isoformat() if job.end else None
+            jd["message"] = job.message
+            jd["created"] = job.created.isoformat() if job.created else None
+            jd["status"] = job.status
+            jd["selected"] = job.selected
+            if filters.get('jobStatus'):
+                if job.status in filters["jobStatus"]:
+                    job_dicts.append(jd)
+                    total_jobs += 1
+            else:
+                job_dicts.append(jd)
+                total_jobs += 1
+
+        # sort in code since the django doesn't support sorting by properties
+        sort_by = filters.get("sortBy")
+        if sort_by:
+            sort_desc = True if filters.get("sortDesc") else False
+            job_dicts = sorted(job_dicts,
+                               key=lambda job: ("" if job[sort_by] is None
+                                                else job[sort_by]),
+                               reverse=sort_desc)
+
+        # calculate pagination
+        currPage = filters["currPage"]
+        perPage = filters["perPage"]
+        page_start = (currPage - 1) * perPage
+        page_end = (currPage * perPage) - 1
+
+        # get current page
+        job_dicts = job_dicts[page_start:page_end]
+
+        return self.json_response(content={"jobs": job_dicts,
+                                           "total_jobs": total_jobs})
 
 
 class JobReset(RESTDispatch):

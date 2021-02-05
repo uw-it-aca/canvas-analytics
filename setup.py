@@ -24,7 +24,7 @@ setup(
         'Django>=3.0,<3.2',
         'UW-RestClients-SWS>=2.3.3,<3.0',
         'UW-RestClients-PWS>=2.1.2,<3.0',
-        'UW-RestClients-Canvas>=1.1.12,<2.0',
+        'UW-RestClients-Canvas>=1.1.13,<2.0',
         'UW-Django-SAML2>=1.5.3,<2.0',
         'django-webpack-loader>=0.7.0',
     ],
