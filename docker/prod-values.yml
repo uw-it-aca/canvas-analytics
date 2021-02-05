@@ -57,10 +57,10 @@ memcached:
 cronjob:
   enabled: false
   jobs:
-    - name: create-update-courses
+    - name: create-or-update-courses
       schedule: "0 15 * * *" # At 7:00am PST
       command: ["/scripts/management_command.sh"]
-      args: ["create_update_courses"]
+      args: ["create_or_update_courses"]
     - name: create-assignment-jobs
       schedule: "0 17 * * 6" # At 9:00am PST on Saturday
       command: ["/scripts/management_command.sh"]
