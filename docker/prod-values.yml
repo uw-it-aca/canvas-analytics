@@ -55,7 +55,7 @@ image:
 memcached:
   enabled: false
 cronjob:
-  enabled: true
+  enabled: false
   jobs:
     - name: create-update-courses
       schedule: "0 15 * * *" # At 7:00am PST
@@ -70,7 +70,7 @@ cronjob:
       command: ["/scripts/management_command.sh"]
       args: ["create_participation_jobs"]
 daemon:
-  enabled: true
+  enabled: false
   daemons:
     - name: run-assignment-jobs
       command: ["/scripts/management_daemon.sh"]
