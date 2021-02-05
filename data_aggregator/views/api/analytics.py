@@ -1,19 +1,26 @@
 from django.db.models import F
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.renderers import JSONRenderer
-from rest_framework.response import Response
-from rest_framework.views import APIView
+from rest_framework.generics import GenericAPIView
 from data_aggregator.models import Assignment, Participation
 from data_aggregator.serializers import ParticipationSerializer, \
     AssignmentSerializer
 
 """
-Accounts API
+Analytics API
 """
 
 
-class BaseAnalyticsAPIView(APIView):
+class AnalyticsResultsSetPagination(PageNumberPagination):
+    page_size = 1000
+    page_size_query_param = 'page_size'
+    max_page_size = 2500
+
+
+class BaseAnalyticsAPIView(GenericAPIView):
 
     renderer_classes = [JSONRenderer]
+    pagination_class = AnalyticsResultsSetPagination
 
     def get_assignment_queryset(self):
         queryset = (
@@ -53,8 +60,9 @@ class AccountParticipationView(BaseAnalyticsAPIView):
         if week:
             queryset = queryset.filter(week__week=week)
 
-        serializer = ParticipationSerializer(queryset, many=True)
-        return Response(serializer.data)
+        paginated_queryset = self.paginate_queryset(queryset)
+        serializer = ParticipationSerializer(paginated_queryset, many=True)
+        return self.get_paginated_response(serializer.data)
 
 
 class AccountAssignmentView(BaseAnalyticsAPIView):
@@ -78,8 +86,9 @@ class AccountAssignmentView(BaseAnalyticsAPIView):
         if week:
             queryset = queryset.filter(week__week=week)
 
-        serializer = AssignmentSerializer(queryset, many=True)
-        return Response(serializer.data)
+        paginated_queryset = self.paginate_queryset(queryset)
+        serializer = AssignmentSerializer(paginated_queryset, many=True)
+        return self.get_paginated_response(serializer.data)
 
 
 class TermParticipationView(BaseAnalyticsAPIView):
@@ -99,8 +108,9 @@ class TermParticipationView(BaseAnalyticsAPIView):
         if week:
             queryset = queryset.filter(week__week=week)
 
-        serializer = ParticipationSerializer(queryset, many=True)
-        return Response(serializer.data)
+        paginated_queryset = self.paginate_queryset(queryset)
+        serializer = ParticipationSerializer(paginated_queryset, many=True)
+        return self.get_paginated_response(serializer.data)
 
 
 class TermAssignmentView(BaseAnalyticsAPIView):
@@ -119,8 +129,10 @@ class TermAssignmentView(BaseAnalyticsAPIView):
         week = request.GET.get("week")
         if week:
             queryset = queryset.filter(week__week=week)
-        serializer = AssignmentSerializer(queryset, many=True)
-        return Response(serializer.data)
+
+        paginated_queryset = self.paginate_queryset(queryset)
+        serializer = AssignmentSerializer(paginated_queryset, many=True)
+        return self.get_paginated_response(serializer.data)
 
 
 class StudentParticipationView(BaseAnalyticsAPIView):
@@ -144,8 +156,9 @@ class StudentParticipationView(BaseAnalyticsAPIView):
         if week:
             queryset = queryset.filter(week__week=week)
 
-        serializer = ParticipationSerializer(queryset, many=True)
-        return Response(serializer.data)
+        paginated_queryset = self.paginate_queryset(queryset)
+        serializer = ParticipationSerializer(paginated_queryset, many=True)
+        return self.get_paginated_response(serializer.data)
 
 
 class StudentAssignmentView(BaseAnalyticsAPIView):
@@ -169,5 +182,6 @@ class StudentAssignmentView(BaseAnalyticsAPIView):
         if week:
             queryset = queryset.filter(week__week=week)
 
-        serializer = AssignmentSerializer(queryset, many=True)
-        return Response(serializer.data)
+        paginated_queryset = self.paginate_queryset(queryset)
+        serializer = AssignmentSerializer(paginated_queryset, many=True)
+        return self.get_paginated_response(serializer.data)
