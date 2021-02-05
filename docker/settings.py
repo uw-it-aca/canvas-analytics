@@ -4,6 +4,7 @@ import os
 INSTALLED_APPS += [
     'data_aggregator.apps.DataAggregatorConfig',
     'webpack_loader',
+    'rest_framework'
 ]
 
 if os.getenv('ENV') == 'localdev':
