@@ -1,18 +1,14 @@
+import utilities from "../../js/utilities.js";
+
 const utilitiesMixin = {
     filters: {
-        date: function(value) {
-          var options = {
-              year: "numeric",
-              month: "2-digit",
-              day: "numeric"
-          };
-          return value ? new Date(value).toLocaleString('en-US', options) : '';
+        short_date: function(date) {
+            return utilities.toIsoDateStr(date).split("T")[0].replaceAll("-", "/");
         },
-        iso_date: function(value) {
+        iso_date: function(date) {
             let iso_date = '';
-            if(value) {
-              iso_date = new Date(new Date(value).toString().split('GMT')[0]+' UTC')
-                                  .toISOString().split('.')[0]+'Z';
+            if(date) {
+                iso_date = utilities.toIsoDateStr(date);
             }
             return iso_date;
         }

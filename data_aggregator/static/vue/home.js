@@ -3,13 +3,13 @@ import Vuex from 'vuex';
 import axios from 'axios';
 
 // custom components
+import ActiveRangePicker from './components/home/active-range-picker.vue';
 import JobsTable from './components/home/jobs-table.vue';
 import JobsFilter from './components/home/jobs-filter.vue';
-import JobsRangePicker from './components/home/jobs-range-picker.vue';
 
+Vue.component('active-range-picker', ActiveRangePicker);
 Vue.component('jobs-table', JobsTable);
 Vue.component('jobs-filter', JobsFilter);
-Vue.component('jobs-range-picker', JobsRangePicker);
 
 // date range picker component - https://innologica.github.io/vue2-daterange-picker/
 import DateRangePicker from 'vue2-daterange-picker';
@@ -44,12 +44,16 @@ const store = new Vuex.Store({
     currPage: 1,
     sortBy: 'status',
     sortDesc: false,
-    selectedDateRange: {
+    jobType: [],
+    jobStatus: [],
+    activeDateRange: {
       startDate: null,
       endDate: null,
     },
-    jobType: [],
-    jobStatus: [],
+    jobDateRange: {
+      startDate: null,
+      endDate: null,
+    }
   },
   mutations: {
     setRefreshTime(state, value) {
@@ -61,8 +65,8 @@ const store = new Vuex.Store({
     setLoading(state, value) {
       state.isLoading = value;
     },
-    setSelectedDateRange(state, value) {
-      state.selectedDateRange = value;
+    setActiveDateRange(state, value) {
+      state.activeDateRange = value;
     },
     setJobs(state, value) {
       state.jobs = value;
@@ -88,14 +92,23 @@ const store = new Vuex.Store({
     setSortDesc(state, value) {
       state.sortDesc = value;
     },
-    setSelectedDateRange(state, value) {
-      state.selectedDateRange = value;
+    setActiveDateRange(state, value) {
+      state.activeDateRange = value;
     },
-    setStartDate(state, value) {
-      state.selectedDateRange.startDate = value;
+    setActiveRangeStartDate(state, value) {
+      state.activeDateRange.startDate = value;
     },
-    setEndDate(state, value) {
-      state.selectedDateRange.endDate = value;
+    setActiveRangeEndDate(state, value) {
+      state.activeDateRange.endDate = value;
+    },
+    setJobDateRange(state, value) {
+      state.jobDateRange = value;
+    },
+    setJobRangeStartDate(state, value) {
+      state.jobDateRange.startDate = value;
+    },
+    setJobRangeEndDate(state, value) {
+      state.jobDateRange.endDate = value;
     },
     addVarToState(state, {name, value}) {
       state[name] = value;
@@ -109,7 +122,8 @@ const store = new Vuex.Store({
 // initializae root component 
 import dataMixin from './mixins/data_mixin';
 import utilitiesMixin from './mixins/utilities_mixin';
-import {mapState, mapMutations} from 'vuex';
+import utilities from "../js/utilities.js";
+import {mapState} from 'vuex';
 
 new Vue({
   el: '#vue_root',
@@ -149,19 +163,23 @@ new Vue({
                          (hash["sortDesc"].toLowerCase() === 'true'));
     }
     if(hash["startDate"]) {
-      let s = hash["startDate"].match(/\d+/g);
-      this.$store.commit('setStartDate',
-                         new Date(parseInt(s[0]),
-                                  parseInt(s[1])-1,
-                                  parseInt(s[2])));
+      let dateStr = utilities.toIsoDateStr(utilities.parseIsoDateStr(hash["startDate"]));
+      this.$store.commit('setActiveRangeStartDate', dateStr);
     }
     if(hash["endDate"]) {
-      let s = hash["endDate"].match(/\d+/g);
-      this.$store.commit('setEndDate',
-                         new Date(parseInt(s[0]),
-                                  parseInt(s[1])-1,
-                                  parseInt(s[2])));
+      let dateStr = utilities.toIsoDateStr(utilities.parseIsoDateStr(hash["endDate"]));
+      this.$store.commit('setActiveRangeEndDate', dateStr);
     }
+    if(hash["jobStartDate"]) {
+      let dateStr = utilities.toIsoDateStr(utilities.parseIsoDateStr(hash["jobStartDate"]));
+      this.$store.commit('setJobRangeStartDate', dateStr);
+    }
+
+    if(hash["jobEndDate"]) {
+      let dateStr = utilities.toIsoDateStr(utilities.parseIsoDateStr(hash["jobEndDate"]));
+      this.$store.commit('setJobRangeEndDate', dateStr);
+  }
+
     if(hash["refreshTime"]) {
       this.$store.commit('setRefreshTime', parseInt(hash["refreshTime"]))
     }
@@ -181,7 +199,8 @@ new Vue({
   computed: {
     ...mapState({
       refreshTime: (state) => state.refreshTime,
-      selectedDateRange: (state) => state.selectedDateRange,
+      activeDateRange: (state) => state.activeDateRange,
+      jobDateRange: (state) => state.jobDateRange,
       perPage: (state) => state.perPage,
       currPage: (state) => state.currPage,
       sortBy: (state) => state.sortBy,
@@ -196,9 +215,10 @@ new Vue({
       );
     },
     selectionChangeTriggers: function() {
-      // refresh if any of these change 
-      return this.selectedDateRange, this.currPage, this.perPage,
-        this.sortBy, this.sortDesc, this.jobType, this.jobStatus;
+      // refresh if any of these change
+      return this.activeDateRange, this.jobDateRange,
+        this.currPage, this.perPage, this.sortBy, this.sortDesc, this.jobType,
+        this.jobStatus;
     }
   },
   watch: {
@@ -207,18 +227,27 @@ new Vue({
     },
     refreshTime: function() {
       this.updateURL();
+      clearInterval(this.refreshTimer);
+      this.refreshTimer = setInterval(this.refreshJobs, this.refreshTime * 1000);
     }
   },
   methods: {
     refreshJobs: function() {
       let promise = this.getJobs({
-        "dateRange": this.selectedDateRange,
+        "activeDateRange": {
+          "startDate": utilities.parseIsoDateStr(this.activeDateRange.startDate),
+          "endDate": utilities.parseIsoDateStr(this.activeDateRange.endDate),
+        },
+        "jobDateRange": {
+          "startDate": utilities.parseIsoDateStr(this.jobDateRange.startDate),
+          "endDate": utilities.parseIsoDateStr(this.jobDateRange.endDate),
+        },
         "perPage": this.perPage,
         "currPage": this.currPage,
         "sortBy": this.sortBy,
         "sortDesc": this.sortDesc,
         "jobType": this.jobType,
-        "jobStatus": this.jobStatus
+        "jobStatus": this.jobStatus,
       })
       .then(response => {
         if (response.data) {
@@ -258,40 +287,27 @@ new Vue({
       params['currPage'] = this.$store.state.currPage;
       params['sortBy'] = this.$store.state.sortBy;
       params['sortDesc'] = this.$store.state.sortDesc;
-      params['startDate'] = this.formatDate(
-        this.$store.state.selectedDateRange.startDate);
-      params['endDate'] = this.formatDate(
-        this.$store.state.selectedDateRange.endDate);
+      params['startDate'] = utilities.toIsoDateStr(
+        this.$store.state.activeDateRange.startDate);
+      params['endDate'] = utilities.toIsoDateStr(
+        this.$store.state.activeDateRange.endDate);
       params['refreshTime'] = this.$store.state.refreshTime;
       if(this.$store.state.jobType.length > 0)
         params['jobType'] = this.$store.state.jobType.join(",");
       if(this.$store.state.jobStatus.length > 0)
         params['jobStatus'] = this.$store.state.jobStatus.join(",");
+      if(this.$store.state.jobDateRange.startDate)
+        params['jobStartDate'] = utilities.toIsoDateStr(
+          this.$store.state.jobDateRange.startDate);
+      if(this.$store.state.jobDateRange.endDate)
+        params['jobEndDate'] = utilities.toIsoDateStr(
+          this.$store.state.jobDateRange.endDate)
       let queryParams = Object.keys(params).map(function(k) {
         return encodeURIComponent(k) + '=' + encodeURIComponent(params[k])
       }).join('&')
       let url = window.location.href.split("#")[0];
       window.location.replace(url + "#" + decodeURIComponent(queryParams));
     },
-    formatDate: function(date) {
-      var d = new Date(date),
-          month = "" + (d.getMonth() + 1),
-          day = "" + d.getDate(),
-          year = d.getFullYear();
-
-      if (month.length < 2) month = "0" + month;
-      if (day.length < 2) day = "0" + day;
-
-      return [year, month, day].join("-");
-    },
-    isValidDate: function(datestr) {
-      try {
-            var timestamp = Date.parse(datestr);
-            return !isNaN(timestamp)
-      } catch(error) {
-        return false
-      }
-    }
   },
   beforeDestroy () {
     clearInterval(this.refreshTimer);

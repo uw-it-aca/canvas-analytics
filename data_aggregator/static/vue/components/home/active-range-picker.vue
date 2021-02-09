@@ -5,16 +5,17 @@
           :locale-data="dateLocale"
           :singleDatePicker="false"
           :showDropdowns="true"
-          :timePicker="false"
+          :timePicker="true"
+          :timePicker24Hour="true"
           :showWeekNumbers="true"
           :autoApply="true"
           :ranges="dateRanges"
           :date-format="dateFormat"
-          v-model="selectedDateRange"
+          v-model="activeDateRange"
           class="mr-2"
   >
     <template v-slot:input="picker" style="min-width: 350px;">
-        {{ picker.startDate | date }} - {{ picker.endDate | date}}
+        {{ picker.startDate | iso_date }} - {{ picker.endDate | iso_date}}
     </template>
 
     <template #ranges="ranges">
@@ -22,7 +23,7 @@
         <ul class="ranges-ul">
           <li v-for="(range, name) in ranges.ranges" :key="name" @click="ranges.clickRange(range)">
             <b>{{name}}</b><br/>
-            <small class="text-muted">{{range[0] | date}} - {{range[1] | date }}</small>
+            <small class="text-muted">{{range[0] | short_date}} - {{range[1] | short_date }}</small>
           </li>
         </ul>
       </div>
@@ -35,37 +36,22 @@
 import {mapState, mapMutations} from 'vuex';
 import dataMixin from '../../mixins/data_mixin';
 import utilitiesMixin from '../../mixins/utilities_mixin';
+import datePickerMixin from '../../mixins/datepicker_mixin';
 
 export default {
-  name: 'jobs-range-picker',
-  mixins: [dataMixin, utilitiesMixin],
-  data: function() {
-    return {
-      dateLocale: {
-        direction: 'ltr',
-        format: 'mm/dd/yyyy',
-        separator: ' - ',
-        applyLabel: 'Apply',
-        cancelLabel: 'Cancel',
-        weekLabel: 'W',
-        customRangeLabel: 'Custom Range',
-        daysOfWeek: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-        monthNames: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-        firstDay: 0
-      },
-    }
-  },
+  name: 'active-range-picker',
+  mixins: [dataMixin, utilitiesMixin, datePickerMixin],
   computed: {
     ...mapState({
       jobRanges: (state) => state.jobRanges,
       terms: (state) => state.terms,
     }),
-    selectedDateRange: {
+    activeDateRange: {
       get () {
-        return this.$store.state.selectedDateRange;
+        return this.$store.state.activeDateRange;
       },
       set (value) {
-        this.$store.commit('setSelectedDateRange', value);
+        this.$store.commit('setActiveDateRange', value);
       }
     },
     dateRanges: function() {
@@ -79,7 +65,7 @@ export default {
   },
   created: function() {
     // default to current month
-    if (!this.selectedDateRange.startDate && !this.selectedDateRange.endDate) {
+    if (!this.activeDateRange.startDate && !this.activeDateRange.endDate) {
       let today = new Date();
       let firstDayMonth = new Date(today.getFullYear(), today.getMonth(), 1);
       let lastDayMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
@@ -87,16 +73,15 @@ export default {
         startDate: firstDayMonth,
         endDate: lastDayMonth
       };
-      this.selectedDateRange = defaultRange;
+      this.activeDateRange = defaultRange;
     }
   },
   methods: {
     dateFormat (classes, date) {
-      classes['contains-jobs'] = this.doesDateHaveJobs(date);
+      classes['contains-jobs'] = this.doesDateHaveActiveJobs(date);
       return classes;
-      
     },
-    doesDateHaveJobs: function(date) {
+    doesDateHaveActiveJobs: function(date) {
       for (var idx in this.jobRanges) {
         var jobRange = this.jobRanges[idx];
         var calDay = new Date(new Date(date).getFullYear(),
@@ -115,7 +100,7 @@ export default {
       return false;
     },
     ...mapMutations([
-      'setSelectedDateRange',
+      'setActiveDateRange',
     ]),
   },
 };

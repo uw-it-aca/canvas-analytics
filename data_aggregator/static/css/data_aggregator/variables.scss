@@ -1,9 +1,5 @@
-@use "sass:map";
 @import "~bootstrap/scss/functions";
 @import "~bootstrap/scss/variables";
-
-// override max width of containers
-$container-max-widths: map.merge($container-max-widths, (xl: 1400px));
 
 // enable responsive font sizing
 // $enable-responsive-font-sizes: true;
