@@ -28,6 +28,14 @@ class JobView(RESTDispatch):
             jobs = jobs.filter(
                 target_date_end__gte=filters["dateRange"]["startDate"])
 
+        jobRunningDateRange = filters.get('jobRunningDateRange')
+        if jobRunningDateRange.get("startDate") and \
+                jobRunningDateRange.get("endDate"):
+            jobs = jobs.filter(
+                start__lte=jobRunningDateRange["endDate"])
+            jobs = jobs.filter(
+                end__gte=jobRunningDateRange["startDate"])
+
         if filters.get('jobType'):
             jobs = jobs.filter(
                 type__type__in=filters["jobType"])

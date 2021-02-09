@@ -50,6 +50,10 @@ const store = new Vuex.Store({
     },
     jobType: [],
     jobStatus: [],
+    selectedJobRunningDateRange: {
+      startDate: null,
+      endDate: null,
+    }
   },
   mutations: {
     setRefreshTime(state, value) {
@@ -91,11 +95,20 @@ const store = new Vuex.Store({
     setSelectedDateRange(state, value) {
       state.selectedDateRange = value;
     },
-    setStartDate(state, value) {
+    setRangeStartDate(state, value) {
       state.selectedDateRange.startDate = value;
     },
-    setEndDate(state, value) {
+    setRangeEndDate(state, value) {
       state.selectedDateRange.endDate = value;
+    },
+    setSelectedJobRunningDateRange(state, value) {
+      state.selectedJobRunningDateRange = value;
+    },
+    setJobRunningStartDate(state, value) {
+      state.selectedJobRunningDateRange.startDate = value;
+    },
+    setJobRunningEndDate(state, value) {
+      state.selectedJobRunningDateRange.endDate = value;
     },
     addVarToState(state, {name, value}) {
       state[name] = value;
@@ -150,18 +163,40 @@ new Vue({
     }
     if(hash["startDate"]) {
       let s = hash["startDate"].match(/\d+/g);
-      this.$store.commit('setStartDate',
+      this.$store.commit('setRangeStartDate',
                          new Date(parseInt(s[0]),
                                   parseInt(s[1])-1,
                                   parseInt(s[2])));
     }
     if(hash["endDate"]) {
       let s = hash["endDate"].match(/\d+/g);
-      this.$store.commit('setEndDate',
+      this.$store.commit('setRangeEndDate',
                          new Date(parseInt(s[0]),
                                   parseInt(s[1])-1,
                                   parseInt(s[2])));
     }
+    if(hash["jobStartDate"]) {
+      let s = hash["jobStartDate"].match(/\d+/g);
+      this.$store.commit('setJobRunningStartDate',
+                         new Date(parseInt(s[0]),
+                                  parseInt(s[1])-1,
+                                  parseInt(s[2]),
+                                  parseInt(s[3]),
+                                  parseInt(s[4]),
+                                  parseInt(s[5])));
+    }
+
+    if(hash["jobEndDate"]) {
+      let s = hash["jobEndDate"].match(/\d+/g);
+      this.$store.commit('setJobRunningEndDate',
+                        new Date(parseInt(s[0]),
+                                 parseInt(s[1])-1,
+                                 parseInt(s[2]),
+                                 parseInt(s[3]),
+                                 parseInt(s[4]),
+                                 parseInt(s[5])));
+  }
+
     if(hash["refreshTime"]) {
       this.$store.commit('setRefreshTime', parseInt(hash["refreshTime"]))
     }
@@ -182,6 +217,7 @@ new Vue({
     ...mapState({
       refreshTime: (state) => state.refreshTime,
       selectedDateRange: (state) => state.selectedDateRange,
+      selectedJobRunningDateRange: (state) => state.selectedJobRunningDateRange,
       perPage: (state) => state.perPage,
       currPage: (state) => state.currPage,
       sortBy: (state) => state.sortBy,
@@ -196,9 +232,10 @@ new Vue({
       );
     },
     selectionChangeTriggers: function() {
-      // refresh if any of these change 
-      return this.selectedDateRange, this.currPage, this.perPage,
-        this.sortBy, this.sortDesc, this.jobType, this.jobStatus;
+      // refresh if any of these change
+      return this.selectedDateRange, this.selectedJobRunningDateRange,
+        this.currPage, this.perPage, this.sortBy, this.sortDesc, this.jobType,
+        this.jobStatus;
     }
   },
   watch: {
@@ -218,7 +255,8 @@ new Vue({
         "sortBy": this.sortBy,
         "sortDesc": this.sortDesc,
         "jobType": this.jobType,
-        "jobStatus": this.jobStatus
+        "jobStatus": this.jobStatus,
+        "jobRunningDateRange": this.selectedJobRunningDateRange,
       })
       .then(response => {
         if (response.data) {
@@ -267,6 +305,12 @@ new Vue({
         params['jobType'] = this.$store.state.jobType.join(",");
       if(this.$store.state.jobStatus.length > 0)
         params['jobStatus'] = this.$store.state.jobStatus.join(",");
+      if(this.$store.state.selectedJobRunningDateRange.startDate)
+        params['jobStartDate'] = this.formatISODate(
+          this.$store.state.selectedJobRunningDateRange.startDate);
+      if(this.$store.state.selectedJobRunningDateRange.endDate)
+        params['jobEndDate'] = this.formatISODate(
+          this.$store.state.selectedJobRunningDateRange.endDate)
       let queryParams = Object.keys(params).map(function(k) {
         return encodeURIComponent(k) + '=' + encodeURIComponent(params[k])
       }).join('&')
@@ -274,15 +318,34 @@ new Vue({
       window.location.replace(url + "#" + decodeURIComponent(queryParams));
     },
     formatDate: function(date) {
-      var d = new Date(date),
-          month = "" + (d.getMonth() + 1),
-          day = "" + d.getDate(),
-          year = d.getFullYear();
+      let d = new Date(date);
+      let month = "" + (d.getMonth() + 1);
+      let day = "" + d.getDate();
+      let year = d.getFullYear();
 
       if (month.length < 2) month = "0" + month;
       if (day.length < 2) day = "0" + day;
 
       return [year, month, day].join("-");
+    },
+    formatISODate: function(date) {
+      let d = new Date(date);
+      let month = "" + (d.getMonth() + 1);
+      let day = "" + d.getDate();
+      let year = "" + d.getFullYear();
+      let hour = "" + d.getHours();
+      let minute = "" + d.getMinutes();
+      let second = "" + d.getSeconds();
+
+      if (month.length < 2) month = "0" + month;
+      if (day.length < 2) day = "0" + day;
+      if (hour.length < 2) hour = "0" + hour;
+      if (minute.length < 2) minute = "0" + minute;
+      if (second.length < 2) second = "0" + second;
+
+      let dateStr = [year, month, day].join("-");
+      let timeStr = [hour, minute, second].join(":");
+      return [dateStr, timeStr].join("T");
     },
     isValidDate: function(datestr) {
       try {

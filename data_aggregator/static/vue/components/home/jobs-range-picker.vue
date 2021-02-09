@@ -35,26 +35,11 @@
 import {mapState, mapMutations} from 'vuex';
 import dataMixin from '../../mixins/data_mixin';
 import utilitiesMixin from '../../mixins/utilities_mixin';
+import datePickerMixin from '../../mixins/datepicker_mixin';
 
 export default {
   name: 'jobs-range-picker',
-  mixins: [dataMixin, utilitiesMixin],
-  data: function() {
-    return {
-      dateLocale: {
-        direction: 'ltr',
-        format: 'mm/dd/yyyy',
-        separator: ' - ',
-        applyLabel: 'Apply',
-        cancelLabel: 'Cancel',
-        weekLabel: 'W',
-        customRangeLabel: 'Custom Range',
-        daysOfWeek: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-        monthNames: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-        firstDay: 0
-      },
-    }
-  },
+  mixins: [dataMixin, utilitiesMixin, datePickerMixin],
   computed: {
     ...mapState({
       jobRanges: (state) => state.jobRanges,
@@ -94,7 +79,6 @@ export default {
     dateFormat (classes, date) {
       classes['contains-jobs'] = this.doesDateHaveJobs(date);
       return classes;
-      
     },
     doesDateHaveJobs: function(date) {
       for (var idx in this.jobRanges) {

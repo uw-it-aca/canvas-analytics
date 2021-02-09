@@ -10,7 +10,7 @@
           <b-button @click="handleAction()" variant="primary" size="md">
             Run
           </b-button>
-          <b-form-checkbox v-show="selectedAction == 'restart'" v-model="ignoreStatus" class="ml-2" switch size="md">Ignore status</b-form-checkbox>
+          <b-form-checkbox v-show="selectedAction == 'restart'" v-model="ignoreStatus" class="ml-2" switch size="md">Include running and expired</b-form-checkbox>
         </b-form>
       </b-col>
     </b-row>
@@ -84,11 +84,11 @@
         </template>
 
         <template slot="thead-top" slot-scope="{ fields }">
-          <td v-for="field in fields" :key="field.key">
+          <td></td>
+          <td>
             <multiselect
               id="jobstatuses"
               name="jobstatus"
-              v-if="field.key == 'status'"
               v-model="jobStatus"
               :multiple="true"
               :options="jobStatusOptions"
@@ -97,11 +97,12 @@
               :show-labels="false"
               placeholder="All">
             </multiselect>
-
+          </td>
+          <td></td>
+          <td>
             <multiselect
               id="jobTypes"
               name="jobtype"
-              v-if="field.key == 'job_type'"
               v-model="jobType"
               :multiple="true"
               :options="jobTypes"
@@ -110,6 +111,42 @@
               :show-labels="false"
               placeholder="All">
             </multiselect>
+          </td>
+          <td colspan="2">
+            <date-range-picker
+              ref="start-picker"
+              v-model="selectedJobRunningDateRange"
+              :opens="'left'"
+              :locale-data="dateLocale"
+              :singleDatePicker="false"
+              :showDropdowns="true"
+              :showWeekNumbers="true"
+              :ranges="false"
+              :timePicker="true"
+              :timePicker24Hour="true"
+              :linkedCalendars="true"
+              :autoApply="false"
+            >
+              <template v-slot:input="picker">
+                <template v-if="picker.startDate && picker.endDate">
+                  {{ picker.startDate | iso_date }} - {{ picker.endDate | iso_date}}
+                </template>
+                <template v-else>
+                  <span class="picker-placeholder"><b-icon-calendar></b-icon-calendar>  All</span>
+                </template>
+              </template>
+
+              <div slot="footer" slot-scope="data" class="picker-footer">
+                <span>
+                  {{data.rangeText}}
+                </span>
+                <span style="margin-left: auto">
+                  <a @click="data.clickCancel" class="btn btn-light btn-sm">Cancel</a>
+                  <a @click="clearJobDataPicker" class="btn btn-light btn-sm">Clear</a>
+                  <a @click="data.clickApply" v-if="!data.in_selection" class="btn btn-primary btn-sm">Apply</a>
+                </span>
+              </div>
+            </date-range-picker>
           </td>
         </template>
 
@@ -152,10 +189,11 @@
 import {mapState, mapMutations} from 'vuex';
 import dataMixin from '../../mixins/data_mixin';
 import utilitiesMixin from '../../mixins/utilities_mixin';
+import datePickerMixin from '../../mixins/datepicker_mixin';
 
 export default {
   name: 'jobs-table',
-  mixins: [dataMixin, utilitiesMixin],
+  mixins: [dataMixin, utilitiesMixin, datePickerMixin],
   props: ['selectedJobs'],
   data: function() {
     return {
@@ -257,6 +295,14 @@ export default {
         this.$store.commit('setCurrPage', value);
       }
     },
+    selectedJobRunningDateRange: {
+      get () {
+        return this.$store.state.selectedJobRunningDateRange;
+      },
+      set (value) {
+        this.$store.commit('setSelectedJobRunningDateRange', value);
+      }
+    },
   },
   methods: {
     handleAction: function() {
@@ -286,6 +332,9 @@ export default {
     select: function() {
       this.allSelected = false;
     },
+    clearJobDataPicker: function() {
+      this.selectedJobRunningDateRange = {startDate: null, endDate: null};
+    },
     _getColumnWidth: function(fieldKey) {
       if (fieldKey == "selected")
         return "25px";
@@ -294,7 +343,7 @@ export default {
       else if(fieldKey == "context")
         return "150%";
       else if(fieldKey == "status")
-        return "200%";
+        return "150%";
       else if (fieldKey == "start")
         return "150%";
       else if (fieldKey == "end")
@@ -351,6 +400,24 @@ export default {
     color: #721c24;
     background-color:  #f5c6cb;
     border-color: #f8d7da;
+  }
+
+  .reportrange-text {
+    min-height: 40px;
+    min-width: 150px;
+    border: 1px solid #e8e8e8 !important;
+  }
+
+  .picker-placeholder {
+    color: #afafaf;
+  }
+
+  .picker-footer {
+    padding: 0.5rem;
+    color: black;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
   }
 </style>
 
