@@ -15,11 +15,32 @@ Including another URLconf
 """
 from django.urls import re_path, include
 from data_aggregator.views.pages import HomeView
-from data_aggregator.views.api.data import JobFilter, JobReset
+from data_aggregator.views.api.jobs import JobView, JobRestartView
+from data_aggregator.views.api.analytics import AccountAssignmentView, \
+    AccountParticipationView, TermAssignmentView, TermParticipationView, \
+    StudentAssignmentView, StudentParticipationView
 
 urlpatterns = [
     re_path(r'^$', HomeView.as_view()),
-    re_path(r'^api/filterjobs/$', JobFilter.as_view()),
-    re_path(r'^api/resetjobs/$', JobReset.as_view()),
+    re_path(r'^api/internal/jobs/$', JobView.as_view()),
+    re_path(r'^api/internal/jobs/restart/$', JobRestartView.as_view()),
+    re_path(r'^api/(?P<version>v[1])/account/(?P<sis_account_id>[-@:\w]+)/'
+            r'assignment/$',
+            AccountAssignmentView.as_view()),
+    re_path(r'^api/(?P<version>v[1])/account/(?P<sis_account_id>[-@:\w]+)/'
+            r'participation/$',
+            AccountParticipationView.as_view()),
+    re_path(r'^api/(?P<version>v[1])/term/(?P<sis_term_id>[-@:\w]+)/'
+            r'assignment/$',
+            TermAssignmentView.as_view()),
+    re_path(r'^api/(?P<version>v[1])/term/(?P<sis_term_id>[-@:\w]+)/'
+            r'participation/$',
+            TermParticipationView.as_view()),
+    re_path(r'^api/(?P<version>v[1])/student/(?P<student_id>[-@:\w]+)/'
+            r'assignment/$',
+            StudentAssignmentView.as_view()),
+    re_path(r'^api/(?P<version>v[1])/student/(?P<student_id>[-@:\w]+)/'
+            r'participation/$',
+            StudentParticipationView.as_view()),
     re_path(r'^saml/', include('uw_saml.urls')),
 ]

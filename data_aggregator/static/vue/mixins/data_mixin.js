@@ -25,7 +25,7 @@ const dataMixin = {
             };
             
             return axios.post(
-                `api/filterjobs/`,
+                `api/internal/jobs/`,
                 filters,
                 axiosConfig
             );
@@ -40,7 +40,7 @@ const dataMixin = {
             }
             };
             return axios.post(
-                `api/resetjobs/`,
+                `api/internal/jobs/restart/`,
                 {"job_ids": jobs.map(job => job.id)},
                 axiosConfig
             );

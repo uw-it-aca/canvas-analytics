@@ -4,7 +4,15 @@ from data_aggregator.views.api import RESTDispatch
 from django.db.models import F, BooleanField, Value
 
 
-class JobFilter(RESTDispatch):
+class JobView(RESTDispatch):
+    '''
+    API endpoint returning a list of job dictionaries
+
+    /api/internal/jobs/
+
+    HTTP POST accepts the following dictionary paramters:
+    * filters: dictionary of request filters
+    '''
 
     def post(self, request, *args, **kwargs):
         filters = json.loads(request.body.decode('utf-8'))
@@ -68,7 +76,15 @@ class JobFilter(RESTDispatch):
                                            "total_jobs": total_jobs})
 
 
-class JobReset(RESTDispatch):
+class JobRestartView(RESTDispatch):
+    '''
+    API endpoint to restart a job
+
+    /api/internal/jobs/restart/
+
+    HTTP POST accepts the following dictionary paramters:
+    * job_ids: list of job ids to restart
+    '''
 
     def post(self, request, *args, **kwargs):
         data = json.loads(request.body.decode('utf-8'))
