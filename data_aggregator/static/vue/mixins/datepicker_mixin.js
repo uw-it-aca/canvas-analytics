@@ -1,3 +1,7 @@
+/*
+ * Common configuration settings for date picker
+*/
+
 const datePickerMixin = {
     data: function() {
         return {

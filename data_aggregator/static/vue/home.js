@@ -122,7 +122,8 @@ const store = new Vuex.Store({
 // initializae root component 
 import dataMixin from './mixins/data_mixin';
 import utilitiesMixin from './mixins/utilities_mixin';
-import {mapState, mapMutations} from 'vuex';
+import {parseIsoDateStr, toIsoDateStr} from "../js/utilities.js";
+import {mapState} from 'vuex';
 
 new Vue({
   el: '#vue_root',
@@ -162,45 +163,21 @@ new Vue({
                          (hash["sortDesc"].toLowerCase() === 'true'));
     }
     if(hash["startDate"]) {
-      let s = hash["startDate"].match(/\d+/g);
-      this.$store.commit('setRangeStartDate',
-                         new Date(parseInt(s[0]),
-                                  parseInt(s[1])-1,
-                                  parseInt(s[2]),
-                                  parseInt(s[3]),
-                                  parseInt(s[4]),
-                                  parseInt(s[5])));
+      let dateStr = toIsoDateStr(parseIsoDateStr(hash["startDate"]));
+      this.$store.commit('setRangeStartDate', dateStr);
     }
     if(hash["endDate"]) {
-      let s = hash["endDate"].match(/\d+/g);
-      this.$store.commit('setRangeEndDate',
-                         new Date(parseInt(s[0]),
-                                  parseInt(s[1])-1,
-                                  parseInt(s[2]),
-                                  parseInt(s[3]),
-                                  parseInt(s[4]),
-                                  parseInt(s[5])));
+      let dateStr = toIsoDateStr(parseIsoDateStr(hash["endDate"]));
+      this.$store.commit('setRangeEndDate', dateStr);
     }
     if(hash["jobStartDate"]) {
-      let s = hash["jobStartDate"].match(/\d+/g);
-      this.$store.commit('setJobRunningStartDate',
-                         new Date(parseInt(s[0]),
-                                  parseInt(s[1])-1,
-                                  parseInt(s[2]),
-                                  parseInt(s[3]),
-                                  parseInt(s[4]),
-                                  parseInt(s[5])));
+      let dateStr = toIsoDateStr(parseIsoDateStr(hash["jobStartDate"]));
+      this.$store.commit('setJobRunningStartDate', dateStr);
     }
 
     if(hash["jobEndDate"]) {
-      let s = hash["jobEndDate"].match(/\d+/g);
-      this.$store.commit('setJobRunningEndDate',
-                        new Date(parseInt(s[0]),
-                                 parseInt(s[1])-1,
-                                 parseInt(s[2]),
-                                 parseInt(s[3]),
-                                 parseInt(s[4]),
-                                 parseInt(s[5])));
+      let dateStr = toIsoDateStr(parseIsoDateStr(hash["jobEndDate"]));
+      this.$store.commit('setJobRunningEndDate', dateStr);
   }
 
     if(hash["refreshTime"]) {
@@ -250,19 +227,27 @@ new Vue({
     },
     refreshTime: function() {
       this.updateURL();
+      clearInterval(this.refreshTimer);
+      this.refreshTimer = setInterval(this.refreshJobs, this.refreshTime * 1000);
     }
   },
   methods: {
     refreshJobs: function() {
       let promise = this.getJobs({
-        "dateRange": this.selectedDateRange,
+        "dateRange": {
+          "startDate": parseIsoDateStr(this.selectedDateRange.startDate),
+          "endDate": parseIsoDateStr(this.selectedDateRange.endDate),
+        },
+        "jobRunningDateRange": {
+          "startDate": parseIsoDateStr(this.selectedJobRunningDateRange.startDate),
+          "endDate": parseIsoDateStr(this.selectedJobRunningDateRange.endDate),
+        },
         "perPage": this.perPage,
         "currPage": this.currPage,
         "sortBy": this.sortBy,
         "sortDesc": this.sortDesc,
         "jobType": this.jobType,
         "jobStatus": this.jobStatus,
-        "jobRunningDateRange": this.selectedJobRunningDateRange,
       })
       .then(response => {
         if (response.data) {
@@ -302,9 +287,9 @@ new Vue({
       params['currPage'] = this.$store.state.currPage;
       params['sortBy'] = this.$store.state.sortBy;
       params['sortDesc'] = this.$store.state.sortDesc;
-      params['startDate'] = this.toISODateStr(
+      params['startDate'] = toIsoDateStr(
         this.$store.state.selectedDateRange.startDate);
-      params['endDate'] = this.toISODateStr(
+      params['endDate'] = toIsoDateStr(
         this.$store.state.selectedDateRange.endDate);
       params['refreshTime'] = this.$store.state.refreshTime;
       if(this.$store.state.jobType.length > 0)
@@ -312,10 +297,10 @@ new Vue({
       if(this.$store.state.jobStatus.length > 0)
         params['jobStatus'] = this.$store.state.jobStatus.join(",");
       if(this.$store.state.selectedJobRunningDateRange.startDate)
-        params['jobStartDate'] = this.toISODateStr(
+        params['jobStartDate'] = toIsoDateStr(
           this.$store.state.selectedJobRunningDateRange.startDate);
       if(this.$store.state.selectedJobRunningDateRange.endDate)
-        params['jobEndDate'] = this.toISODateStr(
+        params['jobEndDate'] = toIsoDateStr(
           this.$store.state.selectedJobRunningDateRange.endDate)
       let queryParams = Object.keys(params).map(function(k) {
         return encodeURIComponent(k) + '=' + encodeURIComponent(params[k])
