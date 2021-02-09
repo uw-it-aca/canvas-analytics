@@ -9,7 +9,7 @@
           </b-form>
           <p>
             <ul>
-              <li><small>Results limited to jobs with an active date range intersecting with {{selectedDateRange.startDate | iso_date}} - {{selectedDateRange.endDate | iso_date}}</small></li>
+              <li><small>Results limited to jobs with an active date range intersecting with {{activeDateRange.startDate | iso_date}} - {{activeDateRange.endDate | iso_date}}</small></li>
             </ul>
           </p>
         </b-col>
@@ -27,7 +27,7 @@ export default {
   mixins: [utilitiesMixin],
   computed: {
     ...mapState({
-      selectedDateRange: (state) => state.selectedDateRange,
+      activeDateRange: (state) => state.activeDateRange,
     }),
   },
   methods: {

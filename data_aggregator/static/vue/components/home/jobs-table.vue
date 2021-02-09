@@ -115,7 +115,7 @@
           <td colspan="2">
             <date-range-picker
               ref="start-picker"
-              v-model="selectedJobRunningDateRange"
+              v-model="jobDateRange"
               :opens="'left'"
               :locale-data="dateLocale"
               :singleDatePicker="false"
@@ -295,12 +295,12 @@ export default {
         this.$store.commit('setCurrPage', value);
       }
     },
-    selectedJobRunningDateRange: {
+    jobDateRange: {
       get () {
-        return this.$store.state.selectedJobRunningDateRange;
+        return this.$store.state.jobDateRange;
       },
       set (value) {
-        this.$store.commit('setSelectedJobRunningDateRange', value);
+        this.$store.commit('setJobDateRange', value);
       }
     },
   },
@@ -333,7 +333,7 @@ export default {
       this.allSelected = false;
     },
     clearJobDataPicker: function() {
-      this.selectedJobRunningDateRange = {startDate: null, endDate: null};
+      this.jobDateRange = {startDate: null, endDate: null};
     },
     _getColumnWidth: function(fieldKey) {
       if (fieldKey == "selected")

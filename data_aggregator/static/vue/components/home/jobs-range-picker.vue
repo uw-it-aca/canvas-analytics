@@ -11,7 +11,7 @@
           :autoApply="true"
           :ranges="dateRanges"
           :date-format="dateFormat"
-          v-model="selectedDateRange"
+          v-model="activeDateRange"
           class="mr-2"
   >
     <template v-slot:input="picker" style="min-width: 350px;">
@@ -46,12 +46,12 @@ export default {
       jobRanges: (state) => state.jobRanges,
       terms: (state) => state.terms,
     }),
-    selectedDateRange: {
+    activeDateRange: {
       get () {
-        return this.$store.state.selectedDateRange;
+        return this.$store.state.activeDateRange;
       },
       set (value) {
-        this.$store.commit('setSelectedDateRange', value);
+        this.$store.commit('setActiveDateRange', value);
       }
     },
     dateRanges: function() {
@@ -65,7 +65,7 @@ export default {
   },
   created: function() {
     // default to current month
-    if (!this.selectedDateRange.startDate && !this.selectedDateRange.endDate) {
+    if (!this.activeDateRange.startDate && !this.activeDateRange.endDate) {
       let today = new Date();
       let firstDayMonth = new Date(today.getFullYear(), today.getMonth(), 1);
       let lastDayMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
@@ -73,7 +73,7 @@ export default {
         startDate: firstDayMonth,
         endDate: lastDayMonth
       };
-      this.selectedDateRange = defaultRange;
+      this.activeDateRange = defaultRange;
     }
   },
   methods: {
@@ -100,7 +100,7 @@ export default {
       return false;
     },
     ...mapMutations([
-      'setSelectedDateRange',
+      'setActiveDateRange',
     ]),
   },
 };

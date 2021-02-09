@@ -22,23 +22,24 @@ class JobView(RESTDispatch):
                     selected=Value(False, BooleanField())
                 ))
 
-        if filters.get('dateRange'):
+        activeDateRange = filters.get('activeDateRange')
+        if activeDateRange:
             jobs = jobs.filter(
-                target_date_start__lte=filters["dateRange"]["endDate"]
+                target_date_start__lte=activeDateRange["endDate"]
             )
             jobs = jobs.filter(
-                target_date_end__gte=filters["dateRange"]["startDate"]
+                target_date_end__gte=activeDateRange["startDate"]
             )
 
-        jobRunningDateRange = filters.get('jobRunningDateRange')
-        if jobRunningDateRange.get("startDate") and \
-                jobRunningDateRange.get("endDate"):
+        jobDateRange = filters.get('jobDateRange')
+        if jobDateRange.get("startDate") and \
+                jobDateRange.get("endDate"):
             jobs = jobs.filter(
-                Q(start__lte=jobRunningDateRange["endDate"]) |
+                Q(start__lte=jobDateRange["endDate"]) |
                 Q(start__isnull=True)
             )
             jobs = jobs.filter(
-                Q(end__gte=jobRunningDateRange["startDate"]) |
+                Q(end__gte=jobDateRange["startDate"]) |
                 Q(end__isnull=True)
             )
 
