@@ -1,15 +1,15 @@
 <template>
-  <b-card class="p-3 bg-light mb-4">
+  <b-card class="p-3 mb-4">
     <b-container fluid>
       <b-row>
         <b-col xs="12">
           <b-form class="mb-2">
             <label class="mr-2">Active job bounds</label>
-            <jobs-range-picker></jobs-range-picker>
+            <active-range-picker></active-range-picker>
           </b-form>
           <p>
             <ul>
-              <li><small>Results limited to jobs with an active date range intersecting with {{activeDateRange.startDate | iso_date}} - {{activeDateRange.endDate | iso_date}}</small></li>
+              <li><small>Results limited to jobs with an active date range that interersects {{activeDateRange.startDate | iso_date}} - {{activeDateRange.endDate | iso_date}}</small></li>
             </ul>
           </p>
         </b-col>

@@ -114,7 +114,7 @@
           </td>
           <td colspan="2">
             <date-range-picker
-              ref="start-picker"
+              ref="jobspicker"
               v-model="jobDateRange"
               :opens="'left'"
               :locale-data="dateLocale"
@@ -334,6 +334,7 @@ export default {
     },
     clearJobDataPicker: function() {
       this.jobDateRange = {startDate: null, endDate: null};
+      this.$refs.jobspicker.togglePicker(false);
     },
     _getColumnWidth: function(fieldKey) {
       if (fieldKey == "selected")

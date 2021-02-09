@@ -39,7 +39,7 @@ import utilitiesMixin from '../../mixins/utilities_mixin';
 import datePickerMixin from '../../mixins/datepicker_mixin';
 
 export default {
-  name: 'jobs-range-picker',
+  name: 'active-range-picker',
   mixins: [dataMixin, utilitiesMixin, datePickerMixin],
   computed: {
     ...mapState({
@@ -78,10 +78,10 @@ export default {
   },
   methods: {
     dateFormat (classes, date) {
-      classes['contains-jobs'] = this.doesDateHaveJobs(date);
+      classes['contains-jobs'] = this.doesDateHaveActiveJobs(date);
       return classes;
     },
-    doesDateHaveJobs: function(date) {
+    doesDateHaveActiveJobs: function(date) {
       for (var idx in this.jobRanges) {
         var jobRange = this.jobRanges[idx];
         var calDay = new Date(new Date(date).getFullYear(),

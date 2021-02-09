@@ -18,9 +18,11 @@ const utilities = {
         /*
         * Converts iso8601 date string to time date in local time
         */
-        if (dateStr instanceof Date )
-            dateStr = this._toIsoDateStr(dateStr);
-        return this._parseIsoDateStr(dateStr)
+        if(dateStr) {
+            if (dateStr instanceof Date )
+                dateStr = this._toIsoDateStr(dateStr);
+            return this._parseIsoDateStr(dateStr)
+        }
     },
     toIsoDateStr: function(date) {
         /*
