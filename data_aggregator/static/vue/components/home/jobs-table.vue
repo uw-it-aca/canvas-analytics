@@ -87,11 +87,11 @@
           <td></td>
           <td>
             <multiselect
-              id="jobstatuses"
-              name="jobstatus"
-              v-model="jobStatus"
+              id="jobTypes"
+              name="jobtype"
+              v-model="jobType"
               :multiple="true"
-              :options="jobStatusOptions"
+              :options="jobTypes"
               :searchable="false"
               :close-on-select="false"
               :show-labels="false"
@@ -101,11 +101,11 @@
           <td></td>
           <td>
             <multiselect
-              id="jobTypes"
-              name="jobtype"
-              v-model="jobType"
+              id="jobstatuses"
+              name="jobstatus"
+              v-model="jobStatus"
               :multiple="true"
-              :options="jobTypes"
+              :options="jobStatusOptions"
               :searchable="false"
               :close-on-select="false"
               :show-labels="false"

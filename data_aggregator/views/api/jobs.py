@@ -1,7 +1,7 @@
 import json
 from data_aggregator.models import Job
 from data_aggregator.views.api import RESTDispatch
-from django.db.models import F, BooleanField, Value
+from django.db.models import F, Q, BooleanField, Value
 
 
 class JobView(RESTDispatch):
@@ -24,17 +24,23 @@ class JobView(RESTDispatch):
 
         if filters.get('dateRange'):
             jobs = jobs.filter(
-                target_date_start__lte=filters["dateRange"]["endDate"])
+                target_date_start__lte=filters["dateRange"]["endDate"]
+            )
             jobs = jobs.filter(
-                target_date_end__gte=filters["dateRange"]["startDate"])
+                target_date_end__gte=filters["dateRange"]["startDate"]
+            )
 
         jobRunningDateRange = filters.get('jobRunningDateRange')
         if jobRunningDateRange.get("startDate") and \
                 jobRunningDateRange.get("endDate"):
             jobs = jobs.filter(
-                start__lte=jobRunningDateRange["endDate"])
+                Q(start__lte=jobRunningDateRange["endDate"]) |
+                Q(start__isnull=True)
+            )
             jobs = jobs.filter(
-                end__gte=jobRunningDateRange["startDate"])
+                Q(end__gte=jobRunningDateRange["startDate"]) |
+                Q(end__isnull=True)
+            )
 
         if filters.get('jobType'):
             jobs = jobs.filter(

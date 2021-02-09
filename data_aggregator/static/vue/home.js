@@ -166,14 +166,20 @@ new Vue({
       this.$store.commit('setRangeStartDate',
                          new Date(parseInt(s[0]),
                                   parseInt(s[1])-1,
-                                  parseInt(s[2])));
+                                  parseInt(s[2]),
+                                  parseInt(s[3]),
+                                  parseInt(s[4]),
+                                  parseInt(s[5])));
     }
     if(hash["endDate"]) {
       let s = hash["endDate"].match(/\d+/g);
       this.$store.commit('setRangeEndDate',
                          new Date(parseInt(s[0]),
                                   parseInt(s[1])-1,
-                                  parseInt(s[2])));
+                                  parseInt(s[2]),
+                                  parseInt(s[3]),
+                                  parseInt(s[4]),
+                                  parseInt(s[5])));
     }
     if(hash["jobStartDate"]) {
       let s = hash["jobStartDate"].match(/\d+/g);
@@ -296,9 +302,9 @@ new Vue({
       params['currPage'] = this.$store.state.currPage;
       params['sortBy'] = this.$store.state.sortBy;
       params['sortDesc'] = this.$store.state.sortDesc;
-      params['startDate'] = this.formatDate(
+      params['startDate'] = this.toISODateStr(
         this.$store.state.selectedDateRange.startDate);
-      params['endDate'] = this.formatDate(
+      params['endDate'] = this.toISODateStr(
         this.$store.state.selectedDateRange.endDate);
       params['refreshTime'] = this.$store.state.refreshTime;
       if(this.$store.state.jobType.length > 0)
@@ -306,10 +312,10 @@ new Vue({
       if(this.$store.state.jobStatus.length > 0)
         params['jobStatus'] = this.$store.state.jobStatus.join(",");
       if(this.$store.state.selectedJobRunningDateRange.startDate)
-        params['jobStartDate'] = this.formatISODate(
+        params['jobStartDate'] = this.toISODateStr(
           this.$store.state.selectedJobRunningDateRange.startDate);
       if(this.$store.state.selectedJobRunningDateRange.endDate)
-        params['jobEndDate'] = this.formatISODate(
+        params['jobEndDate'] = this.toISODateStr(
           this.$store.state.selectedJobRunningDateRange.endDate)
       let queryParams = Object.keys(params).map(function(k) {
         return encodeURIComponent(k) + '=' + encodeURIComponent(params[k])
@@ -317,44 +323,6 @@ new Vue({
       let url = window.location.href.split("#")[0];
       window.location.replace(url + "#" + decodeURIComponent(queryParams));
     },
-    formatDate: function(date) {
-      let d = new Date(date);
-      let month = "" + (d.getMonth() + 1);
-      let day = "" + d.getDate();
-      let year = d.getFullYear();
-
-      if (month.length < 2) month = "0" + month;
-      if (day.length < 2) day = "0" + day;
-
-      return [year, month, day].join("-");
-    },
-    formatISODate: function(date) {
-      let d = new Date(date);
-      let month = "" + (d.getMonth() + 1);
-      let day = "" + d.getDate();
-      let year = "" + d.getFullYear();
-      let hour = "" + d.getHours();
-      let minute = "" + d.getMinutes();
-      let second = "" + d.getSeconds();
-
-      if (month.length < 2) month = "0" + month;
-      if (day.length < 2) day = "0" + day;
-      if (hour.length < 2) hour = "0" + hour;
-      if (minute.length < 2) minute = "0" + minute;
-      if (second.length < 2) second = "0" + second;
-
-      let dateStr = [year, month, day].join("-");
-      let timeStr = [hour, minute, second].join(":");
-      return [dateStr, timeStr].join("T");
-    },
-    isValidDate: function(datestr) {
-      try {
-            var timestamp = Date.parse(datestr);
-            return !isNaN(timestamp)
-      } catch(error) {
-        return false
-      }
-    }
   },
   beforeDestroy () {
     clearInterval(this.refreshTimer);

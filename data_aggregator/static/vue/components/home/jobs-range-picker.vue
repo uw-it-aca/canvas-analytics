@@ -5,7 +5,8 @@
           :locale-data="dateLocale"
           :singleDatePicker="false"
           :showDropdowns="true"
-          :timePicker="false"
+          :timePicker="true"
+          :timePicker24Hour="true"
           :showWeekNumbers="true"
           :autoApply="true"
           :ranges="dateRanges"
@@ -14,7 +15,7 @@
           class="mr-2"
   >
     <template v-slot:input="picker" style="min-width: 350px;">
-        {{ picker.startDate | date }} - {{ picker.endDate | date}}
+        {{ picker.startDate | iso_date }} - {{ picker.endDate | iso_date}}
     </template>
 
     <template #ranges="ranges">
@@ -22,7 +23,7 @@
         <ul class="ranges-ul">
           <li v-for="(range, name) in ranges.ranges" :key="name" @click="ranges.clickRange(range)">
             <b>{{name}}</b><br/>
-            <small class="text-muted">{{range[0] | date}} - {{range[1] | date }}</small>
+            <small class="text-muted">{{range[0] | short_date}} - {{range[1] | short_date }}</small>
           </li>
         </ul>
       </div>
