@@ -1,3 +1,5 @@
+/*jshint esversion: 6 */
+
 const utilities = {
     _parseIsoDateStr: function(dateStr) {
         return new Date(dateStr);
@@ -21,7 +23,7 @@ const utilities = {
         if(dateStr) {
             if (dateStr instanceof Date )
                 dateStr = this._toIsoDateStr(dateStr);
-            return this._parseIsoDateStr(dateStr)
+            return this._parseIsoDateStr(dateStr);
         }
     },
     toIsoDateStr: function(date) {
@@ -34,6 +36,6 @@ const utilities = {
             return this._toIsoDateStr(date);
         }
     }
-}
+};
 
 export default utilities;
