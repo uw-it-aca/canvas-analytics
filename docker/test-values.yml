@@ -44,25 +44,25 @@ memcached:
 cronjob:
   enabled: true
   jobs:
-    - name: create-or-update-courses
+    - name: add-updt-courses
       schedule: "0 8 * * *" # At 12:00am midnight PST
       command: ["/scripts/management_command.sh"]
       args: ["create_or_update_courses"]
-    - name: create-assignment-jobs
+    - name: add-assign-jobs
       schedule: "0 9 * * 6" # At 1:00am PST on Saturday
       command: ["/scripts/management_command.sh"]
       args: ["create_assignment_jobs"]
-    - name: create-participation-jobs
+    - name: add-partic-jobs
       schedule: "0 9 * * 6" # At 1:00am PST on Saturday
       command: ["/scripts/management_command.sh"]
       args: ["create_participation_jobs"]
 daemon:
   enabled: true
   daemons:
-    - name: run-assignment-jobs
+    - name: run-assign-jobs
       command: ["/scripts/management_daemon.sh"]
       args: ['--cron', '* 14-23 * * 6', '--delay', '30', 'run_assignment_jobs']
-    - name: run-participation-jobs
+    - name: run-partic-jobs
       command: ["/scripts/management_daemon.sh"]
       args: ['--cron', '* 14-23 * * 6', '--delay', '30', 'run_participation_jobs']
 certs:
