@@ -7,9 +7,9 @@ import ActiveRangePicker from './components/home/active-range-picker.vue';
 import JobsTable from './components/home/jobs-table.vue';
 import JobsFilter from './components/home/jobs-filter.vue';
 
-Vue.component('active-range-picker', ActiveRangePicker);
 Vue.component('jobs-table', JobsTable);
 Vue.component('jobs-filter', JobsFilter);
+Vue.component('active-range-picker', ActiveRangePicker);
 
 // date range picker component - https://innologica.github.io/vue2-daterange-picker/
 import DateRangePicker from 'vue2-daterange-picker';
@@ -191,7 +191,7 @@ new Vue({
     }
   },
   created: function() {
-    document.title = 'Canvas Data Aggregator Jobs: ' + store.state['pageTitle'];
+    document.title = 'Canvas Analytics: ' + store.state['pageTitle'];
     document.getElementById('vue_root').hidden = false;
     this.changeSelection() // run without delay and with loading indicators 
     this.refreshTimer = setInterval(this.refreshJobs, this.refreshTime * 1000);

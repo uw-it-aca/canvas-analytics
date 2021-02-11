@@ -12,6 +12,7 @@ module.exports = {
     context: __dirname,
     entry: {
         home: './data_aggregator/static/vue/home.js',
+        api: './data_aggregator/static/vue/api.js',
     },
     output: {
         path: path.resolve('./data_aggregator/static/data_aggregator/bundles/'),

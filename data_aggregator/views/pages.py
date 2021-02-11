@@ -34,3 +34,7 @@ class HomeView(PageView):
         context['job_ranges'] = list(job_ranges)
         context['debug'] = settings.DEBUG
         return context
+
+
+class APIDocumentationView(PageView):
+    template_name = "api.html"
