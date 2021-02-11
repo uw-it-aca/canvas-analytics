@@ -32,7 +32,7 @@ COPY --chown=acait:acait --from=wpack /app/data_aggregator/static/data_aggregato
 COPY --chown=acait:acait --from=wpack /app/data_aggregator/static/ /static/
 COPY --chown=acait:acait --from=wpack /app/data_aggregator/static/webpack-stats.json /app/data_aggregator/static/webpack-stats.json
 
-FROM acait/django-test-container:1.2.5 as app-test-container
+FROM acait/django-test-container:1.2.8 as app-test-container
 
 COPY --from=app-container /app/ /app/
 COPY --from=app-container /static/ /static/
