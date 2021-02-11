@@ -1,4 +1,4 @@
-FROM acait/django-container:1.2.8 as app-prewebpack-container
+FROM gcr.io/uwit-mci-axdd/django-container:1.2.8 as app-prewebpack-container
 
 USER root
 
@@ -32,7 +32,7 @@ COPY --chown=acait:acait --from=wpack /app/data_aggregator/static/data_aggregato
 COPY --chown=acait:acait --from=wpack /app/data_aggregator/static/ /static/
 COPY --chown=acait:acait --from=wpack /app/data_aggregator/static/webpack-stats.json /app/data_aggregator/static/webpack-stats.json
 
-FROM acait/django-test-container:1.2.8 as app-test-container
+FROM gcr.io/uwit-mci-axdd/django-test-container:1.2.8 as app-test-container
 
 COPY --from=app-container /app/ /app/
 COPY --from=app-container /static/ /static/
