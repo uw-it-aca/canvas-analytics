@@ -66,21 +66,21 @@ export default {
          type: "int"},
         {name: "sis_term_id",
          example: "Spring-2021",
-         description: "Term id in format [Quarter]-[Year]",
+         description: "Term id in format [Year]-[Quarter]",
          default: "any",
          type: "string"}
       ],
       accountparams: [
         {name: "sis-account-id",
          example: "uwcourse:seattle:arts-sciences:engineering:CSE",
-         description: "Sub account ID identifiying scope of control",
+         description: "Sub account id identifying the scope of control",
          default: "required",
          type: "string"},
       ],
       termparams: [
         {name: "sis-term-id",
          example: "Spring-2021",
-         description: "Term id in format [Quarter]-[Year]",
+         description: "Term id in format [Year]-[Quarter]",
          default: "required",
          type: "string"}
       ],
