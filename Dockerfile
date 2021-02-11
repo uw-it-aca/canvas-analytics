@@ -1,4 +1,4 @@
-FROM acait/django-container:1.2.5 as app-prewebpack-container
+FROM acait/django-container:1.2.8 as app-prewebpack-container
 
 USER root
 
