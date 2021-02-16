@@ -23,11 +23,11 @@ autoscaling:
 targetAverageUtilization: 100
 resources:
   limits:
-    cpu: 1.0
+    cpu: 500m
     memory: 768Mi
   requests:
-    cpu: 100m
-    memory: 700Mi
+    cpu: 50m
+    memory: 256Mi
 lifecycle:
   enabled: true
   preStop:
@@ -74,10 +74,10 @@ daemon:
   daemons:
     - name: run-assign-jobs
       command: ["/scripts/management_daemon.sh"]
-      args: ['--cron', '* 14-23 * * 6', '--delay', '30', 'run_assignment_jobs']
+      args: ['--cron', '* 14-23 * * 6', 'run_assignment_jobs']
     - name: run-partic-jobs
       command: ["/scripts/management_daemon.sh"]
-      args: ['--cron', '* 14-23 * * 6', '--delay', '30', 'run_participation_jobs']
+      args: ['--cron', '* 14-23 * * 6', 'run_participation_jobs']
 certs:
   mounted: true
   certPath: /certs/apps.canvas.uw.edu-uwca.cert

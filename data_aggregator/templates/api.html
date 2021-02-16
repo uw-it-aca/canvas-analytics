@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block body_content %}
+<h3 class="mb-4">Canvas Analytics Web Service</h3>
+<b-card class="p-1 mb-4">
+  <b-card-text>
+      The Canvas Analytics Web Serivice returns harvested assignment or participation
+      analytics data in JSON format. Results are available at different
+      scopes of control: <b>account</b>, <b>term</b>, and <b>student</b>.
+  </b-card-text>
+</b-card>
+<p>Below is a full list of service parameters and their usage.</p>
+<h5>Query Usage</h5>
+<api-query-usage></api-query-usage>
+<h5>Sample Queries</h5>
+<api-query-examples></api-query-examples>
+<h5>Detailed Descriptions of each Query Parameter</h5>
+<api-query-param-description></api-query-param-description>
+{% endblock body_content %}
+
+{% block vue_script %}
+  {% load render_bundle from webpack_loader %}
+  {% render_bundle 'api' 'js' %}
+{% endblock vue_script %}
