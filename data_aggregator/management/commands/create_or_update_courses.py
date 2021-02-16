@@ -23,16 +23,10 @@ class Command(BaseCommand):
         for row in DictReader(sis_data):
             if not len(row):
                 continue
-            canvas_course_id = row['canvas_course_id']
-            sis_course_id = row['course_id']
-            short_name = row['short_name']
-            long_name = row['long_name']
-            canvas_account_id = row['canvas_account_id']
-            sis_account_id = row['account_id']
-            canvas_term_id = row['canvas_term_id']
-            status = row['status']
             created_by_sis = row['created_by_sis']
             if created_by_sis:
+                canvas_course_id = row['canvas_course_id']
+                canvas_term_id = row['canvas_term_id']
                 # get or create current term
                 term, created_term = Term.objects.get_create_current_term(
                     canvas_term_id, sws_term=sws_term)
@@ -47,12 +41,12 @@ class Command(BaseCommand):
                 else:
                     logger.info(f"Updated course - {canvas_course_id}")
                 # we always update the course regardless if it is new or not
-                course.sis_course_id = sis_course_id
-                course.short_name = short_name
-                course.long_name = long_name
-                course.canvas_account_id = canvas_account_id
-                course.sis_account_id = sis_account_id
-                course.status = status
+                course.sis_course_id = row['course_id']
+                course.short_name = row['short_name']
+                course.long_name = row['long_name']
+                course.canvas_account_id = row['canvas_account_id']
+                course.sis_account_id = row['account_id']
+                course.status = row['status']
                 course.save()
                 course_count += 1
         logger.info(f'Created and/or updated {course_count} courses.')

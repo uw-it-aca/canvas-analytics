@@ -1,4 +1,4 @@
-from data_aggregator.models import Course, Term, Week, Assignment, \
+from data_aggregator.models import Course, User, Assignment, \
     Participation
 from rest_framework import serializers
 
@@ -9,6 +9,14 @@ class CourseSerializer(serializers.ModelSerializer):
         fields = ['canvas_course_id', 'sis_course_id', 'short_name',
                   'long_name', 'canvas_account_id', 'sis_account_id',
                   'status']
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['canvas_user_id', 'login_id', 'sis_user_id',
+                  'first_name', 'last_name', 'full_name',
+                  'sortable_name', 'short_name', 'email', 'status']
 
 
 class AssignmentSerializer(serializers.ModelSerializer):

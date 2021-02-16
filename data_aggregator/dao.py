@@ -181,3 +181,15 @@ class CanvasDAO():
         sis_data = report_client.get_report_data(user_report)
         report_client.delete_report(user_report)
         return sis_data
+
+    def get_canvas_user_provisioning_report(self, sis_term_id):
+        # get canvas term using sis-term-id
+        canvas_term = Terms().get_term_by_sis_id(sis_term_id)
+        # get users provisioning report for canvas term
+        report_client = Reports()
+        user_report = report_client.create_user_provisioning_report(
+                    settings.ACADEMIC_CANVAS_ACCOUNT_ID,
+                    term_id=canvas_term.term_id)
+        sis_data = report_client.get_report_data(user_report)
+        report_client.delete_report(user_report)
+        return sis_data

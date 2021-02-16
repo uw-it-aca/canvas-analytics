@@ -73,6 +73,19 @@ class Course(models.Model):
                              on_delete=models.CASCADE)
 
 
+class User(models.Model):
+    canvas_user_id = models.IntegerField(unique=True)
+    login_id = models.TextField(null=True)
+    sis_user_id = models.TextField(null=True)
+    first_name = models.TextField(null=True)
+    last_name = models.TextField(null=True)
+    full_name = models.TextField(null=True)
+    sortable_name = models.TextField(null=True)
+    short_name = models.TextField(null=True)
+    email = models.TextField(null=True)
+    status = models.TextField(null=True)
+
+
 class JobManager(models.Manager):
 
     def start_batch_of_jobs(self, jobtype, batchsize=10):

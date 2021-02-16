@@ -2,9 +2,9 @@ from django.db.models import F
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.renderers import JSONRenderer
 from rest_framework.generics import GenericAPIView
-from data_aggregator.models import Assignment, Participation
+from data_aggregator.models import Assignment, Participation, User
 from data_aggregator.serializers import ParticipationSerializer, \
-    AssignmentSerializer
+    AssignmentSerializer, UserSerializer
 
 """
 Analytics API
@@ -15,6 +15,21 @@ class AnalyticsResultsSetPagination(PageNumberPagination):
     page_size = 1000
     page_size_query_param = 'page_size'
     max_page_size = 2500
+
+
+class UserView(GenericAPIView):
+
+    renderer_classes = [JSONRenderer]
+    pagination_class = AnalyticsResultsSetPagination
+
+    def get(self, request, version):
+        queryset = User.objects.select_related()
+        canvas_user_id = request.GET.get("canvas_user_id")
+        if (canvas_user_id):
+            queryset = queryset.filter(canvas_user_id=canvas_user_id)
+        paginated_queryset = self.paginate_queryset(queryset)
+        serializer = UserSerializer(paginated_queryset, many=True)
+        return self.get_paginated_response(serializer.data)
 
 
 class BaseAnalyticsAPIView(GenericAPIView):
