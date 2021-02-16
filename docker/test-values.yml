@@ -72,7 +72,7 @@ daemon:
       args: ['--cron', '* 14-23 * * 6', 'run_assignment_jobs']
     - name: run-partic-jobs
       command: ["/scripts/management_daemon.sh"]
-      args: ['--cron', '* 14-23 * * 6', 'run_participation_jobs']
+      args: ['--cron', '* 15-23 * * 6', 'run_participation_jobs']
 certs:
   mounted: true
   certPath: /certs/test-apps.canvas.uw.edu-uwca.cert
