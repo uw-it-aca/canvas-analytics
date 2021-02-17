@@ -4,7 +4,7 @@ from django.core.management.base import BaseCommand
 from data_aggregator.models import Course, Job, JobType
 from django.db.models import Q
 from django.utils import timezone
-from datetime import timedelta
+from datetime import datetime, time
 from uw_sws.term import get_current_term
 
 
@@ -21,10 +21,10 @@ class Command(BaseCommand):
         # get participation job type
         partic_type, _ = JobType.objects.get_or_create(type="participation")
 
-        # set target bounds from monday to sunday (work week)
+        # make job active for the current day
         today = timezone.now().date()
-        target_date_start = today - timedelta(days=today.weekday())
-        target_date_end = target_date_start + timedelta(days=6)
+        target_date_start = datetime.combine(today, time(00, 00, 00))
+        target_date_end = datetime.combine(today, time(23, 59, 59))
 
         jobs_count = 0
         sws_term = get_current_term()
