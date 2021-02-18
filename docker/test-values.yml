@@ -56,12 +56,16 @@ cronjob:
       schedule: "0 8 * * *" # At 12:00am midnight PST
       command: ["/scripts/management_command.sh"]
       args: ["create_or_update_courses"]
+    - name: add-updt-users
+      schedule: "0 8 * * *" # At 12:00am midnight PST
+      command: ["/scripts/management_command.sh"]
+      args: ["create_or_update_users"]
     - name: add-assign-jobs
-      schedule: "0 9 * * 6" # At 1:00am PST on Saturday
+      schedule: "0 10 * * 6" # At 2:00am PST on Saturday
       command: ["/scripts/management_command.sh"]
       args: ["create_assignment_jobs"]
     - name: add-partic-jobs
-      schedule: "0 9 * * 6" # At 1:00am PST on Saturday
+      schedule: "0 10 * * 6" # At 2:00am PST on Saturday
       command: ["/scripts/management_command.sh"]
       args: ["create_participation_jobs"]
 daemon:
@@ -69,10 +73,10 @@ daemon:
   daemons:
     - name: run-assign-jobs
       command: ["/scripts/management_daemon.sh"]
-      args: ['--cron', '* 14-23 * * 6', 'run_assignment_jobs']
+      args: ['--cron', '* 12-23 * * 6', 'run_assignment_jobs']
     - name: run-partic-jobs
       command: ["/scripts/management_daemon.sh"]
-      args: ['--cron', '* 15-23 * * 6', 'run_participation_jobs']
+      args: ['--cron', '* 13-23 * * 6', 'run_participation_jobs']
 certs:
   mounted: true
   certPath: /certs/test-apps.canvas.uw.edu-uwca.cert

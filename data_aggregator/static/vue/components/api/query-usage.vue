@@ -7,7 +7,9 @@
 or
 /api/v1/term/(resource-id)/analytics/(analytics-type)/? [week=&ltinteger&gt]
 or
-/api/v1/student/(resource-id)/analytics/(analytics-type)/? [sis_term_id=&ltstring&gt] [week=&ltinteger&gt]
+/api/v1/user/(resource-id)/analytics/(analytics-type)/? [sis_term_id=&ltstring&gt] [week=&ltinteger&gt]
+or
+/api/v1/user/? [has_analytics=&ltboolean&gt]
 </pre>
     </b-card-text>
   </b-card>
@@ -18,7 +20,7 @@ or
 (resource-id)
       /api/v1/account/   ::    (sis-account-id)
       /api/v1/term/      ::    (sis-term-id)
-      /api/v1/student/   ::    (canvas-student-id)
+      /api/v1/user/      ::    (sis-user-id)
 (analytics-type)         ::    ("assignment") or ("participation")
 </pre>
     </b-card-text>

@@ -76,6 +76,19 @@ class Course(models.Model):
                              on_delete=models.CASCADE)
 
 
+class User(models.Model):
+    canvas_user_id = models.IntegerField(unique=True)
+    login_id = models.TextField(null=True)
+    sis_user_id = models.TextField(null=True)
+    first_name = models.TextField(null=True)
+    last_name = models.TextField(null=True)
+    full_name = models.TextField(null=True)
+    sortable_name = models.TextField(null=True)
+    short_name = models.TextField(null=True)
+    email = models.TextField(null=True)
+    status = models.TextField(null=True)
+
+
 class JobManager(models.Manager):
 
     def start_batch_of_jobs(self, jobtype, batchsize=10):
@@ -142,8 +155,9 @@ class Assignment(models.Model):
                             on_delete=models.CASCADE)
     week = models.ForeignKey(Week,
                              on_delete=models.CASCADE)
+    user = models.ForeignKey(User,
+                             on_delete=models.CASCADE)
     assignment_id = models.IntegerField(null=True)
-    student_id = models.IntegerField(null=True)
     title = models.TextField(null=True)
     unlock_at = models.DateTimeField(null=True)
     points_possible = \
@@ -170,7 +184,8 @@ class Participation(models.Model):
                             on_delete=models.CASCADE)
     week = models.ForeignKey(Week,
                              on_delete=models.CASCADE)
-    student_id = models.IntegerField(null=True)
+    user = models.ForeignKey(User,
+                             on_delete=models.CASCADE)
     page_views = models.IntegerField(null=True)
     page_views_level = models.IntegerField(null=True)
     participations = models.IntegerField(null=True)

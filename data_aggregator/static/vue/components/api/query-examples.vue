@@ -25,9 +25,15 @@ export default {
         {desciption: "All participation records for Winter 2021 term Week 5",
          name: origin + "/api/v1/term/2021-winter/participation/?week=5",
          href: origin + "/api/v1/term/2021-winter/participation/?week=5"},
-        {desciption: "All assignment records from Winter 2021 term, Week 5 for student with canvas id 3715220",
-         name: origin + "/api/v1/student/3715220/assignment/?sis_term_id=2021-winter&week=4",
-         href: origin + "/api/v1/student/3715220/assignment/?sis_term_id=2021-winter&week=4"},
+        {desciption: "All users in the canvas analytics db with analytics",
+         name: origin + "/api/v1/user/?has_anaytics=true",
+         href: origin + "/api/v1/user/?has_anaytics=true"},
+        {desciption: "All users in the canvas analytics db without analytics",
+         name: origin + "/api/v1/user/?has_anaytics=false",
+         href: origin + "/api/v1/user/?has_anaytics=false"},
+        {desciption: "All assignment records from Winter 2021 term, Week 5 for user with sis user id 4DC8FAF817814361889CB2715CD16D28",
+         name: origin + "/api/v1/user/4DC8FAF817814361889CB2715CD16D28/assignment/?sis_term_id=2021-winter&week=5",
+         href: origin + "/api/v1/user/4DC8FAF817814361889CB2715CD16D28/assignment/?sis_term_id=2021-winter&week=5"},
       ];
     },
     ...mapState({

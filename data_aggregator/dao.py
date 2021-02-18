@@ -1,7 +1,7 @@
 import logging
 from django.conf import settings
 from data_aggregator.models import Assignment, Participation, Week, Term, \
-    Course
+    Course, User
 from data_aggregator.utilities import get_week_of_term
 from restclients_core.exceptions import DataFailureException
 from restclients_core.util.retry import retry
@@ -68,7 +68,8 @@ class CanvasDAO():
                         canvas_course_id, student_id)
                 for i in res:
                     assignment = Assignment()
-                    assignment.student_id = student_id
+                    user = User.objects.get(canvas_user_id=student_id)
+                    assignment.user = user
                     assignment.assignment_id = i.get('assignment_id')
                     assignment.title = i.get('title')
                     assignment.due_at = i.get('unlock_at')
@@ -134,7 +135,8 @@ class CanvasDAO():
                     canvas_course_id, student_id)
                 for i in res:
                     partic = Participation()
-                    partic.student_id = student_id
+                    user = User.objects.get(canvas_user_id=student_id)
+                    partic.user = user
                     partic.week = week
                     partic.course = course
                     partic.page_views = i.get('page_views')
@@ -176,6 +178,18 @@ class CanvasDAO():
         # get courses provisioning report for canvas term
         report_client = Reports()
         user_report = report_client.create_course_provisioning_report(
+                    settings.ACADEMIC_CANVAS_ACCOUNT_ID,
+                    term_id=canvas_term.term_id)
+        sis_data = report_client.get_report_data(user_report)
+        report_client.delete_report(user_report)
+        return sis_data
+
+    def get_canvas_user_provisioning_report(self, sis_term_id):
+        # get canvas term using sis-term-id
+        canvas_term = Terms().get_term_by_sis_id(sis_term_id)
+        # get users provisioning report for canvas term
+        report_client = Reports()
+        user_report = report_client.create_user_provisioning_report(
                     settings.ACADEMIC_CANVAS_ACCOUNT_ID,
                     term_id=canvas_term.term_id)
         sis_data = report_client.get_report_data(user_report)
