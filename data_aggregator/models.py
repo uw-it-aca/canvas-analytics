@@ -60,6 +60,9 @@ class Week(models.Model):
                              on_delete=models.CASCADE)
     week = models.IntegerField()
 
+    class Meta:
+        unique_together = ('term', 'week',)
+
 
 class Course(models.Model):
     canvas_course_id = models.IntegerField()
