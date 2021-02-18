@@ -1,4 +1,5 @@
 import os
+import jsonfield
 from django.db import models
 from django.utils import timezone
 from data_aggregator import utilities
@@ -116,7 +117,7 @@ class Job(models.Model):
                              on_delete=models.CASCADE)
     target_date_start = models.DateTimeField()
     target_date_end = models.DateTimeField()
-    context = models.JSONField()
+    context = jsonfield.JSONField()
     pid = models.IntegerField(null=True)
     start = models.DateTimeField(null=True)
     end = models.DateTimeField(null=True)
