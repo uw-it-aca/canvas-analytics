@@ -38,9 +38,9 @@
         <b-td>{{param.type}}</b-td>
       </b-tr>
       <b-tr>
-        <b-td colspan="5"><b>/api/v1/student/ endpoint</b></b-td>
+        <b-td colspan="5"><b>/api/v1/user/ endpoint</b></b-td>
       </b-tr>
-      <b-tr v-for="param in studentparams" :key="param.name">
+      <b-tr v-for="param in userparams" :key="param.name">
         <b-td>{{param.name}}</b-td>
         <b-td>{{param.example}}</b-td>
         <b-td>{{param.description}}</b-td>
@@ -64,7 +64,7 @@ export default {
          description: "Week in a term",
          default: "any",
          type: "int"},
-        {name: "sis_term_id",
+        {name: "sis-term-id",
          example: "Spring-2021",
          description: "Term id in format [Year]-[Quarter]",
          default: "any",
@@ -84,12 +84,17 @@ export default {
          default: "required",
          type: "string"}
       ],
-      studentparams: [
-        {name: "canvas-student-id",
-         example: "3715220",
-         description: "Internal canvas student id",
-         default: "required",
-         type: "int"},
+      userparams: [
+        {name: "sis-user-id",
+         example: "4DC8FAF817814361889CB2715CD16D28",
+         description: "Canvas sis user id",
+         default: "optional",
+         type: "string"},
+        {name: "has_analytics",
+         example: "true",
+         description: "Limit to users with analytics ",
+         default: "any",
+         type: "boolean"},
       ],
     }
   },

@@ -17,21 +17,6 @@ class AnalyticsResultsSetPagination(PageNumberPagination):
     max_page_size = 2500
 
 
-class UserView(GenericAPIView):
-
-    renderer_classes = [JSONRenderer]
-    pagination_class = AnalyticsResultsSetPagination
-
-    def get(self, request, version):
-        queryset = User.objects.select_related()
-        canvas_user_id = request.GET.get("canvas_user_id")
-        if (canvas_user_id):
-            queryset = queryset.filter(canvas_user_id=canvas_user_id)
-        paginated_queryset = self.paginate_queryset(queryset)
-        serializer = UserSerializer(paginated_queryset, many=True)
-        return self.get_paginated_response(serializer.data)
-
-
 class BaseAnalyticsAPIView(GenericAPIView):
 
     renderer_classes = [JSONRenderer]
@@ -150,20 +135,49 @@ class TermAssignmentView(BaseAnalyticsAPIView):
         return self.get_paginated_response(serializer.data)
 
 
-class StudentParticipationView(BaseAnalyticsAPIView):
-    '''
-    API endpoint returning participation analytics for a term
+class UserView(GenericAPIView):
 
-    /api/[version]/student/[student-id]/participation/
+    renderer_classes = [JSONRenderer]
+    pagination_class = AnalyticsResultsSetPagination
+
+    def get(self, request, version):
+        queryset = User.objects.select_related()
+        canvas_user_id = request.GET.get("canvas_user_id")
+        if (canvas_user_id):
+            queryset = queryset.filter(canvas_user_id=canvas_user_id)
+        has_analytics = request.GET.get("has_analytics")
+        if (has_analytics):
+            assign_analytic_users = Assignment.objects.values("user")
+            partic_analytic_users = Participation.objects.values("user")
+            if has_analytics.lower() == "true":
+                queryset = queryset.filter(
+                    id__in=assign_analytic_users)
+                queryset = queryset.filter(
+                    id__in=partic_analytic_users)
+            elif has_analytics.lower() == "false":
+                queryset = queryset.exclude(
+                    id__in=assign_analytic_users)
+                queryset = queryset.exclude(
+                    id__in=partic_analytic_users)
+        paginated_queryset = self.paginate_queryset(queryset)
+        serializer = UserSerializer(paginated_queryset, many=True)
+        return self.get_paginated_response(serializer.data)
+
+
+class UserParticipationView(BaseAnalyticsAPIView):
+    '''
+    API endpoint returning participation analytics for a particular user
+
+    /api/[version]/user/[sis-user-id]/participation/
 
     Endpoint accepts the following query parameters:
     * sis_term_id: limit results to a term
     * week: limit results to a week in term
     '''
-    def get(self, request, version, student_id):
+    def get(self, request, version, sis_user_id):
         queryset = (
             self.get_participation_queryset()
-            .filter(student_id=student_id))
+            .filter(user__sis_user_id=sis_user_id))
         sis_term_id = request.GET.get("sis_term_id")
         if sis_term_id:
             queryset = queryset.filter(sis_term_id=sis_term_id)
@@ -176,20 +190,20 @@ class StudentParticipationView(BaseAnalyticsAPIView):
         return self.get_paginated_response(serializer.data)
 
 
-class StudentAssignmentView(BaseAnalyticsAPIView):
+class UserAssignmentView(BaseAnalyticsAPIView):
     '''
-    API endpoint returning assignment analytics for a term
+    API endpoint returning assignment analytics for a particular user
 
-    /api/[version]/student/[student-id]/assignment/
+    /api/[version]/user/[sis-user-id]/assignment/
 
     Endpoint accepts the following query parameters:
     * sis_term_id: limit results to a term
     * week: limit results to a week in term
     '''
-    def get(self, request, version, student_id):
+    def get(self, request, version, sis_user_id):
         queryset = (
             self.get_assignment_queryset()
-            .filter(student_id=student_id))
+            .filter(user__sis_user_id=sis_user_id))
         sis_term_id = request.GET.get("sis_term_id")
         if sis_term_id:
             queryset = queryset.filter(sis_term_id=sis_term_id)

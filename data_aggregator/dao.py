@@ -1,7 +1,7 @@
 import logging
 from django.conf import settings
 from data_aggregator.models import Assignment, Participation, Week, Term, \
-    Course
+    Course, User
 from data_aggregator.utilities import get_week_of_term
 from restclients_core.exceptions import DataFailureException
 from restclients_core.util.retry import retry
@@ -68,7 +68,8 @@ class CanvasDAO():
                         canvas_course_id, student_id)
                 for i in res:
                     assignment = Assignment()
-                    assignment.student_id = student_id
+                    user = User.objects.get(canvas_user_id=student_id)
+                    assignment.user = user
                     assignment.assignment_id = i.get('assignment_id')
                     assignment.title = i.get('title')
                     assignment.due_at = i.get('unlock_at')
@@ -134,7 +135,8 @@ class CanvasDAO():
                     canvas_course_id, student_id)
                 for i in res:
                     partic = Participation()
-                    partic.student_id = student_id
+                    user = User.objects.get(canvas_user_id=student_id)
+                    partic.user = user
                     partic.week = week
                     partic.course = course
                     partic.page_views = i.get('page_views')

@@ -152,8 +152,9 @@ class Assignment(models.Model):
                             on_delete=models.CASCADE)
     week = models.ForeignKey(Week,
                              on_delete=models.CASCADE)
+    user = models.ForeignKey(User,
+                             on_delete=models.CASCADE)
     assignment_id = models.IntegerField(null=True)
-    student_id = models.IntegerField(null=True)
     title = models.TextField(null=True)
     unlock_at = models.DateTimeField(null=True)
     points_possible = \
@@ -180,7 +181,8 @@ class Participation(models.Model):
                             on_delete=models.CASCADE)
     week = models.ForeignKey(Week,
                              on_delete=models.CASCADE)
-    student_id = models.IntegerField(null=True)
+    user = models.ForeignKey(User,
+                             on_delete=models.CASCADE)
     page_views = models.IntegerField(null=True)
     page_views_level = models.IntegerField(null=True)
     participations = models.IntegerField(null=True)
