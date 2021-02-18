@@ -2,7 +2,6 @@
 
 from django.db import migrations, models
 import django.db.models.deletion
-import jsonfield
 
 
 class Migration(migrations.Migration):
@@ -32,7 +31,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('target_date_start', models.DateTimeField()),
                 ('target_date_end', models.DateTimeField()),
-                ('context', jsonfield.JSONField()),
+                ('context', models.JSONField()),
                 ('pid', models.IntegerField(null=True)),
                 ('start', models.DateTimeField(null=True)),
                 ('end', models.DateTimeField(null=True)),

@@ -21,14 +21,13 @@ setup(
     packages=['data_aggregator'],
     include_package_data=True,
     install_requires = [
-        'Django>=2.2.13,<3.0',
+        'Django>=3.0,<3.2',
         'UW-RestClients-SWS>=2.3.3,<3.0',
         'UW-RestClients-PWS>=2.1.2,<3.0',
         'UW-RestClients-Canvas>=1.1.13,<2.0',
         'UW-Django-SAML2>=1.5.3,<2.0',
         'django-webpack-loader>=0.7.0',
-        'djangorestframework>=3.12.2,<4.0',
-        'django-jsonfield'
+        'djangorestframework>=3.12.2,<4.0'
     ],
     license='Apache License, Version 2.0',
     description='Collects data about UW Canvas usage',
