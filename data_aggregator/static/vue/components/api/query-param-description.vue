@@ -18,7 +18,7 @@
         <b-td>{{param.type}}</b-td>
       </b-tr>
       <b-tr>
-        <b-td colspan="5"><b>/api/v1/account/ endpoint</b></b-td>
+        <b-td colspan="5"><b>/api/v1/account/(resource-id)/analytics/(analytics-type)/ endpoint</b></b-td>
       </b-tr>
       <b-tr v-for="param in accountparams" :key="param.name">
         <b-td>{{param.name}}</b-td>
@@ -28,9 +28,19 @@
         <b-td>{{param.type}}</b-td>
       </b-tr>
       <b-tr>
-        <b-td colspan="5"><b>/api/v1/term/ endpoint</b></b-td>
+        <b-td colspan="5"><b>/api/v1/term/(resource-id)/analytics/(analytics-type)/ endpoint</b></b-td>
       </b-tr>
       <b-tr v-for="param in termparams" :key="param.name">
+        <b-td>{{param.name}}</b-td>
+        <b-td>{{param.example}}</b-td>
+        <b-td>{{param.description}}</b-td>
+        <b-td><i>{{param.default}}</i></b-td>
+        <b-td>{{param.type}}</b-td>
+      </b-tr>
+      <b-tr>
+        <b-td colspan="5"><b>/api/v1/user/(resource-id)/analytics/(analytics-type)/ endpoint</b></b-td>
+      </b-tr>
+      <b-tr v-for="param in useranalyticsparams" :key="param.name">
         <b-td>{{param.name}}</b-td>
         <b-td>{{param.example}}</b-td>
         <b-td>{{param.description}}</b-td>
@@ -64,7 +74,7 @@ export default {
          description: "Week in a term",
          default: "any",
          type: "int"},
-        {name: "sis-term-id",
+        {name: "sis_term_id",
          example: "Spring-2021",
          description: "Term id in format [Year]-[Quarter]",
          default: "any",
@@ -84,18 +94,20 @@ export default {
          default: "required",
          type: "string"}
       ],
-      userparams: [
+      useranalyticsparams: [
         {name: "sis-user-id",
          example: "4DC8FAF817814361889CB2715CD16D28",
          description: "Canvas sis user id",
          default: "optional",
          type: "string"},
+      ],
+      userparams: [
         {name: "has_analytics",
          example: "true",
          description: "Limit to users with analytics ",
          default: "any",
          type: "boolean"},
-      ],
+      ]
     }
   },
   computed: {
