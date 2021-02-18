@@ -21,7 +21,7 @@ setup(
     packages=['data_aggregator'],
     include_package_data=True,
     install_requires = [
-        'Django>=3.0,<3.2',
+        'Django>=2.2.13,<3.0',
         'UW-RestClients-SWS>=2.3.3,<3.0',
         'UW-RestClients-PWS>=2.1.2,<3.0',
         'UW-RestClients-Canvas>=1.1.13,<2.0',
