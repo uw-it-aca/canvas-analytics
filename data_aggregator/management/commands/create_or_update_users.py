@@ -23,7 +23,7 @@ class Command(BaseCommand):
             users,
             ["login_id", "sis_user_id", "first_name",
              "last_name", "full_name", "sortable_name",
-             "short_name", "email", "status"],
+             "email", "status"],
             batch_size=batch_size)
 
     def handle(self, *args, **options):
@@ -70,7 +70,6 @@ class Command(BaseCommand):
                 user.last_name = row['last_name']
                 user.full_name = row['full_name']
                 user.sortable_name = row['sortable_name']
-                user.short_name = row['short_name']
                 user.email = row['email']
                 user.status = status
                 if new_user:
@@ -79,7 +78,7 @@ class Command(BaseCommand):
                     updated[user.canvas_user_id] = user
                 user_count += 1
         self.create_users(created.values())
-        print("Created {} users".format(len(created)))
+        print("Created {} user(s)".format(len(created)))
         self.update_users(updated.values())
-        print("Updated {} users".format(len(updated)))
+        print("Updated {} user(s)".format(len(updated)))
         self.logger.info('Finished creating / updating users')
