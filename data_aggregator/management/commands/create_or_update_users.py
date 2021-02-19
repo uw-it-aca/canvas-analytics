@@ -70,7 +70,6 @@ class Command(BaseCommand):
                 user.last_name = row['last_name']
                 user.full_name = row['full_name']
                 user.sortable_name = row['sortable_name']
-                user.short_name = row['short_name']
                 user.email = row['email']
                 user.status = status
                 if new_user:

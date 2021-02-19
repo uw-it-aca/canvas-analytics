@@ -65,11 +65,11 @@ class Week(models.Model):
 
 
 class Course(models.Model):
-    canvas_course_id = models.IntegerField()
+    canvas_course_id = models.BigIntegerField()
     sis_course_id = models.TextField(null=True)
     short_name = models.TextField(null=True)
     long_name = models.TextField(null=True)
-    canvas_account_id = models.IntegerField(null=True)
+    canvas_account_id = models.BigIntegerField(null=True)
     sis_account_id = models.TextField(null=True)
     status = models.TextField(null=True)
     term = models.ForeignKey(Term,
@@ -77,14 +77,13 @@ class Course(models.Model):
 
 
 class User(models.Model):
-    canvas_user_id = models.IntegerField(unique=True)
+    canvas_user_id = models.BigIntegerField(unique=True)
     login_id = models.TextField(null=True)
     sis_user_id = models.TextField(null=True)
     first_name = models.TextField(null=True)
     last_name = models.TextField(null=True)
     full_name = models.TextField(null=True)
     sortable_name = models.TextField(null=True)
-    short_name = models.TextField(null=True)
     email = models.TextField(null=True)
     status = models.TextField(null=True)
 
