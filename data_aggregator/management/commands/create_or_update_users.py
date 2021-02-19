@@ -23,7 +23,7 @@ class Command(BaseCommand):
             users,
             ["login_id", "sis_user_id", "first_name",
              "last_name", "full_name", "sortable_name",
-             "short_name", "email", "status"],
+             "email", "status"],
             batch_size=batch_size)
 
     def handle(self, *args, **options):
