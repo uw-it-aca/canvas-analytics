@@ -78,7 +78,7 @@ class Command(BaseCommand):
                     updated[user.canvas_user_id] = user
                 user_count += 1
         self.create_users(created.values())
-        print("Created {} users".format(len(created)))
+        print("Created {} user(s)".format(len(created)))
         self.update_users(updated.values())
-        print("Updated {} users".format(len(updated)))
+        print("Updated {} user(s)".format(len(updated)))
         self.logger.info('Finished creating / updating users')
