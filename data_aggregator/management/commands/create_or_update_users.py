@@ -9,22 +9,30 @@ from uw_sws.term import get_current_term
 from uw_pws import PWS
 
 
+def chunker(seq, size):
+    return (seq[pos:pos + size] for pos in range(0, len(seq), size))
+
+
 class Command(BaseCommand):
 
     help = ("Loads or updates list of students for the current term.")
 
     @transaction.atomic
-    def create_users(self, users, batch_size=1000):
-        User.objects.bulk_create(users, batch_size=batch_size)
+    def create_users(self, users, batch_size=100):
+        if users:
+            User.objects.bulk_create(users, batch_size=batch_size)
+            print("Created {} user(s)".format(len(users)))
 
     @transaction.atomic
-    def update_users(self, users, batch_size=1000):
-        User.objects.bulk_update(
-            users,
-            ["login_id", "sis_user_id", "first_name",
-             "last_name", "full_name", "sortable_name",
-             "email", "status"],
-            batch_size=batch_size)
+    def update_users(self, users, batch_size=100):
+        if users:
+            User.objects.bulk_update(
+                users,
+                ["login_id", "sis_user_id", "first_name",
+                 "last_name", "full_name", "sortable_name",
+                 "email", "status"],
+                batch_size=batch_size)
+            print("Updated {} user(s)".format(len(users)))
 
     def handle(self, *args, **options):
         self.logger = logging.getLogger(__name__)
@@ -35,8 +43,8 @@ class Command(BaseCommand):
         sis_data = CanvasDAO().get_canvas_user_provisioning_report(
             sws_term.canvas_sis_id())
         user_count = 0
-        updated = {}
-        created = {}
+        update = {}
+        create = {}
 
         self.logger.info(f"Parsing Canvas user provisioning report "
                          f"containing {len(sis_data)} rows.")
@@ -73,14 +81,12 @@ class Command(BaseCommand):
                 user.email = row['email']
                 user.status = status
                 if new_user:
-                    created[user.canvas_user_id] = user
+                    create[user.canvas_user_id] = user
                 else:
-                    updated[user.canvas_user_id] = user
+                    update[user.canvas_user_id] = user
                 user_count += 1
-        created = created.values()
-        self.create_users(created)
-        print("Created {} user(s)".format(len(created)))
-        updated = updated.values()
-        self.update_users(updated)
-        print("Updated {} user(s)".format(len(updated)))
+        for users in chunker(list(create.values()), 1000):
+            self.create_users(users)
+        for users in chunker(list(update.values()), 1000):
+            self.update_users(users)
         self.logger.info('Finished creating / updating users')
