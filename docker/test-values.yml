@@ -43,7 +43,7 @@ targetAverageUtilization: 100
 resources:
   limits:
     cpu: 1000m
-    memory: 1024Mi
+    memory: 2048Mi
   requests:
     cpu: 50m
     memory: 256Mi
