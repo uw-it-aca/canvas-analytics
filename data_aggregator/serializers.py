@@ -16,7 +16,7 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ['sis_user_id', 'canvas_user_id', 'login_id',
                   'first_name', 'last_name', 'full_name',
-                  'sortable_name', 'short_name', 'email', 'status']
+                  'sortable_name', 'email', 'status']
 
 
 class AssignmentSerializer(serializers.ModelSerializer):
