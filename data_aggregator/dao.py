@@ -68,7 +68,14 @@ class CanvasDAO():
                         canvas_course_id, student_id)
                 for i in res:
                     assignment = Assignment()
-                    user = User.objects.get(canvas_user_id=student_id)
+                    try:
+                        user = User.objects.get(canvas_user_id=student_id)
+                    except User.DoesNotExist:
+                        logging.warning("User with canvas_user_id {} does not "
+                                        "exist in Canvas Analytics DB. "
+                                        "Skipping."
+                                        .format(student_id))
+                        continue
                     assignment.user = user
                     assignment.assignment_id = i.get('assignment_id')
                     assignment.title = i.get('title')
@@ -135,7 +142,14 @@ class CanvasDAO():
                     canvas_course_id, student_id)
                 for i in res:
                     partic = Participation()
-                    user = User.objects.get(canvas_user_id=student_id)
+                    try:
+                        user = User.objects.get(canvas_user_id=student_id)
+                    except User.DoesNotExist:
+                        logging.warning("User with canvas_user_id {} does not "
+                                        "exist in Canvas Analytics DB. "
+                                        "Skipping."
+                                        .format(student_id))
+                        continue
                     partic.user = user
                     partic.week = week
                     partic.course = course
