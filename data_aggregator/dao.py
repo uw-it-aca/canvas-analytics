@@ -81,7 +81,7 @@ class CanvasDAO():
                                       .get(user=user,
                                            assignment_id=assignment_id))
                         # check if anything has changed
-                        if (assignment.title != i.get('title') or 
+                        if (assignment.title != i.get('title') or
                             assignment.due_at != i.get('unlock_at') or
                             assignment.points_possible !=
                                 i.get('points_possible') or
@@ -89,15 +89,15 @@ class CanvasDAO():
                                 i.get('non_digital_submission') or
                             assignment.due_at != i.get('due_at') or
                             assignment.status != i.get('status') or
-                             assignment.muted != i.get('muted') or
-                             assignment.max_score != i.get('max_score') or
-                             assignment.min_score != i.get('min_score') or
-                             assignment.first_quartile !=
-                                 i.get('first_quartile') or
-                             assignment.median != i.get('median') or
-                             assignment.third_quartile !=
+                            assignment.muted != i.get('muted') or
+                            assignment.max_score != i.get('max_score') or
+                            assignment.min_score != i.get('min_score') or
+                            assignment.first_quartile !=
+                                i.get('first_quartile') or
+                            assignment.median != i.get('median') or
+                            assignment.third_quartile !=
                                 i.get('third_quartile') or
-                             assignment.excused != i.get('excused')):
+                                assignment.excused != i.get('excused')):
                             # something changed so we want to update
                             pass
                         else:
