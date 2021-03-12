@@ -82,7 +82,7 @@ class CanvasDAO():
                                            assignment_id=assignment_id))
                         # check if anything has changed
                         if (assignment.title != i.get('title') or
-                            assignment.due_at != i.get('unlock_at') or
+                            assignment.unlock_at != i.get('unlock_at') or
                             assignment.points_possible !=
                                 i.get('points_possible') or
                             assignment.non_digital_submission !=
@@ -110,7 +110,7 @@ class CanvasDAO():
                     assignment.assignment_id = assignment_id
                     assignment.week = week
                     assignment.title = i.get('title')
-                    assignment.due_at = i.get('unlock_at')
+                    assignment.unlock_at = i.get('unlock_at')
                     assignment.points_possible = i.get('points_possible')
                     assignment.non_digital_submission = \
                         i.get('non_digital_submission')
