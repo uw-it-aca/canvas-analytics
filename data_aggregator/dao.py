@@ -67,7 +67,7 @@ class CanvasDAO():
                 res = self.get_assignment_for_student(
                         canvas_course_id, student_id)
                 for i in res:
-                    assignment = Assignment()
+                    assignment_id = i.get('assignment_id')
                     try:
                         user = User.objects.get(canvas_user_id=student_id)
                     except User.DoesNotExist:
@@ -76,8 +76,39 @@ class CanvasDAO():
                                         "Skipping."
                                         .format(student_id))
                         continue
+                    try:
+                        assignment = (Assignment.objects
+                                      .get(user=user,
+                                           assignment_id=assignment_id))
+                        # check if anything has changed
+                        if (assignment.title != i.get('title') or 
+                            assignment.due_at != i.get('unlock_at') or
+                            assignment.points_possible !=
+                                i.get('points_possible') or
+                            assignment.non_digital_submission !=
+                                i.get('non_digital_submission') or
+                            assignment.due_at != i.get('due_at') or
+                            assignment.status != i.get('status') or
+                             assignment.muted != i.get('muted') or
+                             assignment.max_score != i.get('max_score') or
+                             assignment.min_score != i.get('min_score') or
+                             assignment.first_quartile !=
+                                 i.get('first_quartile') or
+                             assignment.median != i.get('median') or
+                             assignment.third_quartile !=
+                                i.get('third_quartile') or
+                             assignment.excused != i.get('excused')):
+                            # something changed so we want to update
+                            pass
+                        else:
+                            # skip this assignment since nothing changed
+                            continue
+                    except Assignment.DoesNotExist:
+                        pass
+                    assignment = Assignment()
                     assignment.user = user
-                    assignment.assignment_id = i.get('assignment_id')
+                    assignment.assignment_id = assignment_id
+                    assignment.week = week
                     assignment.title = i.get('title')
                     assignment.due_at = i.get('unlock_at')
                     assignment.points_possible = i.get('points_possible')
@@ -98,7 +129,6 @@ class CanvasDAO():
                         assignment.posted_at = submission.get('posted_at')
                         assignment.submitted_at = \
                             submission.get('submitted_at')
-                    assignment.week = week
                     assignment.course = course
                     assignments.append(assignment)
                     num_assignments += 1
