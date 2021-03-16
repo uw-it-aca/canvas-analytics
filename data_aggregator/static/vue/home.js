@@ -33,7 +33,7 @@ const store = new Vuex.Store({
     terms: JSON.parse(document.getElementById('terms').innerHTML), // job terms loaded on page load
     jobTypes: JSON.parse(document.getElementById('jobtypes').innerHTML), // job types loaded on page load
     jobRanges: JSON.parse(document.getElementById('job_ranges').innerHTML),
-    refreshTime: 5,
+    refreshTime: 30,
     // loading state
     isLoading: false, // toggles table loading indicator
     // data returned on each refresh
