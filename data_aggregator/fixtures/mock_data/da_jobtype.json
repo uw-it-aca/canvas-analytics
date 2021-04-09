@@ -1,0 +1,16 @@
+[
+{
+ "model": "data_aggregator.jobtype",
+ "pk": 1,
+ "fields": {
+  "type": "assignment"
+ }
+},
+{
+ "model": "data_aggregator.jobtype",
+ "pk": 2,
+ "fields": {
+  "type": "participation"
+ }
+}
+]
