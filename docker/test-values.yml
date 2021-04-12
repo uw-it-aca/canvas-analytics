@@ -86,9 +86,6 @@ environmentVariables:
   - name: ENV
     value: test
 
-  - name: WEBSERVER
-    value: nginx
-
   - name: PWS_ENV
     value: EVAL
 
@@ -96,7 +93,7 @@ environmentVariables:
     value: EVAL
 
   - name: CANVAS_ENV
-    value: PROD
+    value: EVAL
   - name: CANVAS_TIMEOUT
     value: "60"
 

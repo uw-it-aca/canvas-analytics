@@ -1,8 +1,8 @@
-FROM gcr.io/uwit-mci-axdd/django-container:1.2.8 as app-prewebpack-container
+FROM gcr.io/uwit-mci-axdd/django-container:1.3.1 as app-prewebpack-container
 
 USER root
 
-RUN apt-get update && apt-get install mysql-client libmysqlclient-dev -y
+RUN apt-get update && apt-get install libpq-dev -y
 
 USER acait
 
@@ -10,7 +10,6 @@ ADD --chown=acait:acait data_aggregator/VERSION /app/data_aggregator/
 ADD --chown=acait:acait setup.py /app/
 ADD --chown=acait:acait requirements.txt /app/
 RUN . /app/bin/activate && pip install -r requirements.txt
-RUN . /app/bin/activate && pip install mysqlclient
 
 ADD --chown=acait:acait . /app/
 ADD --chown=acait:acait docker/ project/
@@ -32,7 +31,7 @@ COPY --chown=acait:acait --from=wpack /app/data_aggregator/static/data_aggregato
 COPY --chown=acait:acait --from=wpack /app/data_aggregator/static/ /static/
 COPY --chown=acait:acait --from=wpack /app/data_aggregator/static/webpack-stats.json /app/data_aggregator/static/webpack-stats.json
 
-FROM gcr.io/uwit-mci-axdd/django-test-container:1.2.8 as app-test-container
+FROM gcr.io/uwit-mci-axdd/django-test-container:1.3.1 as app-test-container
 
 COPY --from=app-container /app/ /app/
 COPY --from=app-container /static/ /static/
