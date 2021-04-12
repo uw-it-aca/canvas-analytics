@@ -3,7 +3,7 @@ import os
 
 INSTALLED_APPS += [
     'data_aggregator.apps.DataAggregatorConfig',
-    'analytics',
+    'analytics.apps.AnalyticsConfig',
     'webpack_loader',
     'rest_framework'
 ]
