@@ -40,10 +40,10 @@ externalService:
   enabled: true
   name: analytics-db-service
   type: ClusterIP
-  serviceAddress: 172.18.0.41
-  servicePort: 3306
+  serviceAddress: 172.18.1.225
+  servicePort: 5432
 database:
-  engine: mysql
+  engine: postgres
   name: canvas_analytics_prod
   hostname: analytics-db-service
   secretName: analytics.apps.canvas.uw.edu-sql-secrets
