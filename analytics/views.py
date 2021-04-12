@@ -1,16 +1,15 @@
 from django.conf import settings
 from django.shortcuts import render
 from django.http import HttpResponse
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from uw_saml.decorators import group_required
 from analytics.models import (
     WeeklyDataTimePeriod, WeeklyDataDataPoint, ManagedCurrentTerm,
     ManagedCourseSISIDs)
 from dateutil import parser
-import StringIO
+from io import StringIO
 import csv
 import codecs
-import cStringIO
 
 
 @group_required(settings.CANVAS_ANALYTICS_GROUP)
@@ -169,7 +168,7 @@ class UnicodeWriter:
 
     def __init__(self, f, dialect=csv.excel, encoding="utf-8", **kwds):
         # Redirect output to a queue
-        self.queue = cStringIO.StringIO()
+        self.queue = StringIO()
         self.writer = csv.writer(self.queue, dialect=dialect, **kwds)
         self.stream = f
         self.encoder = codecs.getincrementalencoder(encoding)()
