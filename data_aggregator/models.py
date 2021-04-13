@@ -95,6 +95,8 @@ class JobManager(models.Manager):
                 .select_related()
                 .filter(type__type=jobtype)
                 .filter(pid=None)
+                .filter(target_date_end__gte=timezone.now())
+                .filter(target_date_start__lte=timezone.now())
                 [:batchsize])
         for job in jobs:
             job.mark_start()
