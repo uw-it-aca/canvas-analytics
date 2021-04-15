@@ -1,0 +1,167 @@
+ingress:
+  enabled: true
+  type: nginx
+  tls:
+    canvas-analytics:
+      secretName: analytics.apps.canvas.uw.edu-ingress-cert
+      hosts:
+        - analytics.apps.canvas.uw.edu
+  hosts:
+    canvas-analytics:
+      host: analytics.apps.canvas.uw.edu
+      paths:
+        - "/"
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+    nginx.ingress.kubernetes.io/client-body-buffer-size: "16K"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "500"
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 2
+targetAverageUtilization: 100
+resources:
+  limits:
+    cpu: 1000m
+    memory: 2048Mi
+  requests:
+    cpu: 50m
+    memory: 256Mi
+lifecycle:
+  enabled: true
+  preStop:
+    enabled: true
+affinity:
+   podsSpanNodes: true
+readiness:
+  enabled: true
+externalService:
+  enabled: true
+  name: analytics-db-service
+  type: ClusterIP
+  serviceAddress: 172.18.1.225
+  servicePort: 5432
+database:
+  engine: postgres
+  name: canvas_analytics_prod
+  hostname: analytics-db-service
+  secretName: analytics.apps.canvas.uw.edu-sql-secrets
+repo: canvas-analytics
+instance: prod
+image:
+  repository: gcr.io/uwit-mci-axdd/canvas-analytics
+  tag: IMAGE_TAG
+memcached:
+  enabled: false
+cronjob:
+  enabled: false
+  jobs:
+    - name: subacct-activity
+      schedule: "0 10 * * 0" # At 2:00am PST on Sunday
+      command: ["/scripts/management_command.sh"]
+      args: ["build_subaccount_activity_report"]
+certs:
+  mounted: true
+  certPath: /certs/apps.canvas.uw.edu-uwca.cert
+  keyPath: /certs/apps.canvas.uw.edu-uwca.key
+  secretName: analytics.apps.canvas.uw.edu-uwca-certs
+
+environmentVariables:
+  - name: ENV
+    value: prod
+
+  - name: PWS_ENV
+    value: PROD
+
+  - name: SWS_ENV
+    value: PROD
+
+  - name: CANVAS_ENV
+    value: PROD
+  - name: CANVAS_TIMEOUT
+    value: "90"
+
+  - name: AUTH
+    value: SAML
+  - name: SAML_ENTITY_ID
+    value: https://analytics.apps.canvas.uw.edu/saml2
+  - name: CLUSTER_CNAME
+    value: analytics.apps.canvas.uw.edu
+
+externalSecrets:
+  enabled: true
+  secrets:
+    - name: analytics.apps.canvas.uw.edu-canvas-secrets
+      externalKey: axdd/kv/data/canvas/shared/secrets
+      data:
+        - name: canvas-account-id
+          property: canvas-account-id
+
+    - name: analytics.apps.canvas.uw.edu-secrets
+      externalKey: axdd/kv/data/canvas/analytics/prod/secrets
+      data:
+        - name: django-secret
+          property: django-secret
+
+    - name: analytics.apps.canvas.uw.edu-shared-secrets
+      externalKey: axdd/kv/data/canvas/analytics/shared/secrets
+      data:
+        - name: canvas-api-token
+          property: canvas-api-token
+        - name: access-group-id
+          property: access-group-id
+
+    - name: analytics.apps.canvas.uw.edu-sql-secrets
+      externalKey: axdd/kv/data/canvas/analytics/shared/sql-secrets
+      data:
+        - name: username
+          property: username
+        - name: password
+          property: password
+
+    - name: analytics.apps.canvas.uw.edu-uwca-certs
+      externalKey: axdd/kv/data/canvas/prod/uwca-certs
+      data:
+        - name: apps.canvas.uw.edu-uwca.cert
+          property: apps.canvas.uw.edu-uwca.cert
+        - name: apps.canvas.uw.edu-uwca.key
+          property: apps.canvas.uw.edu-uwca.key
+
+    - name: analytics.apps.canvas.uw.edu-ic-certs
+      externalKey: axdd/kv/data/canvas/analytics/prod/ic-certs
+      data:
+        - name: analytics.apps.canvas.uw.edu-ic.cert
+          property: analytics.apps.canvas.uw.edu-ic.cert
+
+    - name: analytics.apps.canvas.uw.edu-uw-idp-cert
+      externalKey: axdd/kv/data/idp-cert
+      data:
+        - name: uw-idp-cert
+          property: cert
+
+environmentVariablesSecrets:
+  djangoSecret:
+    name: DJANGO_SECRET
+    secretName: analytics.apps.canvas.uw.edu-secrets
+    secretKey: django-secret
+  canvasAPIToken:
+    name: CANVAS_OAUTH_BEARER
+    secretName: analytics.apps.canvas.uw.edu-shared-secrets
+    secretKey: canvas-api-token
+  canvasAccountID:
+    name: CANVAS_ACCOUNT_ID
+    secretName: analytics.apps.canvas.uw.edu-canvas-secrets
+    secretKey: canvas-account-id
+  accessGroup:
+    name: ACCESS_GROUP
+    secretName: analytics.apps.canvas.uw.edu-shared-secrets
+    secretKey: access-group-id
+  samlSPCert:
+    name: SP_CERT
+    secretName: analytics.apps.canvas.uw.edu-ic-certs
+    secretKey: analytics.apps.canvas.uw.edu-ic.cert
+  samlIDPCert:
+    name: IDP_CERT
+    secretName: analytics.apps.canvas.uw.edu-uw-idp-cert
+    secretKey: uw-idp-cert
