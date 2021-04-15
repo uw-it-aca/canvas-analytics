@@ -17,16 +17,16 @@ def create(sis_term_id, week):
 
     env = os.getenv("ENV")
     if env == "localdev" or not env:
-        create_action = "CREATE"
+        create_action = "CREATE VIEW"
         cursor.execute(
             'DROP VIEW IF EXISTS `{view_name}`'.format(view_name=view_name)
         )
     else:
-        create_action = "CREATE OR REPLACE"
+        create_action = "CREATE MATERIALIZED VIEW"
 
     cursor.execute(
         '''
-        {create_action} VIEW `{view_name}` AS
+        {create_action} `{view_name}` AS
             SELECT
                 data_aggregator_term.id AS term_id,
                 data_aggregator_week.id AS week_id,
@@ -69,5 +69,4 @@ class Command(BaseCommand):
 
         sis_term_id = sws_term.canvas_sis_id()
         week = get_week_of_term(sws_term.first_day_quarter)
-        view_name = get_view_name(sis_term_id, week)
         create(sis_term_id, week)

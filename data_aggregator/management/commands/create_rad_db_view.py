@@ -54,16 +54,16 @@ def create(sis_term_id, week):
                     p1.user_id,
                     p1.course_id,
                     p1.week_id,
-                    (
-                    IFNULL(
-                        ((p1.participations) - min_raw_participation_score) /
-                        (NULLIF((max_raw_participation_score - min_raw_participation_score), 0) / 10), 0) - 5
-                    ) AS normalized_participation_score,
-                    (
-                    IFNULL(
-                        ((2 * p1.time_on_time + p1.time_late) - min_raw_assignment_score) /
-                        (NULLIF((max_raw_assignment_score - min_raw_assignment_score), 0) / 10), 0) - 5
-                    ) AS normalized_assignment_score
+                        coalesce(
+                            cast((p1.participations - min_raw_participation_score) as decimal) /
+                            NULLIF( cast((max_raw_participation_score - min_raw_participation_score) as decimal) / 10, 0),
+                        0) - 5
+                    AS normalized_participation_score,
+                        coalesce(
+                            cast(((2 * p1.time_on_time + p1.time_late) - min_raw_assignment_score) as decimal) /
+                            NULLIF( cast((max_raw_assignment_score - min_raw_assignment_score) as decimal) / 10, 0)
+                                , 0) - 5
+                    AS normalized_assignment_score
                 FROM `{participations_view_name}` p1
                 JOIN (
                     SELECT
@@ -82,7 +82,9 @@ def create(sis_term_id, week):
                     p1.week_id,
                     participations,
                     p1.time_on_time,
-                    p1.time_late
+                    p1.time_late,
+                    normalized_participation_score,
+                    normalized_assignment_score
             ) norm_ra
             GROUP BY
                 norm_ra.user_id
@@ -95,11 +97,11 @@ def create(sis_term_id, week):
             SELECT
                 a2.user_id,
                 CASE
-                WHEN (IFNULL(a2.max_score, 0) - IFNULL(a2.min_score, 0)) = 0 THEN 0
+                WHEN (COALESCE(a2.max_score, 0) - COALESCE(a2.min_score, 0)) = 0 THEN 0
                 WHEN a2.score  IS NULL THEN -5
-                ELSE ((10 * (IFNULL(a2.score, 0) - IFNULL(a2.min_score, 0))) /
-                        (IFNULL(a2.max_score, 0) - IFNULL(a2.min_score, 0))) - 5
-                END AS 'normalized_score'
+                ELSE ((10 * (COALESCE(a2.score, 0) - COALESCE(a2.min_score, 0))) /
+                        (COALESCE(a2.max_score, 0) - COALESCE(a2.min_score, 0))) - 5
+                END AS normalized_score
             FROM `{assignments_view_name}` a2
             WHERE a2.status = 'on_time' OR a2.status = 'late' OR a2.status = 'missing'
             GROUP BY a2.user_id, normalized_score 
@@ -109,13 +111,13 @@ def create(sis_term_id, week):
         ) AS a
         ON p.user_id = a.user_id
         JOIN data_aggregator_user u ON p.user_id = u.id
-                    '''.format(
-						    create_action=create_action,
-						    view_name=view_name,
-                            week=week,
-                            sis_term_id=sis_term_id,
-                            participations_view_name=participations_view_name,
-                            assignments_view_name=assignments_view_name)
+        '''.format(
+            create_action=create_action,
+            view_name=view_name,
+            week=week,
+            sis_term_id=sis_term_id,
+            participations_view_name=participations_view_name,
+            assignments_view_name=assignments_view_name)
     )
     return True
 
