@@ -12,11 +12,20 @@ class Command(BaseCommand):
 
     help = ("Creates assignment jobs for active courses in current term.")
 
+
+    def add_arguments(self, parser):
+        parser.add_argument("--canvas_course_id",
+                            type=int,
+                            help=("Canvas course ID to create a job for."),
+                            default=None,
+                            required=False)
+
     def handle(self, *args, **options):
         """
         Load assignments jobs for all active courses in the current term
         """
-        logger = logging.getLogger(__name__)
+
+        canvas_course_id = options["canvas_course_id"]
 
         # get assignment job type
         assignment_type, _ = JobType.objects.get_or_create(type="assignment")
@@ -26,27 +35,37 @@ class Command(BaseCommand):
         target_date_start = datetime.combine(today, time(00, 00, 00))
         target_date_end = datetime.combine(today, time(23, 59, 59))
 
-        jobs_count = 0
-        sws_term = get_current_term()
-        courses = (Course.objects.filter(
-            Q(status='active') & Q(term__sis_term_id=sws_term.canvas_sis_id()))
-        )
-        course_count = courses.count()
-        if course_count == 0:
-            logger.info(
-                f'No active courses in term {sws_term.canvas_sis_id()} to '
-                f'create assignment jobs for.')
+        if canvas_course_id:
+            logging.info(
+                f"Adding assignment job for course "
+                f"{canvas_course_id}")
+            job = Job()
+            job.type = assignment_type
+            job.target_date_start = target_date_start
+            job.target_date_end = target_date_end
+            job.context = {'canvas_course_id': canvas_course_id}
+            job.save()
         else:
-            for course in courses:
-                # create assignment jobs
-                logger.info(
-                    f"Adding assignment jobs for course "
-                    f"{course.canvas_course_id}")
-                job = Job()
-                job.type = assignment_type
-                job.target_date_start = target_date_start
-                job.target_date_end = target_date_end
-                job.context = {'canvas_course_id': course.canvas_course_id}
-                job.save()
-                jobs_count += 1
-        logger.info(f'Created {jobs_count} assignment jobs.')
+            courses = (Course.objects.filter(
+                Q(status='active') & Q(term__sis_term_id='2021-spring'))
+            )
+            course_count = courses.count()
+            if course_count == 0:
+                logging.info(
+                    f'No active courses in term 2021-spring to '
+                    f'create assignment jobs for.')
+            else:
+                jobs_count = 0
+                for course in courses:
+                    # create assignment jobs
+                    logging.info(
+                        f"Adding assignment jobs for course "
+                        f"{course.canvas_course_id}")
+                    job = Job()
+                    job.type = assignment_type
+                    job.target_date_start = target_date_start
+                    job.target_date_end = target_date_end
+                    job.context = {'canvas_course_id': course.canvas_course_id}
+                    job.save()
+                    jobs_count += 1
+                logging.info(f'Created {jobs_count} assignment jobs.')
