@@ -31,7 +31,7 @@ class CanvasDAO():
                         "type": ['StudentEnrollment'],
                         "state": ['active', 'deleted', 'inactive']
                     })
-        res = [stu.user_id for stu in stus]
+        res = list({stu.user_id for stu in stus})
         return(res)
 
     def get_course(self, canvas_course_id):
@@ -67,7 +67,6 @@ class CanvasDAO():
                 res = self.get_assignment_for_student(
                         canvas_course_id, student_id)
                 for i in res:
-                    assignment_id = i.get('assignment_id')
                     try:
                         user = User.objects.get(canvas_user_id=student_id)
                     except User.DoesNotExist:
@@ -77,6 +76,7 @@ class CanvasDAO():
                                         .format(student_id))
                         continue
                     try:
+                        assignment_id = i.get('assignment_id')
                         assignment = (Assignment.objects
                                       .get(user=user,
                                            assignment_id=assignment_id))
@@ -171,7 +171,6 @@ class CanvasDAO():
                 res = self.get_participation_for_student(
                     canvas_course_id, student_id)
                 for i in res:
-                    partic = Participation()
                     try:
                         user = User.objects.get(canvas_user_id=student_id)
                     except User.DoesNotExist:
@@ -180,6 +179,7 @@ class CanvasDAO():
                                         "Skipping."
                                         .format(student_id))
                         continue
+                    partic = Participation()
                     partic.user = user
                     partic.week = week
                     partic.course = course

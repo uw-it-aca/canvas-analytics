@@ -177,6 +177,12 @@ class Assignment(models.Model):
     posted_at = models.DateTimeField(null=True)
     submitted_at = models.DateTimeField(null=True)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'course', 'assignment_id'],
+                                    name='unique_assignment')
+        ]
+
 
 class Participation(models.Model):
     course = models.ForeignKey(Course,
@@ -196,3 +202,9 @@ class Participation(models.Model):
     time_late = models.IntegerField(null=True)
     time_missing = models.IntegerField(null=True)
     time_floating = models.IntegerField(null=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'course', 'week'],
+                                    name='unique_participation')
+        ]
