@@ -93,9 +93,9 @@ environmentVariables:
     value: EVAL
 
   - name: CANVAS_ENV
-    value: EVAL
+    value: PROD
   - name: CANVAS_TIMEOUT
-    value: "60"
+    value: "90"
 
   - name: AUTH
     value: SAML
