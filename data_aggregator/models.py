@@ -176,6 +176,7 @@ class Assignment(models.Model):
     score = models.DecimalField(null=True, max_digits=13, decimal_places=3)
     posted_at = models.DateTimeField(null=True)
     submitted_at = models.DateTimeField(null=True)
+
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=['user', 'course', 'assignment_id'],

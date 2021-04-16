@@ -12,7 +12,6 @@ class Command(BaseCommand):
 
     help = ("Creates assignment jobs for active courses in current term.")
 
-
     def add_arguments(self, parser):
         parser.add_argument("--canvas_course_id",
                             type=int,
