@@ -16,16 +16,18 @@ def create(sis_term_id, week):
 
     env = os.getenv("ENV")
     if env == "localdev" or not env:
-        create_action = "CREATE VIEW"
+        create_action = ("CREATE VIEW `{view_name}`"
+                         .format(view_name=view_name))
         cursor.execute(
             'DROP VIEW IF EXISTS `{view_name}`'.format(view_name=view_name)
         )
     else:
-        create_action = "CREATE MATERIALIZED VIEW"
+        create_action = ("CREATE MATERIALIZED VIEW {view_name}"
+                         .format(view_name=view_name))
 
     cursor.execute(
         '''
-        {create_action} `{view_name}` AS
+        {create_action} AS
         SELECT
             data_aggregator_term.id AS term_id,
             data_aggregator_week.id AS week_id,
@@ -69,7 +71,6 @@ def create(sis_term_id, week):
             data_aggregator_week.term_id = data_aggregator_term.id
         WHERE data_aggregator_week.week = b.max_week
         '''.format(create_action=create_action,
-                   view_name=view_name,
                    week=week,
                    sis_term_id=sis_term_id)
     )
