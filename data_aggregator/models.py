@@ -95,6 +95,8 @@ class JobManager(models.Manager):
                 .select_related()
                 .filter(type__type=jobtype)
                 .filter(pid=None)
+                .filter(target_date_end__gte=timezone.now())
+                .filter(target_date_start__lte=timezone.now())
                 [:batchsize])
         for job in jobs:
             job.mark_start()
@@ -175,6 +177,12 @@ class Assignment(models.Model):
     posted_at = models.DateTimeField(null=True)
     submitted_at = models.DateTimeField(null=True)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'course', 'assignment_id'],
+                                    name='unique_assignment')
+        ]
+
 
 class Participation(models.Model):
     course = models.ForeignKey(Course,
@@ -194,3 +202,9 @@ class Participation(models.Model):
     time_late = models.IntegerField(null=True)
     time_missing = models.IntegerField(null=True)
     time_floating = models.IntegerField(null=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'course', 'week'],
+                                    name='unique_participation')
+        ]

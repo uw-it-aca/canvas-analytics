@@ -73,10 +73,10 @@ daemon:
   daemons:
     - name: run-assign-jobs
       command: ["/scripts/management_daemon.sh"]
-      args: ['--cron', '* 12-23 * * 6', 'run_assignment_jobs']
+      args: ['--cron', '* * * * *', 'run_assignment_jobs']
     - name: run-partic-jobs
       command: ["/scripts/management_daemon.sh"]
-      args: ['--cron', '* 13-23 * * 6', 'run_participation_jobs']
+      args: ['--cron', '* * * * *', 'run_participation_jobs']
 certs:
   mounted: true
   certPath: /certs/test-apps.canvas.uw.edu-uwca.cert
@@ -93,9 +93,9 @@ environmentVariables:
     value: EVAL
 
   - name: CANVAS_ENV
-    value: EVAL
+    value: PROD
   - name: CANVAS_TIMEOUT
-    value: "60"
+    value: "90"
 
   - name: AUTH
     value: SAML

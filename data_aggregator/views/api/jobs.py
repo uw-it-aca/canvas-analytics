@@ -2,6 +2,8 @@ import json
 from data_aggregator.models import Job
 from data_aggregator.views.api import RESTDispatch
 from django.db.models import F, Q, BooleanField, Value
+from django.utils import timezone
+from datetime import datetime, time
 
 
 class JobView(RESTDispatch):
@@ -102,6 +104,12 @@ class JobRestartView(RESTDispatch):
     '''
 
     def post(self, request, *args, **kwargs):
+
+        # make reset job active for the current day
+        today = timezone.now().date()
+        target_date_start = datetime.combine(today, time(00, 00, 00))
+        target_date_end = datetime.combine(today, time(23, 59, 59))
+
         data = json.loads(request.body.decode('utf-8'))
         job_ids = data["job_ids"]
         for job_id in job_ids:
@@ -109,6 +117,8 @@ class JobRestartView(RESTDispatch):
             job.pid = None
             job.start = None
             job.end = None
+            job.target_date_start = target_date_start
+            job.target_date_end = target_date_end
             job.message = ""
             job.save()
         return self.json_response(content={"reset": True})
