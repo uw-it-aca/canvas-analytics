@@ -1,0 +1,28 @@
+[
+{
+ "model": "data_aggregator.job",
+ "pk": 1,
+ "fields": {
+  "type": 1,
+  "target_date_start": "2021-04-02 00:00:00Z",
+  "target_date_end": "2021-04-02 23:59:59Z",
+  "context": {
+   "canvas_course_id": 831726
+  },
+  "created": "2021-04-02"
+ }
+},
+{
+ "model": "data_aggregator.job",
+ "pk": 2,
+ "fields": {
+  "type": 2,
+  "target_date_start": "2021-04-02 00:00:00Z",
+  "target_date_end": "2021-04-02 23:59:59Z",
+  "context": {
+   "canvas_course_id": 831726
+  },
+  "created": "2021-04-02"
+ }
+}
+]

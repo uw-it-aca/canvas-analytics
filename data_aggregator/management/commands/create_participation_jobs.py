@@ -1,11 +1,9 @@
-
 import logging
 from django.core.management.base import BaseCommand
 from data_aggregator.models import Course, Job, JobType
 from django.db.models import Q
 from django.utils import timezone
 from datetime import datetime, time
-from uw_sws.term import get_current_term
 
 
 class Command(BaseCommand):
@@ -51,8 +49,8 @@ class Command(BaseCommand):
             course_count = courses.count()
             if course_count == 0:
                 logging.info(
-                    f'No active courses in term 2021-spring to '
-                    f'create participation jobs for.')
+                    'No active courses in term 2021-spring to create '
+                    'participation jobs for.')
             else:
                 jobs_count = 0
                 for course in courses:

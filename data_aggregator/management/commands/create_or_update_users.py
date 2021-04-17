@@ -1,7 +1,7 @@
 
 import logging
 from django.db import transaction
-from csv import DictReader, reader
+from csv import DictReader
 from django.core.management.base import BaseCommand
 from data_aggregator.models import User
 from data_aggregator.dao import CanvasDAO

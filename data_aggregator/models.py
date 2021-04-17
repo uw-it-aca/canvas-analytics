@@ -179,7 +179,8 @@ class Assignment(models.Model):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['user', 'course', 'assignment_id'],
+            models.UniqueConstraint(fields=['user', 'course', 'assignment_id',
+                                            'week'],
                                     name='unique_assignment')
         ]
 
