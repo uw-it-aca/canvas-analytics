@@ -109,7 +109,7 @@ def create(sis_term_id, week):
         ) AS a
         ON p.user_id = a.user_id
         JOIN data_aggregator_user u ON p.user_id = u.id
-        ''' # noqa
+        '''  # noqa
         .format(
             create_action=create_action,
             view_name=view_name,

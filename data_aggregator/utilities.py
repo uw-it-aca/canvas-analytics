@@ -33,6 +33,7 @@ def get_term_number(quarter_name):
                          "WINTER, SPRING, SUMMER, and AUTUMN."
                          .format(quarter_name))
 
+
 def get_view_name(sis_term_id, week, label):
     view_name = ("{sis_term_id}_week_{week}_{label}"
                  .format(sis_term_id=sis_term_id.replace("-", "_"),

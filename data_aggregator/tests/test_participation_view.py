@@ -1,14 +1,13 @@
-import os
 import unittest
-from unittest import mock
 from data_aggregator.utilities import get_view_name
 from data_aggregator.management.commands.create_participation_db_view \
     import create
 from data_aggregator.tests.db_utils import get_row_count
 
+
 class TestParticipationView(unittest.TestCase):
 
-    fixtures = ['/data_aggregator/fixtures/mock_data/*.json',]
+    fixtures = ['/data_aggregator/fixtures/mock_data/*.json', ]
 
     def test_get_view_name(self):
         """
@@ -41,7 +40,7 @@ class TestParticipationView(unittest.TestCase):
         sis_term_id = "2013-spring"
         week = 1
         label = "participations"
-        
+
         self.assertEqual(
             get_row_count(get_view_name(sis_term_id, week, label)),
             20)

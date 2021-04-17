@@ -1,5 +1,6 @@
 from django.db import connection
 
+
 def get_row_count(table_name):
     cursor = connection.cursor()
     query = cursor.execute('SELECT COUNT(*) FROM "{table_name}"'
@@ -9,7 +10,7 @@ def get_row_count(table_name):
 
 def get_row_count_where_status_equals(table_name, status):
     cursor = connection.cursor()
-    query = cursor.execute('''SELECT COUNT(*) 
+    query = cursor.execute('''SELECT COUNT(*)
                               FROM "{table_name}"
                               WHERE status = '{status}'
                            '''

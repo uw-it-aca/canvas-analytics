@@ -1,6 +1,4 @@
-import os
 import unittest
-from unittest import mock
 from data_aggregator.utilities import get_view_name
 from data_aggregator.management.commands.create_rad_db_view import create
 from data_aggregator.tests.db_utils import get_row_count
@@ -8,7 +6,7 @@ from data_aggregator.tests.db_utils import get_row_count
 
 class TestRadView(unittest.TestCase):
 
-    fixtures = ['/data_aggregator/fixtures/mock_data/*.json',]
+    fixtures = ['/data_aggregator/fixtures/mock_data/*.json', ]
 
     def test_get_view_name(self):
         view_name = get_view_name("2013-spring", "1", "rad")
@@ -35,7 +33,7 @@ class TestRadView(unittest.TestCase):
         sis_term_id = "2013-spring"
         week = 1
         label = "rad"
-        
+
         self.assertEqual(
             get_row_count(get_view_name(sis_term_id, week, label)),
             20)
@@ -44,6 +42,7 @@ class TestRadView(unittest.TestCase):
         self.assertEqual(
             get_row_count(get_view_name(sis_term_id, week, label)),
             20)
+
 
 if __name__ == "__main__":
     unittest.main()
