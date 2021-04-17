@@ -15,13 +15,13 @@ def create(sis_term_id, week):
 
     env = os.getenv("ENV")
     if env == "localdev" or not env:
-        create_action = ("CREATE VIEW `{view_name}`"
+        create_action = ('CREATE VIEW "{view_name}"'
                          .format(view_name=view_name))
         cursor.execute(
-            'DROP VIEW IF EXISTS `{view_name}`'.format(view_name=view_name)
+            'DROP VIEW IF EXISTS "{view_name}"'.format(view_name=view_name)
         )
     else:
-        create_action = ("CREATE MATERIALIZED VIEW {view_name}"
+        create_action = ('CREATE MATERIALIZED VIEW "{view_name}"'
                          .format(view_name=view_name))
 
     cursor.execute(
