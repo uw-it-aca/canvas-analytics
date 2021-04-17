@@ -64,7 +64,7 @@ def create(sis_term_id, week):
                             NULLIF( cast((max_raw_assignment_score - min_raw_assignment_score) as decimal) / 10, 0)
                                 , 0) - 5
                     AS normalized_assignment_score
-                FROM `{participations_view_name}` p1
+                FROM "{participations_view_name}" p1
                 JOIN (
                     SELECT
                         course_id,
@@ -72,7 +72,7 @@ def create(sis_term_id, week):
                         MAX(p2.participations) AS max_raw_participation_score,
                         MIN(2 * p2.time_on_time + p2.time_late) AS min_raw_assignment_score,
                         MAX(2 * p2.time_on_time + p2.time_late) AS max_raw_assignment_score
-                    FROM `{participations_view_name}` p2
+                    FROM "{participations_view_name}" p2
                     GROUP BY 
                         course_id
                 ) ra ON p1.course_id  = ra.course_id
@@ -102,7 +102,7 @@ def create(sis_term_id, week):
                 ELSE ((10 * (COALESCE(a2.score, 0) - COALESCE(a2.min_score, 0))) /
                         (COALESCE(a2.max_score, 0) - COALESCE(a2.min_score, 0))) - 5
                 END AS normalized_score
-            FROM `{assignments_view_name}` a2
+            FROM "{assignments_view_name}" a2
             WHERE a2.status = 'on_time' OR a2.status = 'late' OR a2.status = 'missing'
             GROUP BY a2.user_id, normalized_score 
             ) a1
