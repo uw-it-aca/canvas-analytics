@@ -1,5 +1,3 @@
-
-import logging
 import os
 from django.core.management.base import BaseCommand
 from uw_sws.term import get_current_term
@@ -52,7 +50,6 @@ def create(sis_term_id, week):
         WHERE data_aggregator_week.week = {week}
         AND data_aggregator_term.sis_term_id = '{sis_term_id}'
         '''.format(create_action=create_action,
-                   view_name=view_name,
                    week=week,
                    sis_term_id=sis_term_id)
     )

@@ -1,4 +1,3 @@
-import logging
 import os
 from django.core.management.base import BaseCommand
 from uw_sws.term import get_current_term

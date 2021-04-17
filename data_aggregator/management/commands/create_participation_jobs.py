@@ -1,4 +1,3 @@
-
 import logging
 from django.core.management.base import BaseCommand
 from data_aggregator.models import Course, Job, JobType

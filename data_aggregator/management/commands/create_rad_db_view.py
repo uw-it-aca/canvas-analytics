@@ -1,5 +1,3 @@
-
-import logging
 import os
 from django.core.management.base import BaseCommand
 from uw_sws.term import get_current_term
@@ -14,11 +12,11 @@ def create(sis_term_id, week):
 
     view_name = get_view_name(sis_term_id, week, "rad")
     assignments_view_name = get_view_name(sis_term_id,
-	                                      week,
-	                                      "assignments")
+                                          week,
+                                          "assignments")
     participations_view_name = get_view_name(sis_term_id,
-	                                         week,
-											 "participations")
+                                             week,
+                                             "participations")
 
     cursor = connection.cursor()
 
@@ -48,7 +46,7 @@ def create(sis_term_id, week):
                 norm_ra.user_id,
                 AVG(normalized_assignment_score) AS assignment_score,
                 AVG(normalized_participation_score) AS participation_score
-            FROM 
+            FROM
             (
                 SELECT
                     p1.user_id,
@@ -111,7 +109,8 @@ def create(sis_term_id, week):
         ) AS a
         ON p.user_id = a.user_id
         JOIN data_aggregator_user u ON p.user_id = u.id
-        '''.format(
+        ''' # noqa
+        .format(
             create_action=create_action,
             view_name=view_name,
             week=week,
