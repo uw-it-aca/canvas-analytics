@@ -34,22 +34,13 @@ def create(sis_term_id, week):
     cursor.execute(
         '''
         {create_action} AS
-        SELECT DISTINCT
-            u.canvas_user_id,
-            u.full_name,
-            '{sis_term_id}' as term,
-            {week} as week,
-            assignment_score,
-            participation_score,
-            grade
-        FROM
-        (
+        WITH
+        avg_norm_ap AS (
             SELECT
-                norm_ra.user_id,
+                norm_ap.user_id,
                 AVG(normalized_assignment_score) AS assignment_score,
                 AVG(normalized_participation_score) AS participation_score
-            FROM
-            (
+            FROM (
                 SELECT
                     p1.user_id,
                     p1.course_id,
@@ -75,7 +66,7 @@ def create(sis_term_id, week):
                     FROM "{participations_view_name}" p2
                     GROUP BY 
                         course_id
-                ) ra ON p1.course_id  = ra.course_id
+                ) raw_ap_bounds ON p1.course_id  = raw_ap_bounds.course_id
                 GROUP BY
                     p1.user_id,
                     p1.course_id,
@@ -85,11 +76,11 @@ def create(sis_term_id, week):
                     p1.time_late,
                     normalized_participation_score,
                     normalized_assignment_score
-            ) norm_ra
+            ) AS norm_ap
             GROUP BY
-                norm_ra.user_id
-        ) AS p JOIN 
-        (
+                norm_ap.user_id
+        ),
+        avg_norm_gr AS (
             SELECT DISTINCT
                 a1.user_id,
                 AVG(normalized_score) AS grade
@@ -108,10 +99,19 @@ def create(sis_term_id, week):
             ) a1
             GROUP BY
                 a1.user_id
-        ) AS a
-        ON p.user_id = a.user_id
-        JOIN data_aggregator_user u ON p.user_id = u.id
-        '''  # noqa
+        )
+        SELECT DISTINCT
+            u.canvas_user_id,
+            u.full_name,
+            '{sis_term_id}' as term,
+            {week} as week,
+            assignment_score,
+            participation_score,
+            grade
+        FROM avg_norm_ap
+        JOIN avg_norm_gr ON avg_norm_ap.user_id = avg_norm_gr.user_id
+        JOIN data_aggregator_user u ON avg_norm_ap.user_id = u.id
+        ''' # noqa
         .format(
             create_action=create_action,
             week=week,
