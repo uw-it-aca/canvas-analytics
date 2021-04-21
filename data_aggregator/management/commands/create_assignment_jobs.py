@@ -5,6 +5,7 @@ from data_aggregator.models import Course, Job, JobType
 from django.db.models import Q
 from django.utils import timezone
 from datetime import datetime, time
+from uw_sws.term import get_current_term
 
 
 class Command(BaseCommand):
@@ -44,14 +45,16 @@ class Command(BaseCommand):
             job.context = {'canvas_course_id': canvas_course_id}
             job.save()
         else:
+            sws_term = get_current_term()
+            sis_term_id = sws_term.canvas_sis_id()
             courses = (Course.objects.filter(
-                Q(status='active') & Q(term__sis_term_id='2021-spring'))
+                Q(status='active') & Q(term__sis_term_id=sis_term_id))
             )
             course_count = courses.count()
             if course_count == 0:
                 logging.info(
-                    'No active courses in term 2021-spring to create '
-                    'assignment jobs for.')
+                    f'No active courses in term {sis_term_id} to create '
+                    f'assignment jobs for.')
             else:
                 jobs_count = 0
                 for course in courses:
