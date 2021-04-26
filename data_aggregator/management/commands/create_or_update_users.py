@@ -35,19 +35,17 @@ class Command(BaseCommand):
             print("Updated {} user(s)".format(len(users)))
 
     def handle(self, *args, **options):
-        self.logger = logging.getLogger(__name__)
-
         # get the current term object from sws
         sws_term = get_current_term()
         # get provising data and load courses
-        sis_data = CanvasDAO().get_canvas_user_provisioning_report(
+        sis_data = CanvasDAO().download_user_provisioning_report(
             sws_term.canvas_sis_id())
         user_count = 0
         update = {}
         create = {}
 
-        self.logger.info(f"Parsing Canvas user provisioning report "
-                         f"containing {len(sis_data)} rows.")
+        logging.info(f"Parsing Canvas user provisioning report "
+                     f"containing {len(sis_data)} rows.")
 
         pws = PWS()
         existing_users = {}
@@ -89,4 +87,4 @@ class Command(BaseCommand):
             self.create_users(users)
         for users in chunker(list(update.values()), 1000):
             self.update_users(users)
-        self.logger.info('Finished creating / updating users')
+        logging.info('Finished creating / updating users')

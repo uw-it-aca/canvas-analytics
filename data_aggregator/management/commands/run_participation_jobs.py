@@ -1,29 +1,40 @@
+import logging
 from django.db import transaction
-from data_aggregator.dao import CanvasDAO
 from data_aggregator.models import Participation
 from data_aggregator.management.commands._base import RunJobCommand
-
+from data_aggregator.dao import CanvasDAO, CloudStorageDAO, AnalyticTypes
 
 class Command(RunJobCommand):
 
-    job_type = "participation"
+    job_type = AnalyticTypes.participation
+
 
     help = ("Loads the participation data for a batch of jobs. Designed to "
             "be run as a cron that is constantly checking for new jobs.")
 
-    @transaction.atomic
-    def write_participations(self, job, partics):
-        # delete existing participation data in case of a job restart
-        old_participation = Participation.objects.filter(job=job)
-        old_participation.delete()
-        # save participation data
-        Participation.objects.bulk_create(partics)
-
     def work(self, job):
-        # load participation data
         canvas_course_id = job.context["canvas_course_id"]
-        partics = (
-            CanvasDAO().get_participation(canvas_course_id))
-        for partic in partics:
-            partic.job = job
-        self.write_participations(job, partics)
+        sis_course_id = job.context["sis_course_id"]
+        analytic_type = AnalyticTypes.participation
+
+        # download participations analtyics from Canvas API
+        canvas_dao = CanvasDAO()
+        participations = canvas_dao.download_raw_analytics_for_course(
+            canvas_course_id, analytic_type)
+
+        # upload participations to GCS bucket
+        try:
+            cs_dao = CloudStorageDAO()
+            cs_dao.upload_analytics_to_bucket(
+                participations, sis_course_id, analytic_type)
+        except ValueError as e:
+            logging.warning(e)
+        else:
+            # download participations from GCS bucket
+            cs_dao.download_analytics_from_bucket(sis_course_id, analytic_type)
+
+            # delete existing participations data in case of a job restart
+            old_participations = Participation.objects.filter(job=job)
+            old_participations.delete()
+            # save participations to db
+            canvas_dao.save_participations_to_db(participations, job)

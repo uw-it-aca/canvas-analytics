@@ -36,7 +36,7 @@ class RunJobCommand(BaseCommand):
             tb = traceback.format_exc()
             job.message = tb
             job.save()
-            self.logger.error(tb)
+            logging.error(tb)
         else:
             job.mark_end()
 
@@ -46,7 +46,6 @@ class RunJobCommand(BaseCommand):
         where pid=None and start=None). For a batch of unstarted jobs,
         calls the run_job method for each job.
         """
-        self.logger = logging.getLogger(__name__)
         num_parallel_jobs = options["num_parallel_jobs"]
         job_batch_size = options["job_batch_size"]
         jobs = Job.objects.start_batch_of_jobs(
@@ -59,10 +58,10 @@ class RunJobCommand(BaseCommand):
                     pool.map(self.run_job, jobs)
             else:
                 if num_parallel_jobs > 1:
-                    self.logger.warning(
+                    logging.warning(
                         "Running single threaded. Multithreading is "
                         "disabled in Django settings.")
                 for job in jobs:
                     self.run_job(job)
         else:
-            self.logger.info(f"No active {self.job_type} jobs.")
+            logging.info(f"No active {self.job_type} jobs.")
