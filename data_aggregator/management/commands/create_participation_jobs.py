@@ -51,14 +51,15 @@ class Command(BaseCommand):
                            'sis_course_id': sis_course_id}
             job.save()
         else:
+            sws_term = get_current_term()
             courses = (Course.objects.filter(
-                Q(status='active') & Q(term__sis_term_id='2021-spring'))
+                Q(status='active') & Q(term__sis_term_id=sws_term.canvas_sis_id()))
             )
             course_count = courses.count()
             if course_count == 0:
                 logging.info(
-                    'No active courses in term 2021-spring to create '
-                    'participation jobs for.')
+                    f'No active courses in term {sws_term.canvas_sis_id()} to '
+                    f'create assignment jobs for.')
             else:
                 jobs_count = 0
                 for course in courses:

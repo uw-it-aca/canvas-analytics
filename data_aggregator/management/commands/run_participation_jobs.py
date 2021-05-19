@@ -2,7 +2,7 @@ import logging
 from django.db import transaction
 from data_aggregator.models import Participation
 from data_aggregator.management.commands._base import RunJobCommand
-from data_aggregator.dao import CanvasDAO, CloudStorageDAO, AnalyticTypes
+from data_aggregator.dao import CanvasDAO, AnalyticTypes
 
 class Command(RunJobCommand):
 
@@ -14,27 +14,14 @@ class Command(RunJobCommand):
 
     def work(self, job):
         canvas_course_id = job.context["canvas_course_id"]
-        sis_course_id = job.context["sis_course_id"]
         analytic_type = AnalyticTypes.participation
-
         # download participations analtyics from Canvas API
         canvas_dao = CanvasDAO()
         participations = canvas_dao.download_raw_analytics_for_course(
             canvas_course_id, analytic_type)
-
-        # upload participations to GCS bucket
-        try:
-            cs_dao = CloudStorageDAO()
-            cs_dao.upload_analytics_to_bucket(
-                participations, sis_course_id, analytic_type)
-        except ValueError as e:
-            logging.warning(e)
-        else:
-            # download participations from GCS bucket
-            cs_dao.download_analytics_from_bucket(sis_course_id, analytic_type)
-
-            # delete existing participations data in case of a job restart
-            old_participations = Participation.objects.filter(job=job)
-            old_participations.delete()
-            # save participations to db
-            canvas_dao.save_participations_to_db(participations, job)
+        # delete existing participations data in case of a job restart
+        old_participations = Participation.objects.filter(job=job)
+        old_participations.delete()
+        # save participations to db
+        canvas_dao.save_participations_to_db(participations, job)
+        print("Saved {} participation entries".format(len(participations)))

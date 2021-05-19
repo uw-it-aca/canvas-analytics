@@ -1,6 +1,6 @@
 import unittest
 from django.test import TestCase
-from data_aggregator.dao import AnalyticTypes, CanvasDAO, CloudStorageDAO
+from data_aggregator.dao import AnalyticTypes, CanvasDAO
 from mock import patch, MagicMock
 from restclients_core.exceptions import DataFailureException
 
@@ -223,14 +223,6 @@ class TestCanvasDAO(TestCase):
             mock_reports_inst.delete_report.called,
             True)
 
-
-class TestCloudStorageDAO(TestCase):
-
-    def test_get_relative_file_path(self):
-        csd = CloudStorageDAO()
-        csd.get_sis_term_id = MagicMock(return_value="2021-spring")
-        csd.get_week_of_term = MagicMock(return_value=1)
-        self.assertEqual(csd.get_relative_file_path(), "2021-spring/1/")
 
 if __name__ == "__main__":
     unittest.main()
