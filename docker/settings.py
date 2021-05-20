@@ -18,8 +18,11 @@ else:
     DATA_AGGREGATOR_ACCESS_GROUP = os.getenv('ACCESS_GROUP', '')
     DATA_AGGREGATOR_THREADING_ENABLED = True
     # Restclient cache configuration
-    RESTCLIENTS_DAO_CACHE_CLASS = 'gcs_clients.RestclientGCSClient'
-    GCS_BUCKET_NAME = 'canvas-analytics'
+    RESTCLIENTS_DAO_CACHE_CLASS = 'data_aggregator.cache.DataAggregatorGCSCache'
+    if os.getenv('ENV') == 'eval':
+        GCS_BUCKET_NAME = 'canvas-analytics-test'
+    elif os.getenv('ENV') == 'prod':
+        GCS_BUCKET_NAME = 'canvas-analytics'
     GCS_REPLACE = False  # replace contents if already exists
     GCS_TIMEOUT = 5  # request timeout in seconds
     GCS_NUM_RETRIES = 3  # number of request retries 
