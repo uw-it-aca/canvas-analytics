@@ -1,7 +1,4 @@
-import os
 import logging
-import json
-from io import StringIO
 from django.conf import settings
 from data_aggregator.models import Assignment, Course, Participation, \
     Term, User, Week
@@ -38,7 +35,6 @@ class CanvasDAO():
         sws_term = get_current_term()
         self.curr_term = sws_term.canvas_sis_id()
         self.curr_week = get_week_of_term(sws_term.first_day_quarter)
-
 
     @retry(DataFailureException, tries=5, delay=3, backoff=2,
            status_codes=[0, 403, 500])
@@ -120,9 +116,9 @@ class CanvasDAO():
                     continue
                 try:
                     assign = (Assignment.objects
-                             .get(user=user,
-                                  assignment_id=assignment_id,
-                                  week=week))
+                              .get(user=user,
+                                   assignment_id=assignment_id,
+                                   week=week))
                 except Assignment.DoesNotExist:
                     assign = Assignment()
                 assign.job = job
@@ -196,13 +192,13 @@ class CanvasDAO():
                     i.get('participations_level')
                 if i.get('tardiness_breakdown'):
                     partic.time_tardy = (i.get('tardiness_breakdown')
-                                            .get('total'))
+                                         .get('total'))
                     partic.time_on_time = (i.get('tardiness_breakdown')
-                                            .get('on_time'))
+                                           .get('on_time'))
                     partic.time_late = (i.get('tardiness_breakdown')
                                         .get('late'))
                     partic.time_missing = (i.get('tardiness_breakdown')
-                                            .get('missing'))
+                                           .get('missing'))
                     partic.time_floating = (i.get('tardiness_breakdown')
                                             .get('floating'))
                 partic.page_views = i.get('page_views')

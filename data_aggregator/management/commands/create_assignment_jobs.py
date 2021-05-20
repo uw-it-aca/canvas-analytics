@@ -54,7 +54,8 @@ class Command(BaseCommand):
         else:
             sws_term = get_current_term()
             courses = (Course.objects.filter(
-                Q(status='active') & Q(term__sis_term_id=sws_term.canvas_sis_id()))
+                Q(status='active') &
+                Q(term__sis_term_id=sws_term.canvas_sis_id()))
             )
             course_count = courses.count()
             if course_count == 0:
