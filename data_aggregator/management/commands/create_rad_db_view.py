@@ -111,7 +111,7 @@ def create(sis_term_id, week):
         FROM avg_norm_ap
         JOIN avg_norm_gr ON avg_norm_ap.user_id = avg_norm_gr.user_id
         JOIN data_aggregator_user u ON avg_norm_ap.user_id = u.id
-        ''' # noqa
+        '''  # noqa
         .format(
             create_action=create_action,
             week=week,
