@@ -1,4 +1,4 @@
-FROM gcr.io/uwit-mci-axdd/django-container:1.3.1 as app-prewebpack-container
+FROM gcr.io/uwit-mci-axdd/django-container:1.3.1 as app-container
 
 USER root
 
@@ -24,12 +24,6 @@ ADD . /app/
 WORKDIR /app/
 RUN npm install .
 RUN npx webpack --mode=production
-
-FROM app-prewebpack-container as app-container
-
-COPY --chown=acait:acait --from=wpack /app/data_aggregator/static/data_aggregator/bundles/* /app/data_aggregator/static/data_aggregator/bundles/
-COPY --chown=acait:acait --from=wpack /app/data_aggregator/static/ /static/
-COPY --chown=acait:acait --from=wpack /app/data_aggregator/static/webpack-stats.json /app/data_aggregator/static/webpack-stats.json
 
 FROM gcr.io/uwit-mci-axdd/django-test-container:1.3.1 as app-test-container
 
