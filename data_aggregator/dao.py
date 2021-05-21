@@ -1,31 +1,45 @@
 import logging
 from django.conf import settings
-from data_aggregator.models import Assignment, Participation, Week, Term, \
-    Course, User
+from data_aggregator.models import Assignment, Course, Participation, \
+    Term, User, Week
 from data_aggregator.utilities import get_week_of_term
 from restclients_core.exceptions import DataFailureException
 from restclients_core.util.retry import retry
 from uw_sws.term import get_current_term
 from uw_canvas import Canvas
+from uw_canvas.analytics import Analytics
 from uw_canvas.courses import Courses
 from uw_canvas.enrollments import Enrollments
-from uw_canvas.analytics import Analytics
 from uw_canvas.reports import Reports
 from uw_canvas.terms import Terms
 
 
+class AnalyticTypes():
+
+    assignment = "assignment"
+    participation = "participation"
+
+
 class CanvasDAO():
     """
-    Query canvas for a course
+    Query canvas for analytics
     """
 
     def __init__(self):
-        self.logger = logging.getLogger(__name__)
         self.canvas = Canvas()
+        self.courses = Courses()
+        self.enrollments = Enrollments()
+        self.analytics = Analytics()
+        self.reports = Reports()
+        self.terms = Terms()
+        sws_term = get_current_term()
+        self.curr_term = sws_term.canvas_sis_id()
+        self.curr_week = get_week_of_term(sws_term.first_day_quarter)
 
-    def get_student_ids_for_course(self, canvas_course_id):
-        enrollments = Enrollments()
-        stus = enrollments.get_enrollments_for_course(
+    @retry(DataFailureException, tries=5, delay=3, backoff=2,
+           status_codes=[0, 403, 500])
+    def download_student_ids_for_course(self, canvas_course_id):
+        stus = self.enrollments.get_enrollments_for_course(
                     canvas_course_id,
                     params={
                         "type": ['StudentEnrollment'],
@@ -34,208 +48,185 @@ class CanvasDAO():
         res = list({stu.user_id for stu in stus})
         return(res)
 
-    def get_course(self, canvas_course_id):
+    @retry(DataFailureException, tries=5, delay=3, backoff=2,
+           status_codes=[0, 403, 500])
+    def download_course(self, canvas_course_id):
         try:
-            canvas = Courses()
-            return canvas.get_course(canvas_course_id)
+            return self.courses.get_course(canvas_course_id)
         except Exception as e:
-            self.logger.error(e)
+            logging.error(e)
 
     @retry(DataFailureException, tries=5, delay=3, backoff=2,
            status_codes=[0, 403, 500])
-    def get_assignment_for_student(self, canvas_course_id, student_id):
-        return Analytics().get_student_assignments_for_course(
-            student_id, canvas_course_id)
+    def download_raw_analytics_for_student(
+            self, canvas_course_id, student_id, analytic_type):
+        if analytic_type == AnalyticTypes.assignment:
+            return self.analytics.get_student_assignments_for_course(
+                student_id, canvas_course_id,
+                term=self.curr_term, week=self.curr_week)
+        elif analytic_type == AnalyticTypes.participation:
+            return self.analytics.get_student_summaries_by_course(
+                canvas_course_id, student_id=student_id,
+                term=self.curr_term, week=self.curr_week)
+        else:
+            raise ValueError(f"Unknown analytic type: {analytic_type}")
 
-    def get_assignments(self, canvas_course_id):
-        students_ids = self.get_student_ids_for_course(canvas_course_id)
-        curr_term = get_current_term()
-        term = Term.objects.get(year=curr_term.year,
-                                quarter=curr_term.quarter)
-        course = (Course.objects.get(
-                    canvas_course_id=canvas_course_id,
-                    term=term))
-        week, _ = Week.objects.get_or_create(
-            week=get_week_of_term(curr_term.first_day_quarter),
-            term=term)
-        num_students_in_course = len(students_ids)
-        num_students_wo_assignment = 0
-        num_assignments = 0
-        assignments = []
+    def download_raw_analytics_for_course(
+            self, canvas_course_id, analytic_type):
+        students_ids = self.download_student_ids_for_course(canvas_course_id)
+        analytics = []
         for student_id in students_ids:
             try:
-                res = self.get_assignment_for_student(
-                        canvas_course_id, student_id)
-                for i in res:
-                    try:
-                        user = User.objects.get(canvas_user_id=student_id)
-                    except User.DoesNotExist:
-                        logging.warning("User with canvas_user_id {} does not "
-                                        "exist in Canvas Analytics DB. "
-                                        "Skipping."
-                                        .format(student_id))
-                        continue
-                    try:
-                        assignment_id = i.get('assignment_id')
-                        assignment = (Assignment.objects
-                                      .get(user=user,
-                                           assignment_id=assignment_id))
-                        # check if anything has changed
-                        if (assignment.title != i.get('title') or
-                            assignment.unlock_at != i.get('unlock_at') or
-                            assignment.points_possible !=
-                                i.get('points_possible') or
-                            assignment.non_digital_submission !=
-                                i.get('non_digital_submission') or
-                            assignment.due_at != i.get('due_at') or
-                            assignment.status != i.get('status') or
-                            assignment.muted != i.get('muted') or
-                            assignment.max_score != i.get('max_score') or
-                            assignment.min_score != i.get('min_score') or
-                            assignment.first_quartile !=
-                                i.get('first_quartile') or
-                            assignment.median != i.get('median') or
-                            assignment.third_quartile !=
-                                i.get('third_quartile') or
-                                assignment.excused != i.get('excused')):
-                            # something changed so we want to update
-                            pass
-                        else:
-                            # skip this assignment since nothing changed
-                            continue
-                    except Assignment.DoesNotExist:
-                        pass
-                    assignment = Assignment()
-                    assignment.user = user
-                    assignment.assignment_id = assignment_id
-                    assignment.week = week
-                    assignment.title = i.get('title')
-                    assignment.unlock_at = i.get('unlock_at')
-                    assignment.points_possible = i.get('points_possible')
-                    assignment.non_digital_submission = \
-                        i.get('non_digital_submission')
-                    assignment.due_at = i.get('due_at')
-                    assignment.status = i.get('status')
-                    assignment.muted = i.get('muted')
-                    assignment.max_score = i.get('max_score')
-                    assignment.min_score = i.get('min_score')
-                    assignment.first_quartile = i.get('first_quartile')
-                    assignment.median = i.get('median')
-                    assignment.third_quartile = i.get('third_quartile')
-                    assignment.excused = i.get('excused')
-                    submission = i.get('submission')
-                    if submission:
-                        assignment.score = submission.get('score')
-                        assignment.posted_at = submission.get('posted_at')
-                        assignment.submitted_at = \
-                            submission.get('submitted_at')
-                    assignment.course = course
-                    assignments.append(assignment)
-                    num_assignments += 1
+                res = self.download_raw_analytics_for_student(
+                    canvas_course_id, student_id, analytic_type=analytic_type)
+                for analytic in res:
+                    analytic["canvas_user_id"] = student_id
+                    analytic["canvas_course_id"] = canvas_course_id
+                    analytics.append(analytic)
             except DataFailureException as e:
                 if e.status == 404:
-                    num_students_wo_assignment += 1
-                    self.logger.warning(e)
+                    logging.warning(e)
                     continue
                 else:
                     raise
-        self.logger.info(f"Loaded {num_assignments} assignment records "
-                         f"for {num_students_in_course} students. "
-                         f"Skipped {num_students_wo_assignment} "
-                         f"students who did not have assignment data.")
-        return assignments
+        return analytics
 
-    @retry(DataFailureException, tries=5, delay=3, backoff=2,
-           status_codes=[0, 403, 500])
-    def get_participation_for_student(self, canvas_course_id, student_id):
-        return Analytics().get_student_summaries_by_course(
-            canvas_course_id, student_id=student_id)
+    def save_assignments_to_db(self, assignment_dicts, job):
+        if assignment_dicts:
+            canvas_course_id = assignment_dicts[0]["canvas_course_id"]
+            curr_term = get_current_term()
+            term = Term.objects.get(year=curr_term.year,
+                                    quarter=curr_term.quarter)
+            course = (Course.objects.get(
+                        canvas_course_id=canvas_course_id,
+                        term=term))
+            week, _ = Week.objects.get_or_create(
+                week=get_week_of_term(curr_term.first_day_quarter),
+                term=term)
+            assign_objs = []
+            for i in assignment_dicts:
+                student_id = i.get('canvas_user_id')
+                assignment_id = i.get('assignment_id')
+                try:
+                    user = User.objects.get(canvas_user_id=student_id)
+                except User.DoesNotExist:
+                    logging.warning(f"User with canvas_user_id {student_id} "
+                                    f"does not exist in Canvas Analytics DB. "
+                                    f"Skipping.")
+                    continue
+                try:
+                    assign = (Assignment.objects
+                              .get(user=user,
+                                   assignment_id=assignment_id,
+                                   week=week))
+                except Assignment.DoesNotExist:
+                    assign = Assignment()
+                assign.job = job
+                assign.user = user
+                assign.assignment_id = assignment_id
+                assign.week = week
+                assign.title = i.get('title')
+                assign.unlock_at = i.get('unlock_at')
+                assign.points_possible = i.get('points_possible')
+                assign.non_digital_submission = \
+                    i.get('non_digital_submission')
+                assign.due_at = i.get('due_at')
+                assign.status = i.get('status')
+                assign.muted = i.get('muted')
+                assign.max_score = i.get('max_score')
+                assign.min_score = i.get('min_score')
+                assign.first_quartile = i.get('first_quartile')
+                assign.median = i.get('median')
+                assign.third_quartile = i.get('third_quartile')
+                assign.excused = i.get('excused')
+                submission = i.get('submission')
+                if submission:
+                    assign.score = submission.get('score')
+                    assign.posted_at = submission.get('posted_at')
+                    assign.submitted_at = \
+                        submission.get('submitted_at')
+                assign.course = course
+                assign_objs.append(assign)
+            # save assignment data
+            Assignment.objects.bulk_create(assign_objs)
+            logging.info(f"Loaded {len(assign_objs)} assignment records.")
+        else:
+            logging.info("No assignment records to load.")
 
-    def get_participation(self, canvas_course_id):
-        students_ids = self.get_student_ids_for_course(canvas_course_id)
-        curr_term = get_current_term()
-        term = Term.objects.get(year=curr_term.year,
-                                quarter=curr_term.quarter)
-        course = (Course.objects.get(
-                    canvas_course_id=canvas_course_id,
-                    term=term))
-        week, _ = Week.objects.get_or_create(
-            week=get_week_of_term(curr_term.first_day_quarter),
-            term=term)
-        num_students_in_course = len(students_ids)
-        num_students_wo_participation = 0
-        num_participation = 0
-        participations = []
-        for student_id in students_ids:
-            try:
-                res = self.get_participation_for_student(
-                    canvas_course_id, student_id)
-                for i in res:
-                    try:
-                        user = User.objects.get(canvas_user_id=student_id)
-                    except User.DoesNotExist:
-                        logging.warning("User with canvas_user_id {} does not "
-                                        "exist in Canvas Analytics DB. "
-                                        "Skipping."
-                                        .format(student_id))
-                        continue
+    def save_participations_to_db(self, participation_dicts, job):
+        if participation_dicts:
+            canvas_course_id = participation_dicts[0]["canvas_course_id"]
+            curr_term = get_current_term()
+            term = Term.objects.get(year=curr_term.year,
+                                    quarter=curr_term.quarter)
+            course = (Course.objects.get(
+                        canvas_course_id=canvas_course_id,
+                        term=term))
+            week, _ = Week.objects.get_or_create(
+                week=get_week_of_term(curr_term.first_day_quarter),
+                term=term)
+            partic_objs = []
+            for i in participation_dicts:
+                student_id = i.get('canvas_user_id')
+                try:
+                    user = User.objects.get(canvas_user_id=student_id)
+                except User.DoesNotExist:
+                    logging.warning(f"User with canvas_user_id {student_id} "
+                                    f"does not exist in Canvas Analytics DB. "
+                                    f"Skipping.")
+                    continue
+                try:
+                    partic = (Participation.objects.get(user=user,
+                                                        week=week))
+                except Participation.DoesNotExist:
                     partic = Participation()
-                    partic.user = user
-                    partic.week = week
-                    partic.course = course
-                    partic.page_views = i.get('page_views')
-                    partic.page_views_level = \
-                        i.get('page_views_level')
-                    partic.participations = i.get('participations')
-                    partic.participations_level = \
-                        i.get('participations_level')
-                    if i.get('tardiness_breakdown'):
-                        partic.time_tardy = (i.get('tardiness_breakdown')
-                                             .get('total'))
-                        partic.time_on_time = (i.get('tardiness_breakdown')
-                                                .get('on_time'))
-                        partic.time_late = (i.get('tardiness_breakdown')
-                                            .get('late'))
-                        partic.time_missing = (i.get('tardiness_breakdown')
-                                                .get('missing'))
-                        partic.time_floating = (i.get('tardiness_breakdown')
-                                                .get('floating'))
-                    partic.page_views = i.get('page_views')
-                    participations.append(partic)
-                    num_participation += 1
-            except DataFailureException as e:
-                if e.status == 404:
-                    num_students_wo_participation += 1
-                    self.logger.warning(e)
-                    continue
-                else:
-                    raise
-        self.logger.info(f"Loaded {num_participation} participation records "
-                         f"for {num_students_in_course} students. "
-                         f"Skipped {num_students_wo_participation} "
-                         f"students who did not have participation data.")
-        return participations
+                partic.job = job
+                partic.user = user
+                partic.week = week
+                partic.course = course
+                partic.page_views = i.get('page_views')
+                partic.page_views_level = \
+                    i.get('page_views_level')
+                partic.participations = i.get('participations')
+                partic.participations_level = \
+                    i.get('participations_level')
+                if i.get('tardiness_breakdown'):
+                    partic.time_tardy = (i.get('tardiness_breakdown')
+                                         .get('total'))
+                    partic.time_on_time = (i.get('tardiness_breakdown')
+                                           .get('on_time'))
+                    partic.time_late = (i.get('tardiness_breakdown')
+                                        .get('late'))
+                    partic.time_missing = (i.get('tardiness_breakdown')
+                                           .get('missing'))
+                    partic.time_floating = (i.get('tardiness_breakdown')
+                                            .get('floating'))
+                partic.page_views = i.get('page_views')
+                partic_objs.append(partic)
+            # save assignment data
+            Participation.objects.bulk_create(partic_objs)
+            logging.info(f"Loaded {len(partic_objs)} participation records.")
+        else:
+            logging.info("No participation records to load.")
 
-    def get_canvas_course_provisioning_report(self, sis_term_id):
+    def download_course_provisioning_report(self, sis_term_id):
         # get canvas term using sis-term-id
-        canvas_term = Terms().get_term_by_sis_id(sis_term_id)
+        canvas_term = self.terms.get_term_by_sis_id(sis_term_id)
         # get courses provisioning report for canvas term
-        report_client = Reports()
-        user_report = report_client.create_course_provisioning_report(
+        user_report = self.reports.create_course_provisioning_report(
                     settings.ACADEMIC_CANVAS_ACCOUNT_ID,
                     term_id=canvas_term.term_id)
-        sis_data = report_client.get_report_data(user_report)
-        report_client.delete_report(user_report)
+        sis_data = self.reports.get_report_data(user_report)
+        self.reports.delete_report(user_report)
         return sis_data
 
-    def get_canvas_user_provisioning_report(self, sis_term_id):
+    def download_user_provisioning_report(self, sis_term_id):
         # get canvas term using sis-term-id
-        canvas_term = Terms().get_term_by_sis_id(sis_term_id)
+        canvas_term = self.terms.get_term_by_sis_id(sis_term_id)
         # get users provisioning report for canvas term
-        report_client = Reports()
-        user_report = report_client.create_user_provisioning_report(
+        user_report = self.reports.create_user_provisioning_report(
                     settings.ACADEMIC_CANVAS_ACCOUNT_ID,
                     term_id=canvas_term.term_id)
-        sis_data = report_client.get_report_data(user_report)
-        report_client.delete_report(user_report)
+        sis_data = self.reports.get_report_data(user_report)
+        self.reports.delete_report(user_report)
         return sis_data
