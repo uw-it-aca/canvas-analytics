@@ -54,6 +54,10 @@ image:
   tag: IMAGE_TAG
 memcached:
   enabled: false
+gcsCredentials:
+  mounted: true
+    secretName: test-analytics.apps.canvas.uw.edu-shared-secrets
+    secretKey: gcs-credentials
 cronjob:
   enabled: false
   jobs:
