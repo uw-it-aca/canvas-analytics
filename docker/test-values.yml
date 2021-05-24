@@ -49,6 +49,10 @@ resources:
     memory: 256Mi
 memcached:
   enabled: false
+gcsCredentials:
+  mounted: true
+    secretName: test-analytics.apps.canvas.uw.edu-shared-secrets
+    secretKey: gcs-credentials
 cronjob:
   enabled: true
   jobs:
