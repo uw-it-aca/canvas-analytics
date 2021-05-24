@@ -19,7 +19,7 @@ else:
     DATA_AGGREGATOR_THREADING_ENABLED = True
     # Restclient cache configuration
     RESTCLIENTS_DAO_CACHE_CLASS = 'data_aggregator.cache.DataAggregatorGCSCache'
-    if os.getenv('ENV') == 'eval':
+    if os.getenv('ENV') == 'test':
         GCS_BUCKET_NAME = 'canvas-analytics-test'
     elif os.getenv('ENV') == 'prod':
         GCS_BUCKET_NAME = 'canvas-analytics'
