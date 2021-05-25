@@ -27,8 +27,6 @@ else:
     GCS_TIMEOUT = 5  # request timeout in seconds
     GCS_NUM_RETRIES = 3  # number of request retries
 
-GOOGLE_APPLICATION_CREDENTIALS = '/gcs/credentials.json'
-
 WEBPACK_LOADER = {
     'DEFAULT': {
         'BUNDLE_DIR_NAME': 'data_aggregator/bundles/',

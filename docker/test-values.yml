@@ -119,6 +119,9 @@ environmentVariables:
   - name: CLUSTER_CNAME
     value: test-analytics.apps.canvas.uw.edu
 
+  - name: GOOGLE_APPLICATION_CREDENTIALS
+    value: "/gcs/credentials.json"
+
 externalSecrets:
   enabled: true
   secrets:
