@@ -56,8 +56,7 @@ memcached:
   enabled: false
 gcsCredentials:
   mounted: true
-    secretName: test-analytics.apps.canvas.uw.edu-shared-secrets
-    secretKey: gcs-credentials
+  secretName: analytics.apps.canvas.uw.edu-gcs-credentials
 cronjob:
   enabled: false
   jobs:
@@ -96,6 +95,12 @@ environmentVariables:
 externalSecrets:
   enabled: true
   secrets:
+    - name: analytics.apps.canvas.uw.edu-gcs-credentials
+      externalKey: axdd/kv/data/canvas/analytics/shared/gcs-credentials
+      data:
+        - name: credentials.json
+          property: credentials.json
+
     - name: analytics.apps.canvas.uw.edu-canvas-secrets
       externalKey: axdd/kv/data/canvas/shared/secrets
       data:
