@@ -25,7 +25,7 @@ else:
         GCS_BUCKET_NAME = 'canvas-analytics'
     GCS_REPLACE = False  # replace contents if already exists
     GCS_TIMEOUT = 5  # request timeout in seconds
-    GCS_NUM_RETRIES = 3  # number of request retries 
+    GCS_NUM_RETRIES = 3  # number of request retries
 
 WEBPACK_LOADER = {
     'DEFAULT': {
