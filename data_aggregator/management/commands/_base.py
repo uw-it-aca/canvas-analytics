@@ -19,7 +19,7 @@ class RunJobCommand(BaseCommand):
         parser.add_argument("--num_parallel_jobs",
                             type=int,
                             help=("Size of job thread pool"),
-                            default=25,
+                            default=20,
                             required=False)
 
     def work(self, job):
