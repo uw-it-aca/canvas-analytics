@@ -362,34 +362,36 @@ export default {
 };
 </script>
 
-<style>
+<style lang="scss">
+  @import "../../../css/data_aggregator/variables.scss";
+
   .table-pending {
-    color: #818182;
-    background-color: #fefefe;
-    border-color: #fdfdfe;
+      color: #818182;
+      background-color: map-get($theme-colors, "pending-bg");
+      border-color: #fdfdfe;
   }
 
   .table-running {
     color: #0c5460;
-    background-color: #d1ecf1;
+    background-color: map-get($theme-colors, "running-bg");
     border-color: #bee5eb;
   }
 
   .table-completed {
     color: #155724;
-    background-color: #d4edda;
+    background-color: map-get($theme-colors, "completed-bg");
     border-color: #c3e6cb;
   }
 
   .table-failed {
     color: #721c24;
-    background-color: #f8d7da;
+    background-color: map-get($theme-colors, "failed-bg");
     border-color: #f5c6cb;
   }
 
   .table-expired {
     color: #721c24;
-    background-color: #f3f8d7;
+    background-color: map-get($theme-colors, "expired-bg");
     border-color: #eef5c6;
   }
 

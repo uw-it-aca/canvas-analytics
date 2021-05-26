@@ -1,9 +1,94 @@
 import json
-from data_aggregator.models import Job
+from data_aggregator.models import Job, JobStatusTypes
 from data_aggregator.views.api import RESTDispatch
 from django.db.models import F, Q, BooleanField, Value
 from django.utils import timezone
 from datetime import datetime, time
+
+
+def get_filtered_jobs_list(filters):
+    jobs = (Job.objects
+            .annotate(
+                job_type=F('type__type'),
+                selected=Value(False, BooleanField())
+            ))
+
+    activeDateRange = filters.get('activeDateRange')
+    if activeDateRange:
+        jobs = jobs.filter(
+            target_date_start__lte=activeDateRange["endDate"]
+        )
+        jobs = jobs.filter(
+            target_date_end__gte=activeDateRange["startDate"]
+        )
+
+    jobDateRange = filters.get('jobDateRange')
+    if jobDateRange.get("startDate") and \
+            jobDateRange.get("endDate"):
+        jobs = jobs.filter(
+            Q(start__lte=jobDateRange["endDate"]) |
+            Q(start__isnull=True)
+        )
+        jobs = jobs.filter(
+            Q(end__gte=jobDateRange["startDate"]) |
+            Q(end__isnull=True)
+        )
+
+    if filters.get('jobType'):
+        jobs = jobs.filter(
+            type__type__in=filters["jobType"])
+
+    total_jobs = 0
+    job_dicts = []
+    for job in jobs:
+        jd = {}
+        jd["id"] = job.id
+        jd["context"] = job.context
+        jd["job_type"] = job.job_type
+        jd["pid"] = job.pid
+        jd["start"] = job.start.isoformat() if job.start else None
+        jd["end"] = job.end.isoformat() if job.end else None
+        jd["message"] = job.message
+        jd["created"] = job.created.isoformat() if job.created else None
+        jd["status"] = job.status
+        jd["selected"] = job.selected
+        if filters.get('jobStatus'):
+            if job.status in filters["jobStatus"]:
+                job_dicts.append(jd)
+                total_jobs += 1
+        else:
+            job_dicts.append(jd)
+            total_jobs += 1
+    return total_jobs, job_dicts
+
+
+class JobChartDataView(RESTDispatch):
+    '''
+    API endpoint returning a list of job status chart data
+
+    /api/internal/jobs-chart-data/
+
+    HTTP POST accepts the following dictionary paramters:
+    * filters: dictionary of request filters
+    '''
+    def post(self, request, *args, **kwargs):
+        filters = json.loads(request.body.decode('utf-8'))
+
+        _, job_dicts = get_filtered_jobs_list(filters)
+
+        jobs_by_status = {}
+        for jd in job_dicts:
+            if jd["status"] not in jobs_by_status:
+                jobs_by_status[jd["status"]] = 1
+            else:
+                jobs_by_status[jd["status"]] += 1
+
+        # make sure all possible job statuses are accounted for
+        for job_status_type in JobStatusTypes.types():
+            if job_status_type not in jobs_by_status:
+                jobs_by_status[job_status_type] = 0
+
+        return self.json_response(content=jobs_by_status)
 
 
 class JobView(RESTDispatch):
@@ -18,58 +103,8 @@ class JobView(RESTDispatch):
 
     def post(self, request, *args, **kwargs):
         filters = json.loads(request.body.decode('utf-8'))
-        jobs = (Job.objects
-                .annotate(
-                    job_type=F('type__type'),
-                    selected=Value(False, BooleanField())
-                ))
 
-        activeDateRange = filters.get('activeDateRange')
-        if activeDateRange:
-            jobs = jobs.filter(
-                target_date_start__lte=activeDateRange["endDate"]
-            )
-            jobs = jobs.filter(
-                target_date_end__gte=activeDateRange["startDate"]
-            )
-
-        jobDateRange = filters.get('jobDateRange')
-        if jobDateRange.get("startDate") and \
-                jobDateRange.get("endDate"):
-            jobs = jobs.filter(
-                Q(start__lte=jobDateRange["endDate"]) |
-                Q(start__isnull=True)
-            )
-            jobs = jobs.filter(
-                Q(end__gte=jobDateRange["startDate"]) |
-                Q(end__isnull=True)
-            )
-
-        if filters.get('jobType'):
-            jobs = jobs.filter(
-                type__type__in=filters["jobType"])
-
-        total_jobs = 0
-        job_dicts = []
-        for job in jobs:
-            jd = {}
-            jd["id"] = job.id
-            jd["context"] = job.context
-            jd["job_type"] = job.job_type
-            jd["pid"] = job.pid
-            jd["start"] = job.start.isoformat() if job.start else None
-            jd["end"] = job.end.isoformat() if job.end else None
-            jd["message"] = job.message
-            jd["created"] = job.created.isoformat() if job.created else None
-            jd["status"] = job.status
-            jd["selected"] = job.selected
-            if filters.get('jobStatus'):
-                if job.status in filters["jobStatus"]:
-                    job_dicts.append(jd)
-                    total_jobs += 1
-            else:
-                job_dicts.append(jd)
-                total_jobs += 1
+        total_jobs, job_dicts = get_filtered_jobs_list(filters)
 
         # sort in code since the django doesn't support sorting by properties
         sort_by = filters.get("sortBy")

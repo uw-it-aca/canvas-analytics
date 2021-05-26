@@ -22,23 +22,20 @@ $theme-colors: (
   'gold': #ffbc24, //uw gold
   'teal': #558097, // uw teal
 
-  // myuw course colors
-  'c1': #2E6884,
-  'c1a': #36799A,
-  'c2': #844B2E,
-  'c2a': #9A5736,
-  'c3': #14511E,
-  'c3a': #218431,
-  'c4': #444444,
-  'c4a': #646464,
-  'c5': #91279f,
-  'c5a': #BD37CF,
-  'c6': #716141,
-  'c6a': #84734C,
-  'c7': #4B2E84,
-  'c7a': #653FB2,
-  'c8': #352E9B,
-  'c8a': #473EC5,
+  // job status colors
+  'completed': #d4edda,
+  'expired': #eef8b8,
+  'failed': #e79ca4,
+  'pending': #adadad,
+  'running': #d1ecf1,
+
+  // job status background colors
+  'completed-bg': #d4edda,
+  'expired-bg': #f3f8d7,
+  'failed-bg': #f8d7da,
+  'pending-bg': #fefefe,
+  'running-bg': #d1ecf1,
+
 );
 
 // override global line height (1.5rem default)

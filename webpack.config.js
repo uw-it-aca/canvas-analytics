@@ -4,8 +4,6 @@ const webpack = require('webpack')
 const BundleTracker = require('webpack-bundle-tracker')
 const VueLoaderPlugin = require('vue-loader/lib/plugin')
 const CleanWebpackPlugin = require('clean-webpack-plugin')
-const MiniCssExtractPlugin = require('mini-css-extract-plugin')
-const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin')
 
 module.exports = {
     mode: 'development',
@@ -24,9 +22,6 @@ module.exports = {
             filename: './data_aggregator/static/webpack-stats.json'
         }),
         new VueLoaderPlugin(),
-        new MiniCssExtractPlugin({
-            filename: "[name]-[hash].css",
-        })
     ],
     module: {
         rules: [{
@@ -35,11 +30,25 @@ module.exports = {
             },
             {
                 test: /\.s[ac]ss$/,
-                use: [MiniCssExtractPlugin.loader, "css-loader", "sass-loader"]
+                sideEffects: true,
+                use: [
+                    // Creates `style` nodes from JS strings
+                    "style-loader",
+                    // Translates CSS into CommonJS
+                    "css-loader",
+                    // Compiles Sass to CSS
+                    "sass-loader",
+                  ],
             },
             {
                 test: /\.css$/,
-                loader: 'style-loader!css-loader'
+                sideEffects: true,
+                use: [
+                    // Creates `style` nodes from JS strings
+                    "style-loader",
+                    // Translates CSS into CommonJS
+                    "css-loader",
+                  ],
             },
             {
                 test: /\.(png|svg|jpg|gif|woff|woff2|eot|ttf|svg)$/,

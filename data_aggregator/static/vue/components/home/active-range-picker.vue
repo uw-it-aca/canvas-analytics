@@ -1,18 +1,18 @@
 <template>
   <date-range-picker
-          ref="picker"
-          :opens="'right'"
-          :locale-data="dateLocale"
-          :singleDatePicker="false"
-          :showDropdowns="true"
-          :timePicker="true"
-          :timePicker24Hour="true"
-          :showWeekNumbers="true"
-          :autoApply="true"
-          :ranges="dateRanges"
-          :date-format="dateFormat"
-          v-model="activeDateRange"
-          class="mr-2"
+    ref="picker"
+    :opens="'right'"
+    :locale-data="dateLocale"
+    :singleDatePicker="false"
+    :showDropdowns="true"
+    :timePicker="true"
+    :timePicker24Hour="true"
+    :showWeekNumbers="true"
+    :autoApply="true"
+    :ranges="dateRanges"
+    :date-format="dateFormat"
+    v-model="activeDateRange"
+    class="mr-2"
   >
     <template v-slot:input="picker" style="min-width: 350px;">
         {{ picker.startDate | iso_date }} - {{ picker.endDate | iso_date}}

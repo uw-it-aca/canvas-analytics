@@ -7,11 +7,7 @@
             <label class="mr-2">Active job bounds</label>
             <active-range-picker></active-range-picker>
           </b-form>
-          <p>
-            <ul>
-              <li><small>Results limited to jobs with an active date range that interersects {{activeDateRange.startDate | iso_date}} - {{activeDateRange.endDate | iso_date}}</small></li>
-            </ul>
-          </p>
+          <piechart></piechart>
         </b-col>
       </b-row>
     </b-container>
