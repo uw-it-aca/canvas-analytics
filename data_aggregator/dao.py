@@ -177,7 +177,8 @@ class CanvasDAO():
                     continue
                 try:
                     partic = (Participation.objects.get(user=user,
-                                                        week=week))
+                                                        week=week,
+                                                        course=course))
                 except Participation.DoesNotExist:
                     partic = Participation()
                 partic.job = job
