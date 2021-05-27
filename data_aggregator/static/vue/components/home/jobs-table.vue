@@ -6,6 +6,7 @@
           <label class="mr-2">Action</label>
           <b-form-select v-model="selectedAction" id="action-select" name="action-select">
             <b-form-select-option :value="'restart'">Restart selected</b-form-select-option>
+            <b-form-select-option :value="'clear'">Clear selected</b-form-select-option>
           </b-form-select>
           <b-button @click="handleAction()" variant="primary" size="md">
             Run
@@ -304,17 +305,35 @@ export default {
       if (this.selectedAction == 'restart') {
         let _this = this;
         let jobsToRestart = this.selectedJobs;
-        let doRestart = false;
         if (jobsToRestart.length == 0) {
           this.showNoSelectedJobsWarning();
         } else {
-          doRestart = this.showRestartWarning(jobsToRestart);
+          this.showActionWarning(jobsToRestart, this.selectedAction)
+          .then(choice => {
+            if (choice) {
+              _this.restartJobs(jobsToRestart).then(function(choice) {
+                jobsToRestart.forEach(function (job, index) {
+                  _this._setLocalPendingStatus(job);
+                });
+              });
+            }
+          });
         }
-        if (doRestart) {
-          this.restartJobs(jobsToRestart).then(function() {
-            jobsToRestart.forEach(function (job, index) {
-              _this._setLocalPendingStatus(job);
-            });
+      } else if (this.selectedAction == 'clear') {
+        let _this = this;
+        let jobsToClear = this.selectedJobs;
+        if (jobsToClear.length == 0) {
+          this.showNoSelectedJobsWarning();
+        } else {
+          this.showActionWarning(jobsToClear, this.selectedAction)
+          .then(choice => {
+            if (choice) {
+              _this.clearJobs(jobsToClear).then(function() {
+                jobsToClear.forEach(function (job, index) {
+                  _this._setLocalPendingStatus(job);
+                });
+              });
+            }
           });
         }
       }
@@ -324,19 +343,13 @@ export default {
           job.message,
           {
             title: 'Error Log',
-            size: 'lg',
+            size: 'xl',
             buttonSize: 'md',
             okVariant: 'secondary',
             okTitle: 'Dismiss',
             footerClass: 'p-2',
             hideHeaderClose: false,
             centered: true
-          })
-          .then(value => {
-            return value;
-          })
-          .catch(err => {
-            // An error occurred
           })
     },
     showNoSelectedJobsWarning: function() {
@@ -352,17 +365,11 @@ export default {
             hideHeaderClose: false,
             centered: true
           })
-          .then(value => {
-            return value;
-          })
-          .catch(err => {
-            // An error occurred
-          })
     },
-    showRestartWarning: function(jobsToRestart) {
+    showActionWarning: function(jobs, action) {
       // create warning message
       const h = this.$createElement;
-      let cntByStatus = utilities.countByProperty(jobsToRestart, "status");
+      let cntByStatus = utilities.countByProperty(jobs, "status");
       let listItems = [];
       for (const [key, value] of Object.entries(cntByStatus)) {
         listItems.push(
@@ -371,11 +378,14 @@ export default {
       }
       const warningVNode = h('div', [
         h('p', {class: ['text-left']}, [
-          'Please confirm that you want to restart the following jobs:',
+          'Please confirm that you want to ',
+          h('b', action),
+          ' the following jobs:',
         ]),
         listItems
       ]);
-      this.$bvModal.msgBoxConfirm(
+
+      return this.$bvModal.msgBoxConfirm(
         warningVNode,
         {
           title: 'Please Confirm',
@@ -388,12 +398,6 @@ export default {
           footerClass: 'p-2',
           hideHeaderClose: false,
           centered: true
-      })
-      .then(value => {
-        return value;
-      })
-      .catch(err => {
-        // An error occurred
       })
     },
     selectAll: function() {

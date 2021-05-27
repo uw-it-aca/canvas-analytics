@@ -16,7 +16,7 @@ Including another URLconf
 from django.urls import re_path, include
 from data_aggregator.views.pages import HomeView, APIDocumentationView
 from data_aggregator.views.api.jobs import JobView, JobRestartView, \
-    JobChartDataView
+    JobChartDataView, JobClearView
 from data_aggregator.views.api.analytics import AccountAssignmentView, \
     AccountParticipationView, TermAssignmentView, TermParticipationView, \
     UserView, UserAssignmentView, UserParticipationView
@@ -26,6 +26,7 @@ urlpatterns = [
     re_path(r'^api/internal/jobs/$', JobView.as_view()),
     re_path(r'^api/internal/jobs-chart-data/', JobChartDataView.as_view()),
     re_path(r'^api/internal/jobs/restart/$', JobRestartView.as_view()),
+    re_path(r'^api/internal/jobs/clear/$', JobClearView.as_view()),
     re_path(r'^api/$', APIDocumentationView.as_view()),
     re_path(r'^api/(?P<version>v[1])/$', APIDocumentationView.as_view()),
     re_path(r'^api/(?P<version>v[1])/user/$', UserView.as_view()),
