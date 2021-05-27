@@ -38,7 +38,7 @@ class Command(BaseCommand):
         # make job active for the current day
         today = timezone.now().date()
         target_date_start = datetime.combine(today, time(00, 00, 00))
-        target_date_end = target_date_start + timedelta(days=1)
+        target_date_end = datetime.combine(today, time(23, 59, 59))
 
         if canvas_course_id and sis_course_id:
             logging.info(

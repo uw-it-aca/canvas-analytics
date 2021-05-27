@@ -6,10 +6,12 @@ import axios from 'axios';
 import ActiveRangePicker from './components/home/active-range-picker.vue';
 import JobsTable from './components/home/jobs-table.vue';
 import JobsFilter from './components/home/jobs-filter.vue';
+import PieChart from './components/home/piechart.vue';
 
 Vue.component('jobs-table', JobsTable);
 Vue.component('jobs-filter', JobsFilter);
 Vue.component('active-range-picker', ActiveRangePicker);
+Vue.component('piechart', PieChart);
 
 // date range picker component - https://innologica.github.io/vue2-daterange-picker/
 import DateRangePicker from 'vue2-daterange-picker';
@@ -39,6 +41,8 @@ const store = new Vuex.Store({
     // data returned on each refresh
     jobs: [], // master list of jobs
     totalJobs: 0,
+    // data returned by jobs chart data endpoint
+    jobsGroupedByStatus: {},
     // data filters
     perPage: 250,
     currPage: 1,
@@ -73,6 +77,9 @@ const store = new Vuex.Store({
     },
     setTotalJobs(state, value) {
       state.totalJobs = value;
+    },
+    setJobsGroupedByStatus(state, value) {
+      state.jobsGroupedByStatus = value;
     },
     setJobType(state, value) {
       state.jobType = value;
@@ -119,7 +126,7 @@ const store = new Vuex.Store({
   }
 });
 
-// initializae root component 
+// initialize root component 
 import dataMixin from './mixins/data_mixin';
 import utilitiesMixin from './mixins/utilities_mixin';
 import utilities from "../js/utilities.js";
@@ -219,7 +226,7 @@ new Vue({
       return this.activeDateRange, this.jobDateRange,
         this.currPage, this.perPage, this.sortBy, this.sortDesc, this.jobType,
         this.jobStatus;
-    }
+    },
   },
   watch: {
     selectionChangeTriggers: function() {
@@ -273,6 +280,27 @@ new Vue({
       });
       return promise;
     },
+    refreshJobsGroupedByStatus: function() {
+      let promise = this.getJobsChartData({
+        "activeDateRange": {
+          "startDate": utilities.parseIsoDateStr(this.activeDateRange.startDate),
+          "endDate": utilities.parseIsoDateStr(this.activeDateRange.endDate),
+        },
+        "jobDateRange": {
+          "startDate": utilities.parseIsoDateStr(this.jobDateRange.startDate),
+          "endDate": utilities.parseIsoDateStr(this.jobDateRange.endDate),
+        },
+        "jobType": this.jobType,
+      })
+      .then(response => {
+        if (response.data) {
+          // we need to reset all selected ids on every refresh
+          let _this = this;
+          this.$store.commit('setJobsGroupedByStatus', response.data);
+        }
+      })
+      return promise;
+    },
     changeSelection: function() {
       this.updateURL()
       this.$store.commit('setLoading', true);
@@ -280,6 +308,7 @@ new Vue({
       this.refreshJobs().finally(response => {
         _this.$store.commit('setLoading', false);
       })
+      this.refreshJobsGroupedByStatus()
     },
     updateURL: function() {
       let params = {};

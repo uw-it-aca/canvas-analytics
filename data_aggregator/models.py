@@ -111,6 +111,20 @@ class JobType(models.Model):
     type = models.CharField(max_length=64, choices=JOB_CHOICES)
 
 
+class JobStatusTypes():
+    expired = "expired"
+    pending = "pending"
+    running = "running"
+    completed = "completed"
+    failed = "failed"
+
+    @classmethod
+    def types(cls):
+        return [JobStatusTypes.expired, JobStatusTypes.pending,
+                JobStatusTypes.running, JobStatusTypes.completed,
+                JobStatusTypes.failed]
+
+
 class Job(models.Model):
     objects = JobManager()
     type = models.ForeignKey(JobType,
@@ -128,16 +142,16 @@ class Job(models.Model):
     def status(self):
         if (not self.pid and not self.start and not self.end and
                 not self.message) and self.target_date_end < timezone.now():
-            return "expired"
+            return JobStatusTypes.expired
         elif (not self.pid and not self.start and not self.end and
                 not self.message):
-            return "pending"
+            return JobStatusTypes.pending
         elif (self.pid and self.start and not self.end and not self.message):
-            return "running"
+            return JobStatusTypes.running
         elif (self.pid and self.start and self.end and not self.message):
-            return "completed"
+            return JobStatusTypes.completed
         elif (self.message):
-            return "failed"
+            return JobStatusTypes.failed
 
     def mark_start(self, *args, **kwargs):
         self.pid = os.getpid()
