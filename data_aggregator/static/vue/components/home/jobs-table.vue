@@ -5,12 +5,11 @@
         <b-form class="d-flex flex-nowrap" inline>
           <label class="mr-2">Action</label>
           <b-form-select v-model="selectedAction" id="action-select" name="action-select">
-            <b-form-select-option :value="'restart'">Restart selected (completed/failed)</b-form-select-option>
+            <b-form-select-option :value="'restart'">Restart selected</b-form-select-option>
           </b-form-select>
           <b-button @click="handleAction()" variant="primary" size="md">
             Run
           </b-button>
-          <b-form-checkbox v-show="selectedAction == 'restart'" v-model="ignoreStatus" class="ml-2" switch size="md">Include running and expired</b-form-checkbox>
         </b-form>
       </b-col>
     </b-row>
@@ -183,6 +182,7 @@
 
 <script>
 import {mapState, mapMutations} from 'vuex';
+import utilities from "../../../js/utilities.js";
 import dataMixin from '../../mixins/data_mixin';
 import utilitiesMixin from '../../mixins/utilities_mixin';
 import datePickerMixin from '../../mixins/datepicker_mixin';
@@ -209,7 +209,7 @@ export default {
         { key: 'status',
           label: 'Job Status',
           tdClass: (value, key, item) => {
-              return 'table-' + item.status;
+              return item.status;
           },
           sortable: true,
         },
@@ -223,7 +223,6 @@ export default {
         },
       ],
       selectedAction: 'restart',
-      ignoreStatus: false,
       allSelected: false,
       jobStatusOptions: ['pending', 'running', 'completed', 'failed', 'expired']
     }
@@ -305,19 +304,97 @@ export default {
       if (this.selectedAction == 'restart') {
         let _this = this;
         let jobsToRestart = this.selectedJobs;
-        if (!this.ignoreStatus) {
-          jobsToRestart = jobsToRestart.filter(
-            job => (job.status == "completed" ||  job.status == "failed"));
+        let doRestart = false;
+        if (jobsToRestart.length == 0) {
+          this.showNoSelectedJobsWarning();
+        } else {
+          doRestart = this.showRestartWarning(jobsToRestart);
         }
-        this.restartJobs(jobsToRestart).then(function() {
-          jobsToRestart.forEach(function (job, index) {
-            _this._setLocalPendingStatus(job);
+        if (doRestart) {
+          this.restartJobs(jobsToRestart).then(function() {
+            jobsToRestart.forEach(function (job, index) {
+              _this._setLocalPendingStatus(job);
+            });
           });
-        });
+        }
       }
     },
     showError: function(job) {
-       alert(job.message);
+        this.$bvModal.msgBoxOk(
+          job.message,
+          {
+            title: 'Error Log',
+            size: 'lg',
+            buttonSize: 'md',
+            okVariant: 'secondary',
+            okTitle: 'Dismiss',
+            footerClass: 'p-2',
+            hideHeaderClose: false,
+            centered: true
+          })
+          .then(value => {
+            return value;
+          })
+          .catch(err => {
+            // An error occurred
+          })
+    },
+    showNoSelectedJobsWarning: function() {
+        this.$bvModal.msgBoxOk(
+          'Select jobs to perform an action',
+          {
+            title: 'No jobs selected',
+            size: 'sm',
+            buttonSize: 'md',
+            okVariant: 'secondary',
+            okTitle: 'Dismiss',
+            footerClass: 'p-2',
+            hideHeaderClose: false,
+            centered: true
+          })
+          .then(value => {
+            return value;
+          })
+          .catch(err => {
+            // An error occurred
+          })
+    },
+    showRestartWarning: function(jobsToRestart) {
+      // create warning message
+      const h = this.$createElement;
+      let cntByStatus = utilities.countByProperty(jobsToRestart, "status");
+      let listItems = [];
+      for (const [key, value] of Object.entries(cntByStatus)) {
+        listItems.push(
+          h('div', {class: [key]}, key + ": " + value)
+        );
+      }
+      const warningVNode = h('div', [
+        h('p', {class: ['text-left']}, [
+          'Please confirm that you want to restart the following jobs:',
+        ]),
+        listItems
+      ]);
+      this.$bvModal.msgBoxConfirm(
+        warningVNode,
+        {
+          title: 'Please Confirm',
+          size: 'sm',
+          buttonSize: 'md',
+          okVariant: 'danger',
+          okTitle: 'Yes',
+          cancelVariant: 'secondary',
+          cancelTitle: 'No',
+          footerClass: 'p-2',
+          hideHeaderClose: false,
+          centered: true
+      })
+      .then(value => {
+        return value;
+      })
+      .catch(err => {
+        // An error occurred
+      })
     },
     selectAll: function() {
       let _this = this;
@@ -365,31 +442,31 @@ export default {
 <style lang="scss">
   @import "../../../css/data_aggregator/variables.scss";
 
-  .table-pending {
+  .pending {
       color: #818182;
       background-color: map-get($theme-colors, "pending-bg");
       border-color: #fdfdfe;
   }
 
-  .table-running {
+  .running {
     color: #0c5460;
     background-color: map-get($theme-colors, "running-bg");
     border-color: #bee5eb;
   }
 
-  .table-completed {
+  .completed {
     color: #155724;
     background-color: map-get($theme-colors, "completed-bg");
     border-color: #c3e6cb;
   }
 
-  .table-failed {
+  .failed {
     color: #721c24;
     background-color: map-get($theme-colors, "failed-bg");
     border-color: #f5c6cb;
   }
 
-  .table-expired {
+  .expired {
     color: #721c24;
     background-color: map-get($theme-colors, "expired-bg");
     border-color: #eef5c6;

@@ -126,7 +126,7 @@ const store = new Vuex.Store({
   }
 });
 
-// initializae root component 
+// initialize root component 
 import dataMixin from './mixins/data_mixin';
 import utilitiesMixin from './mixins/utilities_mixin';
 import utilities from "../js/utilities.js";

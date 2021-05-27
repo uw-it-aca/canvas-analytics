@@ -35,6 +35,19 @@ const utilities = {
                 date = this._parseIsoDateStr(date);
             return this._toIsoDateStr(date);
         }
+    },
+    countByProperty: function(dictList, property) {
+        let groupedByProperty = {};
+        dictList.forEach(item => {
+            if(property in item) {
+                if (item[property] in groupedByProperty) {
+                    groupedByProperty[item[property]] += 1;
+                } else {
+                    groupedByProperty[item[property]] = 1;
+                }
+            }
+        });
+        return groupedByProperty;
     }
 };
 
