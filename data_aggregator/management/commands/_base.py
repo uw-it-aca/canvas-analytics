@@ -14,7 +14,7 @@ class RunJobCommand(BaseCommand):
         parser.add_argument("--job_batch_size",
                             type=int,
                             help=("Number of jobs to process"),
-                            default=100,
+                            default=50,
                             required=False)
         parser.add_argument("--num_parallel_jobs",
                             type=int,
