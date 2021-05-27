@@ -31,12 +31,18 @@ class RunJobCommand(BaseCommand):
     def run_job(self, job):
         try:
             self.work(job)
-        except Exception:
+        except Exception as err:
             # save error message if one occurs
             tb = traceback.format_exc()
-            job.message = tb
+            if tb:
+                job.message = tb
+                logging.error(tb)
+            else:
+                # Just in case the trace back is empty
+                msg = "Unknown exception occured: {}".format(err)
+                job.message = msg
+                logging.error(msg)
             job.save()
-            logging.error(tb)
         else:
             job.mark_end()
 
@@ -52,16 +58,32 @@ class RunJobCommand(BaseCommand):
             self.job_type,
             batchsize=job_batch_size
         )
-        if jobs:
-            if settings.DATA_AGGREGATOR_THREADING_ENABLED:
-                with ThreadPool(processes=num_parallel_jobs) as pool:
-                    pool.map(self.run_job, jobs)
+        try:
+            if jobs:
+                if settings.DATA_AGGREGATOR_THREADING_ENABLED:
+                    with ThreadPool(processes=num_parallel_jobs) as pool:
+                        pool.map(self.run_job, jobs)
+                else:
+                    if num_parallel_jobs > 1:
+                        logging.warning(
+                            "Running single threaded. Multithreading is "
+                            "disabled in Django settings.")
+                    for job in jobs:
+                        self.run_job(job)
             else:
-                if num_parallel_jobs > 1:
-                    logging.warning(
-                        "Running single threaded. Multithreading is "
-                        "disabled in Django settings.")
-                for job in jobs:
-                    self.run_job(job)
-        else:
-            logging.info(f"No active {self.job_type} jobs.")
+                logging.debug(f"No active {self.job_type} jobs.")
+        except Exception as err:
+            for job in jobs:
+                if not job.message:
+                    # save error message if one occurs but don't overwrite 
+                    # an existing error
+                    tb = traceback.format_exc()
+                    if tb:
+                        job.message = tb
+                        logging.error(tb)
+                    else:
+                        # Just in case the trace back is empty
+                        msg = "Unknown exception occured: {}".format(err)
+                        job.message = msg
+                        logging.error(msg)
+                    job.save()
