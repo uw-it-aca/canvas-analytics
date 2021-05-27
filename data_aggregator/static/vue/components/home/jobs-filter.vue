@@ -4,7 +4,7 @@
       <b-row>
         <b-col xs="12">
           <b-form class="mb-2">
-            <label class="mr-2">Active job bounds</label>
+            <label class="mr-2">Job Range</label>
             <active-range-picker></active-range-picker>
           </b-form>
           <piechart></piechart>
