@@ -100,8 +100,9 @@ class CanvasDAO():
             course = (Course.objects.get(
                         canvas_course_id=canvas_course_id,
                         term=term))
+            curr_week = get_week_of_term(curr_term.first_day_quarter)
             week, _ = Week.objects.get_or_create(
-                week=get_week_of_term(curr_term.first_day_quarter),
+                week=curr_week,
                 term=term)
             assign_objs_create = []
             assign_objs_update = []
@@ -123,8 +124,8 @@ class CanvasDAO():
                     logging.warning(
                         "Found existing assignment entry for user: {}, "
                         "week: {}, year: {}, quarter: {} course: {}"
-                        .format(student_id, curr_term.year, curr_term.quarter,
-                                canvas_course_id))
+                        .format(student_id, curr_week, curr_term.year,
+                                curr_term.quarter, canvas_course_id))
                     assign_objs_update.append(assign)
                 except Assignment.DoesNotExist:
                     assign = Assignment()
@@ -177,8 +178,9 @@ class CanvasDAO():
             course = (Course.objects.get(
                         canvas_course_id=canvas_course_id,
                         term=term))
+            curr_week = get_week_of_term(curr_term.first_day_quarter)
             week, _ = Week.objects.get_or_create(
-                week=get_week_of_term(curr_term.first_day_quarter),
+                week=curr_week,
                 term=term)
             partic_objs_create = []
             partic_objs_update = []
@@ -198,8 +200,8 @@ class CanvasDAO():
                     logging.warning(
                         "Found existing participation entry for user: {}, "
                         "week: {}, year: {}, quarter: {} course: {}"
-                        .format(student_id, curr_term.year, curr_term.quarter,
-                                canvas_course_id))
+                        .format(student_id, curr_week, curr_term.year,
+                                curr_term.quarter, canvas_course_id))
                     partic_objs_update.append(partic)
                 except Participation.DoesNotExist:
                     partic = Participation()
