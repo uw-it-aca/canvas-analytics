@@ -234,7 +234,7 @@ class CanvasDAO():
                 logging.info(f"Created {len(partic_objs_create)} "
                              f"participation records.")
             if partic_objs_update:
-                 # update existing participation entries
+                # update existing participation entries
                 for partic in partic_objs_update:
                     partic.save()
                 logging.info(f"Updated {len(partic_objs_update)} "

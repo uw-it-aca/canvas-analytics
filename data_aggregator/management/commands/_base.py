@@ -75,7 +75,7 @@ class RunJobCommand(BaseCommand):
         except Exception as err:
             for job in jobs:
                 if not job.message:
-                    # save error message if one occurs but don't overwrite 
+                    # save error message if one occurs but don't overwrite
                     # an existing error
                     tb = traceback.format_exc()
                     if tb:
