@@ -100,10 +100,12 @@ class CanvasDAO():
             course = (Course.objects.get(
                         canvas_course_id=canvas_course_id,
                         term=term))
+            curr_week = get_week_of_term(curr_term.first_day_quarter)
             week, _ = Week.objects.get_or_create(
-                week=get_week_of_term(curr_term.first_day_quarter),
+                week=curr_week,
                 term=term)
-            assign_objs = []
+            assign_objs_create = []
+            assign_objs_update = []
             for i in assignment_dicts:
                 student_id = i.get('canvas_user_id')
                 assignment_id = i.get('assignment_id')
@@ -119,8 +121,15 @@ class CanvasDAO():
                               .get(user=user,
                                    assignment_id=assignment_id,
                                    week=week))
+                    logging.warning(
+                        "Found existing assignment entry for user: {}, "
+                        "week: {}, year: {}, quarter: {} course: {}"
+                        .format(student_id, curr_week, curr_term.year,
+                                curr_term.quarter, canvas_course_id))
+                    assign_objs_update.append(assign)
                 except Assignment.DoesNotExist:
                     assign = Assignment()
+                    assign_objs_create.append(assign)
                 assign.job = job
                 assign.user = user
                 assign.assignment_id = assignment_id
@@ -146,10 +155,17 @@ class CanvasDAO():
                     assign.submitted_at = \
                         submission.get('submitted_at')
                 assign.course = course
-                assign_objs.append(assign)
-            # save assignment data
-            Assignment.objects.bulk_create(assign_objs)
-            logging.info(f"Loaded {len(assign_objs)} assignment records.")
+            if assign_objs_create:
+                # create new assignment entries
+                Assignment.objects.bulk_create(assign_objs_create)
+                logging.info(f"Created {len(assign_objs_create)} "
+                             f"assignment records.")
+            if assign_objs_update:
+                # update existing assignment entries
+                for assign in assign_objs_update:
+                    assign.save()
+                logging.info(f"Updated {len(assign_objs_update)} "
+                             f"assignment records.")
         else:
             logging.info("No assignment records to load.")
 
@@ -162,10 +178,12 @@ class CanvasDAO():
             course = (Course.objects.get(
                         canvas_course_id=canvas_course_id,
                         term=term))
+            curr_week = get_week_of_term(curr_term.first_day_quarter)
             week, _ = Week.objects.get_or_create(
-                week=get_week_of_term(curr_term.first_day_quarter),
+                week=curr_week,
                 term=term)
-            partic_objs = []
+            partic_objs_create = []
+            partic_objs_update = []
             for i in participation_dicts:
                 student_id = i.get('canvas_user_id')
                 try:
@@ -179,8 +197,15 @@ class CanvasDAO():
                     partic = (Participation.objects.get(user=user,
                                                         week=week,
                                                         course=course))
+                    logging.warning(
+                        "Found existing participation entry for user: {}, "
+                        "week: {}, year: {}, quarter: {} course: {}"
+                        .format(student_id, curr_week, curr_term.year,
+                                curr_term.quarter, canvas_course_id))
+                    partic_objs_update.append(partic)
                 except Participation.DoesNotExist:
                     partic = Participation()
+                    partic_objs_create.append(partic)
                 partic.job = job
                 partic.user = user
                 partic.week = week
@@ -203,10 +228,17 @@ class CanvasDAO():
                     partic.time_floating = (i.get('tardiness_breakdown')
                                             .get('floating'))
                 partic.page_views = i.get('page_views')
-                partic_objs.append(partic)
-            # save assignment data
-            Participation.objects.bulk_create(partic_objs)
-            logging.info(f"Loaded {len(partic_objs)} participation records.")
+            if partic_objs_create:
+                # create new participation entries
+                Participation.objects.bulk_create(partic_objs_create)
+                logging.info(f"Created {len(partic_objs_create)} "
+                             f"participation records.")
+            if partic_objs_update:
+                # update existing participation entries
+                for partic in partic_objs_update:
+                    partic.save()
+                logging.info(f"Updated {len(partic_objs_update)} "
+                             f"participation records.")
         else:
             logging.info("No participation records to load.")
 

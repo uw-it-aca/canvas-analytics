@@ -3,7 +3,7 @@ from django.core.management.base import BaseCommand
 from data_aggregator.models import Course, Job, JobType
 from django.db.models import Q
 from django.utils import timezone
-from datetime import datetime, time, timedelta
+from datetime import datetime, time
 from uw_sws.term import get_current_term
 
 
