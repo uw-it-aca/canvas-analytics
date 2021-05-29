@@ -45,8 +45,8 @@ resources:
     cpu: 1000m
     memory: 2048Mi
   requests:
-    cpu: 50m
-    memory: 256Mi
+    cpu: 100m
+    memory: 512Mi
 memcached:
   enabled: false
 gcsCredentials:
