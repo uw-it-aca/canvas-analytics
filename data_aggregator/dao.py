@@ -36,8 +36,8 @@ class CanvasDAO():
         self.curr_term = sws_term.canvas_sis_id()
         self.curr_week = get_week_of_term(sws_term.first_day_quarter)
 
-    @retry(DataFailureException, tries=5, delay=3, backoff=2,
-           status_codes=[0, 403, 500])
+    @retry(DataFailureException, tries=5, delay=10, backoff=2,
+           status_codes=[0, 403, 408, 500])
     def download_student_ids_for_course(self, canvas_course_id):
         stus = self.enrollments.get_enrollments_for_course(
                     canvas_course_id,
@@ -48,16 +48,16 @@ class CanvasDAO():
         res = list({stu.user_id for stu in stus})
         return(res)
 
-    @retry(DataFailureException, tries=5, delay=3, backoff=2,
-           status_codes=[0, 403, 500])
+    @retry(DataFailureException, tries=5, delay=10, backoff=2,
+           status_codes=[0, 403, 408, 500])
     def download_course(self, canvas_course_id):
         try:
             return self.courses.get_course(canvas_course_id)
         except Exception as e:
             logging.error(e)
 
-    @retry(DataFailureException, tries=5, delay=3, backoff=2,
-           status_codes=[0, 403, 500])
+    @retry(DataFailureException, tries=5, delay=10, backoff=2,
+           status_codes=[0, 403, 408, 500])
     def download_raw_analytics_for_student(
             self, canvas_course_id, student_id, analytic_type):
         if analytic_type == AnalyticTypes.assignment:
