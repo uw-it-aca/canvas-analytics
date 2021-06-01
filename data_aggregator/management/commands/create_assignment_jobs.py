@@ -4,7 +4,7 @@ from django.core.management.base import BaseCommand
 from data_aggregator.models import Course, Job, JobType
 from django.db.models import Q
 from django.utils import timezone
-from datetime import datetime, time
+from datetime import datetime, timedelta, time
 from uw_sws.term import get_current_term
 
 
@@ -37,8 +37,13 @@ class Command(BaseCommand):
 
         # make job active for the current day
         today = timezone.now().date()
-        target_date_start = datetime.combine(today, time(00, 00, 00))
-        target_date_end = datetime.combine(today, time(23, 59, 59))
+        tomorrow = timezone.now().date() + timedelta(days=1)
+        # midight PST
+        target_date_start = timezone.make_aware(
+            datetime.combine(today, time(8, 0, 0)), timezone=timezone.utc)
+        # next midnight PST
+        target_date_end = timezone.make_aware(
+            datetime.combine(tomorrow, time(7, 59, 59)), timezone=timezone.utc)
 
         if canvas_course_id and sis_course_id:
             logging.info(
