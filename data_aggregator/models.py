@@ -141,9 +141,6 @@ class Job(models.Model):
     @property
     def status(self):
         if (not self.pid and not self.start and not self.end and
-                not self.message) and self.target_date_end < timezone.now():
-            return JobStatusTypes.expired
-        elif (not self.pid and not self.start and not self.end and
                 not self.message):
             return JobStatusTypes.pending
         elif (self.pid and self.start and not self.end and not self.message):
@@ -152,6 +149,8 @@ class Job(models.Model):
             return JobStatusTypes.completed
         elif (self.message):
             return JobStatusTypes.failed
+        elif self.target_date_end < timezone.now():
+            return JobStatusTypes.expired
 
     def mark_start(self, *args, **kwargs):
         self.pid = os.getpid()
