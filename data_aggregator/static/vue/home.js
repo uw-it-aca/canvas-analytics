@@ -6,12 +6,12 @@ import axios from 'axios';
 import ActiveRangePicker from './components/home/active-range-picker.vue';
 import JobsTable from './components/home/jobs-table.vue';
 import JobsFilter from './components/home/jobs-filter.vue';
-import PieChart from './components/home/piechart.vue';
+import Chart from './components/home/chart.vue';
 
 Vue.component('jobs-table', JobsTable);
 Vue.component('jobs-filter', JobsFilter);
 Vue.component('active-range-picker', ActiveRangePicker);
-Vue.component('piechart', PieChart);
+Vue.component('chart', Chart);
 
 // date range picker component - https://innologica.github.io/vue2-daterange-picker/
 import DateRangePicker from 'vue2-daterange-picker';
