@@ -1,12 +1,45 @@
+from django.utils import timezone
 from datetime import date, datetime
+
+
+def datestring_to_datetime(date_str):
+    """
+    Converts an iso8601 date string to a datetime.datetime object
+    :param: date_str
+    :type: str
+    :returns: datetime equivalent to string
+    :type: datetime
+    """
+    if isinstance(date_str, (str)):
+        fmts = ("%Y-%m-%dT%H:%M:%S.%fZ", "%Y-%m-%dT%H:%M:%S.%f",
+                "%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%dT%H:%M:%S")
+        for fmt in fmts:
+            try:
+                dt = timezone.make_aware(
+                    datetime.strptime(date_str, fmt), timezone=timezone.utc)
+                if dt.year < 1900:
+                    err_msg = ('Date %s is out of range. '
+                               'Year must be year >= 1900.' % date_str)
+                    raise ValueError(err_msg)
+                return dt
+            except ValueError:
+                pass
+        err_msg = 'Unsupported date format. %s' % date_str
+        raise ValueError(err_msg)
+    elif isinstance(date_str, datetime):
+        return date_str  # already a date
+    else:
+        raise ValueError("Got {0} expected str.".format(
+            type(date_str)))
 
 
 def get_week_of_term(first_day_quarter, cmp_dt=None):
     if cmp_dt is None:
-        cmp_dt = datetime.now()
+        cmp_dt = timezone.now()
     if isinstance(first_day_quarter, date):
-        first_day_quarter = datetime.combine(first_day_quarter,
-                                             datetime.min.time())
+        first_day_quarter = timezone.make_aware(
+            datetime.combine(first_day_quarter, datetime.min.time()),
+            timezone=timezone.utc)
     days = (cmp_dt - first_day_quarter).days
     if days >= 0:
         return (days // 7) + 1
