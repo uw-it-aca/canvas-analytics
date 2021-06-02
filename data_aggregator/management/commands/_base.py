@@ -117,7 +117,6 @@ class CreateJobCommand(BaseCommand):
                             default=None,
                             required=False)
 
-
     def get_default_target_start(self):
         # make job active for the current day
         today = timezone.now().date()
@@ -126,7 +125,6 @@ class CreateJobCommand(BaseCommand):
             datetime.combine(today, time(8, 0, 0)),
             timezone=timezone.utc)
         return target_date_start
-
 
     def get_default_target_end(self):
         tomorrow = timezone.now().date() + timedelta(days=1)

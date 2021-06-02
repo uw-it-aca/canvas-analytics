@@ -5,7 +5,6 @@ from django.utils import timezone
 from data_aggregator import utilities
 from uw_sws.term import get_current_term
 from uw_sws import SWS_TIMEZONE
-from django.utils import timezone
 
 
 class TermManager(models.Manager):

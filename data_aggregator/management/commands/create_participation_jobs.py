@@ -24,8 +24,8 @@ class Command(CreateJobCommand):
             target_date_start = self.get_default_target_start()
         else:
             target_date_start = datestring_to_datetime(target_start_time)
-        
-        if target_end_time is None: 
+
+        if target_end_time is None:
             target_date_end = self.get_default_target_end()
         else:
             target_date_end = datestring_to_datetime(target_end_time)
