@@ -7,7 +7,7 @@
             <label class="mr-2">Job Range</label>
             <active-range-picker></active-range-picker>
           </b-form>
-          <piechart></piechart>
+          <chart></chart>
         </b-col>
       </b-row>
     </b-container>
