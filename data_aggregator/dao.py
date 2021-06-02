@@ -255,22 +255,22 @@ class CanvasDAO():
                     partic.time_floating = (i.get('tardiness_breakdown')
                                             .get('floating'))
                 partic.page_views = i.get('page_views')
-            if len(partic_objs_create) % 50 == 0:
+                if len(partic_objs_create) % 50 == 0:
+                    # create new participation entries
+                    save(partic_objs_create, create=True)
+                    partic_objs_create = []
+                if len(partic_objs_update) % 50 == 0:
+                    # update existing participation entries
+                    save(partic_objs_update, create=False)
+                    partic_objs_update = []
+            if partic_objs_create:
                 # create new participation entries
                 save(partic_objs_create, create=True)
-                partic_objs_create = []
-            if len(partic_objs_update) % 50 == 0:
+            if partic_objs_update:
                 # update existing participation entries
                 save(partic_objs_update, create=False)
-                partic_objs_update = []
-        if partic_objs_create:
-            # create new participation entries
-            save(partic_objs_create, create=True)
-        if partic_objs_update:
-            # update existing participation entries
-            save(partic_objs_update, create=False)
-        else:
-            logging.info("No participation records to load.")
+            else:
+                logging.info("No participation records to load.")
 
     def download_course_provisioning_report(self, sis_term_id):
         # get canvas term using sis-term-id
