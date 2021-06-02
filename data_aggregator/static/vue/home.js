@@ -202,6 +202,8 @@ new Vue({
     document.getElementById('vue_root').hidden = false;
     this.changeSelection() // run without delay and with loading indicators 
     this.refreshTimer = setInterval(this.refreshJobs, this.refreshTime * 1000);
+    this.refreshTimer = setInterval(this.refreshJobsGroupedByStatus,
+                                    this.refreshTime * 1000);
   },
   computed: {
     ...mapState({
@@ -281,6 +283,7 @@ new Vue({
       return promise;
     },
     refreshJobsGroupedByStatus: function() {
+      let _this = this;
       let promise = this.getJobsChartData({
         "activeDateRange": {
           "startDate": utilities.parseIsoDateStr(this.activeDateRange.startDate),
@@ -295,8 +298,7 @@ new Vue({
       .then(response => {
         if (response.data) {
           // we need to reset all selected ids on every refresh
-          let _this = this;
-          this.$store.commit('setJobsGroupedByStatus', response.data);
+          _this.$store.commit('setJobsGroupedByStatus', response.data);
         }
       })
       return promise;
@@ -305,10 +307,10 @@ new Vue({
       this.updateURL()
       this.$store.commit('setLoading', true);
       let _this = this;
+      this.refreshJobsGroupedByStatus();
       this.refreshJobs().finally(response => {
         _this.$store.commit('setLoading', false);
       })
-      this.refreshJobsGroupedByStatus()
     },
     updateURL: function() {
       let params = {};
