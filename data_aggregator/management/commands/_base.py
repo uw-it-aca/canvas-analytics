@@ -3,6 +3,8 @@ import traceback
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from data_aggregator.models import Job
+from django.utils import timezone
+from datetime import datetime, timedelta, time
 from multiprocessing.dummy import Pool as ThreadPool
 
 
@@ -87,3 +89,47 @@ class RunJobCommand(BaseCommand):
                         job.message = msg
                         logging.error(msg)
                     job.save()
+
+
+class CreateJobCommand(BaseCommand):
+
+    def add_arguments(self, parser):
+        parser.add_argument("--canvas_course_id",
+                            type=int,
+                            help=("Canvas course id to create a job for."),
+                            default=None,
+                            required=False)
+        parser.add_argument("--sis_course_id",
+                            type=int,
+                            help=("Canvas sis-course-id to create a job for."),
+                            default=None,
+                            required=False)
+        parser.add_argument("--target_start_time",
+                            type=str,
+                            help=("iso8601 UTC start time for which the job "
+                                  "is active. YYYY-mm-ddTHH:MM:SS.ss"),
+                            default=None,
+                            required=False)
+        parser.add_argument("--target_end_time",
+                            type=str,
+                            help=("iso8601 UTC end time for which the job "
+                                  "is active. YYYY-mm-ddTHH:MM:SS.ss"),
+                            default=None,
+                            required=False)
+
+    def get_default_target_start(self):
+        # make job active for the current day
+        today = timezone.now().date()
+        # midight PST
+        target_date_start = timezone.make_aware(
+            datetime.combine(today, time(8, 0, 0)),
+            timezone=timezone.utc)
+        return target_date_start
+
+    def get_default_target_end(self):
+        tomorrow = timezone.now().date() + timedelta(days=1)
+        # next midnight PST
+        target_date_end = timezone.make_aware(
+            datetime.combine(tomorrow, time(7, 59, 59)),
+            timezone=timezone.utc)
+        return target_date_end

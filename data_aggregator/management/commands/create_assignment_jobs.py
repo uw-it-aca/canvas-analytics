@@ -1,28 +1,15 @@
 
 import logging
-from django.core.management.base import BaseCommand
+from data_aggregator.management.commands._base import CreateJobCommand
+from data_aggregator.utilities import datestring_to_datetime
 from data_aggregator.models import Course, Job, JobType
 from django.db.models import Q
-from django.utils import timezone
-from datetime import datetime, time
 from uw_sws.term import get_current_term
 
 
-class Command(BaseCommand):
+class Command(CreateJobCommand):
 
     help = ("Creates assignment jobs for active courses in current term.")
-
-    def add_arguments(self, parser):
-        parser.add_argument("--canvas_course_id",
-                            type=int,
-                            help=("Canvas course id to create a job for."),
-                            default=None,
-                            required=False)
-        parser.add_argument("--sis_course_id",
-                            type=int,
-                            help=("Canvas sis-course-id to create a job for."),
-                            default=None,
-                            required=False)
 
     def handle(self, *args, **options):
         """
@@ -31,14 +18,21 @@ class Command(BaseCommand):
 
         canvas_course_id = options["canvas_course_id"]
         sis_course_id = options["sis_course_id"]
+        target_start_time = options["target_start_time"]
+        target_end_time = options["target_end_time"]
+
+        if target_start_time is None:
+            target_date_start = self.get_default_target_start()
+        else:
+            target_date_start = datestring_to_datetime(target_start_time)
+
+        if target_end_time is None:
+            target_date_end = self.get_default_target_end()
+        else:
+            target_date_end = datestring_to_datetime(target_end_time)
 
         # get assignment job type
         assignment_type, _ = JobType.objects.get_or_create(type="assignment")
-
-        # make job active for the current day
-        today = timezone.now().date()
-        target_date_start = datetime.combine(today, time(00, 00, 00))
-        target_date_end = datetime.combine(today, time(23, 59, 59))
 
         if canvas_course_id and sis_course_id:
             logging.info(

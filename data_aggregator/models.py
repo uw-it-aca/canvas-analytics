@@ -1,12 +1,22 @@
 import os
+from datetime import datetime, date
 from django.db import models
 from django.utils import timezone
 from data_aggregator import utilities
 from uw_sws.term import get_current_term
+from uw_sws import SWS_TIMEZONE
 
 
 class TermManager(models.Manager):
     def get_create_current_term(self, canvas_term_id, sws_term=None):
+
+        def sws_to_utc(dt):
+            if isinstance(dt, date):
+                # convert date to datetime
+                dt = datetime.combine(dt, datetime.min.time())
+            SWS_TIMEZONE.localize(dt)
+            return dt.astimezone(timezone.utc)
+
         # get/create model for the term
         term, created = Term.objects.get_or_create(
             canvas_term_id=canvas_term_id)
@@ -18,17 +28,19 @@ class TermManager(models.Manager):
             term.year = sws_term.year
             term.quarter = sws_term.quarter
             term.label = sws_term.term_label()
-            term.last_day_add = sws_term.last_day_add
-            term.last_day_drop = sws_term.last_day_drop
-            term.first_day_quarter = sws_term.first_day_quarter
-            term.census_day = sws_term.census_day
-            term.last_day_instruction = sws_term.last_day_instruction
-            term.grading_period_open = sws_term.grading_period_open
+            term.last_day_add = sws_to_utc(sws_term.last_day_add)
+            term.last_day_drop = sws_to_utc(sws_term.last_day_drop)
+            term.first_day_quarter = sws_to_utc(sws_term.first_day_quarter)
+            term.census_day = sws_to_utc(sws_term.census_day)
+            term.last_day_instruction = \
+                sws_to_utc(sws_term.last_day_instruction)
+            term.grading_period_open = sws_to_utc(sws_term.grading_period_open)
             term.aterm_grading_period_open = \
-                sws_term.aterm_grading_period_open
+                sws_to_utc(sws_term.aterm_grading_period_open)
             term.grade_submission_deadline = \
-                sws_term.grade_submission_deadline
-            term.last_final_exam_date = sws_term.last_final_exam_date
+                sws_to_utc(sws_term.grade_submission_deadline)
+            term.last_final_exam_date = \
+                sws_to_utc(sws_term.last_final_exam_date)
             term.save()
         return term, created
 
@@ -141,9 +153,6 @@ class Job(models.Model):
     @property
     def status(self):
         if (not self.pid and not self.start and not self.end and
-                not self.message) and self.target_date_end < timezone.now():
-            return JobStatusTypes.expired
-        elif (not self.pid and not self.start and not self.end and
                 not self.message):
             return JobStatusTypes.pending
         elif (self.pid and self.start and not self.end and not self.message):
@@ -152,6 +161,8 @@ class Job(models.Model):
             return JobStatusTypes.completed
         elif (self.message):
             return JobStatusTypes.failed
+        elif self.target_date_end < timezone.now():
+            return JobStatusTypes.expired
 
     def mark_start(self, *args, **kwargs):
         self.pid = os.getpid()
