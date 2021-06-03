@@ -225,7 +225,8 @@ export default {
       ],
       selectedAction: 'restart',
       allSelected: false,
-      jobStatusOptions: ['pending', 'running', 'completed', 'failed', 'expired']
+      jobStatusOptions: ['pending', 'claimed', 'running', 'completed',
+                         'failed', 'expired']
     }
   },
   computed: {
@@ -449,31 +450,31 @@ export default {
   .pending {
       color: #818182;
       background-color: map-get($theme-colors, "pending-bg");
-      border-color: #fdfdfe;
+  }
+
+  .claimed {
+      color: #7237b5;
+      background-color: map-get($theme-colors, "claimed-bg");
   }
 
   .running {
     color: #0c5460;
     background-color: map-get($theme-colors, "running-bg");
-    border-color: #bee5eb;
   }
 
   .completed {
     color: #155724;
     background-color: map-get($theme-colors, "completed-bg");
-    border-color: #c3e6cb;
   }
 
   .failed {
     color: #721c24;
     background-color: map-get($theme-colors, "failed-bg");
-    border-color: #f5c6cb;
   }
 
   .expired {
     color: #721c24;
     background-color: map-get($theme-colors, "expired-bg");
-    border-color: #eef5c6;
   }
 
   .error-badge {

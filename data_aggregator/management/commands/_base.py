@@ -15,8 +15,9 @@ class RunJobCommand(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("--job_batch_size",
                             type=int,
-                            help=("Number of jobs to process"),
-                            default=50,
+                            help=("Number of jobs to process. Default is all "
+                                  "jobs."),
+                            default=None,
                             required=False)
         parser.add_argument("--num_parallel_jobs",
                             type=int,
@@ -32,6 +33,7 @@ class RunJobCommand(BaseCommand):
 
     def run_job(self, job):
         try:
+            job.start_job()
             self.work(job)
         except Exception as err:
             # save error message if one occurs
@@ -46,7 +48,7 @@ class RunJobCommand(BaseCommand):
                 logging.error(msg)
             job.save()
         else:
-            job.mark_end()
+            job.end_job()
 
     def handle(self, *args, **options):
         """
@@ -55,8 +57,8 @@ class RunJobCommand(BaseCommand):
         calls the run_job method for each job.
         """
         num_parallel_jobs = options["num_parallel_jobs"]
-        job_batch_size = options["job_batch_size"]
-        jobs = Job.objects.start_batch_of_jobs(
+        job_batch_size = options["job_batch_size"]  # defaults to all jobs
+        jobs = Job.objects.claim_batch_of_jobs(
             self.job_type,
             batchsize=job_batch_size
         )
