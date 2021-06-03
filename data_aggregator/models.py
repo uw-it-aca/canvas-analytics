@@ -102,16 +102,17 @@ class User(models.Model):
 
 class JobManager(models.Manager):
 
-    def start_batch_of_jobs(self, jobtype, batchsize=10):
+    def claim_batch_of_jobs(self, jobtype, batchsize=None):
         jobs = (self.get_queryset()
                 .select_related()
                 .filter(type__type=jobtype)
                 .filter(pid=None)
                 .filter(target_date_end__gte=timezone.now())
-                .filter(target_date_start__lte=timezone.now())
-                [:batchsize])
+                .filter(target_date_start__lte=timezone.now()))
+        if batchsize is not None:
+            jobs = jobs[:batchsize]
         for job in jobs:
-            job.mark_start()
+            job.claim_job()
         return jobs
 
 
@@ -124,17 +125,18 @@ class JobType(models.Model):
 
 
 class JobStatusTypes():
-    expired = "expired"
     pending = "pending"
+    claimed = "claimed"
     running = "running"
     completed = "completed"
     failed = "failed"
+    expired = "expired"
 
     @classmethod
     def types(cls):
-        return [JobStatusTypes.expired, JobStatusTypes.pending,
+        return [JobStatusTypes.pending, JobStatusTypes.claimed,
                 JobStatusTypes.running, JobStatusTypes.completed,
-                JobStatusTypes.failed]
+                JobStatusTypes.failed, JobStatusTypes.expired]
 
 
 class Job(models.Model):
@@ -155,6 +157,9 @@ class Job(models.Model):
         if (not self.pid and not self.start and not self.end and
                 not self.message):
             return JobStatusTypes.pending
+        elif (self.pid and not self.start and not self.end and
+                not self.message):
+            return JobStatusTypes.claimed
         elif (self.pid and self.start and not self.end and not self.message):
             return JobStatusTypes.running
         elif (self.pid and self.start and self.end and not self.message):
@@ -164,12 +169,15 @@ class Job(models.Model):
         elif self.target_date_end < timezone.now():
             return JobStatusTypes.expired
 
-    def mark_start(self, *args, **kwargs):
+    def claim_job(self, *args, **kwargs):
         self.pid = os.getpid()
+        super(Job, self).save(*args, **kwargs)
+
+    def start_job(self, *args, **kwargs):
         self.start = timezone.now()
         super(Job, self).save(*args, **kwargs)
 
-    def mark_end(self, *args, **kwargs):
+    def end_job(self, *args, **kwargs):
         self.end = timezone.now()
         super(Job, self).save(*args, **kwargs)
 

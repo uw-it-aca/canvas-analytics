@@ -22,19 +22,13 @@ $theme-colors: (
   'gold': #ffbc24, //uw gold
   'teal': #558097, // uw teal
 
-  // job status colors
-  'completed': #d4edda,
-  'expired': #eef8b8,
-  'failed': #e79ca4,
-  'pending': #adadad,
-  'running': #d1ecf1,
-
   // job status background colors
-  'completed-bg': #d4edda,
-  'expired-bg': #f3f8d7,
-  'failed-bg': #f8d7da,
-  'pending-bg': #fefefe,
-  'running-bg': #d1ecf1,
+  'completed-bg': #d4eddaab,
+  'expired-bg': #f3f8d7ab,
+  'failed-bg': #f8d7daab,
+  'pending-bg': #fefefeab,
+  'running-bg': #d1ecf1ab,
+  'claimed-bg': #edddffab,
 
 );
 

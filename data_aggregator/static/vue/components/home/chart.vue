@@ -26,10 +26,11 @@ export default {
   },
   data: function() {
     return {
-      selectedChartType: "PieChart",
-      chartTypes: [{value: "PieChart", text: "Pie Chart"},
-                   {value: "BarChart", text: "Bar Chart"}],
-      statusColors: {'completed': '#d4edda',
+      selectedChartType: "BarChart",
+      chartTypes: [{value: "BarChart", text: "Bar Chart"},
+                   {value: "PieChart", text: "Pie Chart"}],
+      statusColors: {'claimed': '#ecdbff',
+                     'completed': '#d4edda',
                      'expired': '#eef8b8',
                      'failed': '#f8d7da',
                      'pending': '#adadad',
