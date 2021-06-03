@@ -93,16 +93,20 @@ class CanvasDAO():
 
     def save_assignments_to_db(self, assignment_dicts, job):
 
-        def save(assign_objs, create=True):
+        def save(assign_objs, canvas_course_id, create=True):
             if create:
-                Assignment.objects.bulk_create(assign_objs)
-                logging.info(f"Created {len(assign_objs)} "
-                             f"assignment records.")
+                if assign_objs:
+                    Assignment.objects.bulk_create(assign_objs)
+                    logging.info(f"Created {len(assign_objs)} "
+                                 f"assignment records for Canvas course "
+                                 f"{canvas_course_id}.")
             else:
-                for assign in assign_objs:
-                    assign.save()
-                logging.info(f"Updated {len(assign_objs)} "
-                             f"assignment records.")
+                if assign_objs:
+                    for assign in assign_objs:
+                        assign.save()
+                    logging.info(f"Updated {len(assign_objs)} "
+                                 f"assignment records for Canvas course "
+                                 f"{canvas_course_id}.")
 
         if assignment_dicts:
             canvas_course_id = assignment_dicts[0]["canvas_course_id"]
@@ -167,35 +171,39 @@ class CanvasDAO():
                     assign.submitted_at = \
                         submission.get('submitted_at')
                 assign.course = course
-                if len(assign_objs_create) % 50 == 0:
+                if (len(assign_objs_create) > 0 and
+                        len(assign_objs_create) % 50 == 0):
                     # create new assignment entries
-                    save(assign_objs_create, create=True)
+                    save(assign_objs_create, canvas_course_id, create=True)
                     assign_objs_create = []
-                if len(assign_objs_update) % 50 == 0:
+                if (len(assign_objs_update) > 0 and
+                        len(assign_objs_update) % 50 == 0):
                     # update existing assignment entries
-                    save(assign_objs_update, create=False)
+                    save(assign_objs_update, canvas_course_id, create=False)
                     assign_objs_update = []
             if assign_objs_create:
                 # create new assignment entries
-                save(assign_objs_create, create=True)
+                save(assign_objs_create, canvas_course_id, create=True)
             if assign_objs_update:
                 # update existing assignment entries
-                save(assign_objs_update, create=False)
+                save(assign_objs_update, canvas_course_id, create=False)
         else:
             logging.info("No assignment records to load.")
 
     def save_participations_to_db(self, participation_dicts, job):
 
-        def save(partic_objs, create=True):
+        def save(partic_objs, canvas_course_id, create=True):
             if create:
                 Participation.objects.bulk_create(partic_objs)
                 logging.info(f"Created {len(partic_objs)} "
-                             f"participation records.")
+                             f"participation records for Canvas course "
+                             f"{canvas_course_id}.")
             else:
                 for partic in partic_objs:
                     partic.save()
                 logging.info(f"Updated {len(partic_objs)} "
-                             f"participation records.")
+                             f"participation records for Canvas course "
+                             f"{canvas_course_id}.")
 
         if participation_dicts:
             canvas_course_id = participation_dicts[0]["canvas_course_id"]
@@ -255,20 +263,22 @@ class CanvasDAO():
                     partic.time_floating = (i.get('tardiness_breakdown')
                                             .get('floating'))
                 partic.page_views = i.get('page_views')
-                if len(partic_objs_create) % 50 == 0:
+                if (len(partic_objs_create) > 0 and
+                        len(partic_objs_create) % 50 == 0):
                     # create new participation entries
-                    save(partic_objs_create, create=True)
+                    save(partic_objs_create, canvas_course_id, create=True)
                     partic_objs_create = []
-                if len(partic_objs_update) % 50 == 0:
+                if (len(partic_objs_update) > 0 and
+                        len(partic_objs_update) % 50 == 0):
                     # update existing participation entries
-                    save(partic_objs_update, create=False)
+                    save(partic_objs_update, canvas_course_id, create=False)
                     partic_objs_update = []
             if partic_objs_create:
                 # create new participation entries
-                save(partic_objs_create, create=True)
+                save(partic_objs_create, canvas_course_id, create=True)
             if partic_objs_update:
                 # update existing participation entries
-                save(partic_objs_update, create=False)
+                save(partic_objs_update, canvas_course_id, create=False)
             else:
                 logging.info("No participation records to load.")
 
