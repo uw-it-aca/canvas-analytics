@@ -51,6 +51,7 @@
     "webpack-cli": "^3.3.12"
   },
   "dependencies": {
+    "moment": "^2.29.1",
     "npm": "^6.11.2",
     "qs": "^6.9.4",
     "vue-google-charts": "^0.3.3",

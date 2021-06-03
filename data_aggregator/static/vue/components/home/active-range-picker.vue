@@ -34,6 +34,7 @@
 
 <script>
 import {mapState, mapMutations} from 'vuex';
+import moment from 'moment';
 import dataMixin from '../../mixins/data_mixin';
 import utilitiesMixin from '../../mixins/utilities_mixin';
 import datePickerMixin from '../../mixins/datepicker_mixin';
@@ -57,8 +58,9 @@ export default {
     dateRanges: function() {
       let ranges = {};
       this.terms.forEach(function (term, index) {
+        ranges["Today"] = [moment.utc().startOf('day').toDate(), moment.utc().endOf('day').toDate()];
         var rangeLabel = term.quarter.charAt(0).toUpperCase() + term.quarter.slice(1) + ", " + term.year;
-        ranges[rangeLabel] = [new Date(term.first_day_quarter), new Date(term.grade_submission_deadline)];
+        ranges[rangeLabel] = [moment.utc(term.first_day_quarter).toDate(), moment.utc(term.grade_submission_deadline).toDate()];
       });
       return ranges;
     },
@@ -66,9 +68,9 @@ export default {
   created: function() {
     // default to current month
     if (!this.activeDateRange.startDate && !this.activeDateRange.endDate) {
-      let today = new Date();
-      let firstDayMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-      let lastDayMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      let today = moment().utc();
+      let firstDayMonth = today.clone().startOf('month').toDate();
+      let lastDayMonth = today.clone().endOf('month').toDate();
       let defaultRange = {
         startDate: firstDayMonth,
         endDate: lastDayMonth
@@ -84,15 +86,9 @@ export default {
     doesDateHaveActiveJobs: function(date) {
       for (var idx in this.jobRanges) {
         var jobRange = this.jobRanges[idx];
-        var calDay = new Date(new Date(date).getFullYear(),
-                              new Date(date).getMonth(),
-                              new Date(date).getDate());
-        var targetStartDay = new Date(new Date(jobRange.target_day_start).getFullYear(),
-                                      new Date(jobRange.target_day_start).getMonth(),
-                                      new Date(jobRange.target_day_start).getDate());
-        var targetEndDay = new Date(new Date(jobRange.target_day_end).getFullYear(),
-                                    new Date(jobRange.target_day_end).getMonth(),
-                                    new Date(jobRange.target_day_end).getDate());
+        var calDay = moment(date).utc().format("YYYY-MM-DD");
+        var targetStartDay = moment(jobRange.target_day_start).utc().format("YYYY-MM-DD");
+        var targetEndDay = moment(jobRange.target_day_end).utc().format("YYYY-MM-DD");
         if (calDay >= targetStartDay && calDay <= targetEndDay) {
           return true;
         }
