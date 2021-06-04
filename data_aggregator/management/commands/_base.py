@@ -3,8 +3,6 @@ import traceback
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from data_aggregator.models import Job
-from django.utils import timezone
-from datetime import datetime, timedelta, time
 from multiprocessing.dummy import Pool as ThreadPool
 
 
@@ -118,20 +116,3 @@ class CreateJobCommand(BaseCommand):
                                   "is active. YYYY-mm-ddTHH:MM:SS.ss"),
                             default=None,
                             required=False)
-
-    def get_default_target_start(self):
-        # make job active for the current day
-        today = timezone.now().date()
-        # midight PST
-        target_date_start = timezone.make_aware(
-            datetime.combine(today, time(8, 0, 0)),
-            timezone=timezone.utc)
-        return target_date_start
-
-    def get_default_target_end(self):
-        tomorrow = timezone.now().date() + timedelta(days=1)
-        # next midnight PST
-        target_date_end = timezone.make_aware(
-            datetime.combine(tomorrow, time(7, 59, 59)),
-            timezone=timezone.utc)
-        return target_date_end
