@@ -1,4 +1,5 @@
 import logging
+import os
 from django.conf import settings
 from data_aggregator.models import Assignment, Course, Participation, \
     Term, User, Week
@@ -35,6 +36,8 @@ class CanvasDAO():
         sws_term = get_current_term()
         self.curr_term = sws_term.canvas_sis_id()
         self.curr_week = get_week_of_term(sws_term.first_day_quarter)
+        os.environ["GCS_BASE_PATH"] = \
+            "{}/{}/".format(self.curr_term, self.curr_week)
 
     @retry(DataFailureException, tries=5, delay=10, backoff=2,
            status_codes=[0, 403, 408, 500])
@@ -62,12 +65,10 @@ class CanvasDAO():
             self, canvas_course_id, student_id, analytic_type):
         if analytic_type == AnalyticTypes.assignment:
             return self.analytics.get_student_assignments_for_course(
-                student_id, canvas_course_id,
-                term=self.curr_term, week=self.curr_week)
+                student_id, canvas_course_id)
         elif analytic_type == AnalyticTypes.participation:
             return self.analytics.get_student_summaries_by_course(
-                canvas_course_id, student_id=student_id,
-                term=self.curr_term, week=self.curr_week)
+                canvas_course_id, student_id=student_id)
         else:
             raise ValueError(f"Unknown analytic type: {analytic_type}")
 
