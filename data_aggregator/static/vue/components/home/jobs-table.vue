@@ -165,6 +165,9 @@
 
         <template #cell(status)="row">
           {{row.item.status}}
+          <span v-if="row.item.status == 'completed'">
+            ({{row.item | execution_time}} sec)
+          </span>
           <b-badge href="#" class="error-badge" v-if="row.item.status == 'failed'" @click="showError(row.item)">
             error
           </b-badge>
