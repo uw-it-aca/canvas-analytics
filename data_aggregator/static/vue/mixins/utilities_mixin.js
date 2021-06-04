@@ -16,9 +16,10 @@ const utilitiesMixin = {
         execution_time: function(item) {
             let start = moment(item.start);
             let end = moment(item.end);
-            return end.diff(start, 'seconds');
-        }
-    },
+            let duration = moment.duration(end.diff(start));
+            return utilities.formatDuration(duration);
+        },
+    }
 }
 
 export default utilitiesMixin;
