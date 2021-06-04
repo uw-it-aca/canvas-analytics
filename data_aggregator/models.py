@@ -150,7 +150,7 @@ class Job(models.Model):
     start = models.DateTimeField(null=True)
     end = models.DateTimeField(null=True)
     message = models.TextField()
-    created = models.DateField(auto_now_add=True)
+    created = models.DateTimeField(auto_now_add=True)
 
     @property
     def status(self):

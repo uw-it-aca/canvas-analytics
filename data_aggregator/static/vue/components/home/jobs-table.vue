@@ -144,6 +144,7 @@
               </div>
             </date-range-picker>
           </td>
+          <td></td>
         </template>
 
         <template #head(selected)="">
@@ -162,6 +163,13 @@
           </ul>
         </template>
 
+        <template #cell(status)="row">
+          {{row.item.status}}
+          <b-badge href="#" class="error-badge" v-if="row.item.status == 'failed'" @click="showError(row.item)">
+            error
+          </b-badge>
+        </template>
+
         <template #cell(start)="row">
           {{row.item.start | iso_date}}
         </template>
@@ -169,12 +177,9 @@
         <template #cell(end)="row">
           {{row.item.end | iso_date}}
         </template>
-    
-        <template #cell(status)="row">
-          {{row.item.status}}
-          <b-badge href="#" class="error-badge" v-if="row.item.status == 'failed'" @click="showError(row.item)">
-            error
-          </b-badge>
+
+        <template #cell(created)="row">
+          {{row.item.created | iso_date}}
         </template>
       </b-table>
     </b-row>
@@ -220,6 +225,10 @@ export default {
         },
         { key: 'end',
           label: 'Job End',
+          sortable: true,
+        },
+        { key: 'created',
+          label: 'Job Created',
           sortable: true,
         },
       ],
