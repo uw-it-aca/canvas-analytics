@@ -31,7 +31,7 @@
 /* Top banner styles */
 .da-app-banner {
     background-color: map-get($theme-colors, "uw-purple");
-    background-image: url('/static/data_aggregator/img/uw-logo-white.png');
+    background-image: url('/static/img/uw-logo-white.png');
     background-position: left 1rem center;
     background-repeat: no-repeat;
     background-size: 60px;
@@ -91,7 +91,7 @@
 }
 
 .da-footer-wordmark {
-    background: url('/static/data_aggregator/img/uw-sprite.svg') no-repeat 0 -434px transparent;
+    background: url('/static/img/uw-sprite.svg') no-repeat 0 -434px transparent;
     display: inline-block;
     margin-bottom: 1rem;
     min-height: 16px;

@@ -2,6 +2,8 @@ import logging
 from data_aggregator.management.commands._base import CreateJobCommand
 from data_aggregator.utilities import datestring_to_datetime
 from data_aggregator.models import Course, Job, JobType
+from data_aggregator.utilities import get_default_target_start, \
+    get_default_target_end
 from django.db.models import Q
 from uw_sws.term import get_current_term
 
@@ -21,12 +23,12 @@ class Command(CreateJobCommand):
         target_end_time = options["target_end_time"]
 
         if target_start_time is None:
-            target_date_start = self.get_default_target_start()
+            target_date_start = get_default_target_start()
         else:
             target_date_start = datestring_to_datetime(target_start_time)
 
         if target_end_time is None:
-            target_date_end = self.get_default_target_end()
+            target_date_end = get_default_target_end()
         else:
             target_date_end = datestring_to_datetime(target_end_time)
 
