@@ -1,9 +1,6 @@
 @import "~bootstrap/scss/functions";
 @import "~bootstrap/scss/variables";
 
-// enable responsive font sizing
-// $enable-responsive-font-sizes: true;
-
 // override the boostrap gutter from 30px to 20px
 $grid-gutter-width: 20px;
 
@@ -14,14 +11,6 @@ $theme-colors: (
   'danger': #a94442,
   'warning': #f5d300,
 
-  // myuw custom colors
-  'purple': #4d307f, // uw purple
-  'dark-purple': #452a78, // thin bar
-  'beige': #e8e3d3, // tan
-  'dark-beige': #85754d, // headers
-  'gold': #ffbc24, //uw gold
-  'teal': #558097, // uw teal
-
   // job status background colors
   'completed-bg': #d4eddaab,
   'expired-bg': #f3f8d7ab,
@@ -30,10 +19,25 @@ $theme-colors: (
   'running-bg': #d1ecf1ab,
   'claimed-bg': #edddffab,
 
-);
+  //text
+  'white-text': #fff,
+  'link-blue': #0069d9,
+  'alert-red': #dc3545,
 
-// override global line height (1.5rem default)
-//$line-height-base: 1.55;
+  //color
+  'uw-metallic': #e8e3d3,
+  'uw-purple': #4b2e83,
+
+  //borders
+  'banner-border': #d1d1d1,
+  'grey-border': #ccc,
+
+  //backgrounds
+  'app-bkgnd': #fff,
+  'grey-bkgnd': #dedede,
+  'grey-light-bkgnd': #f7f7f7
+
+);
 
 // override all links
 $link-color: #4d66ca; //a11y blue

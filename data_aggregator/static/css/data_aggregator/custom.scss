@@ -4,3 +4,107 @@
 // bootstrap + bootstrap-vue
 @import '~bootstrap';
 @import '~bootstrap-vue';
+
+/* Structure */
+
+#vue_root {
+    padding: 30px;
+    position: relative;
+}
+
+.da-content-container {
+    background-color: map-get($theme-colors, "app-bkgnd");
+    overflow: hidden;
+}
+
+/* override styles */
+
+.da-action-link {
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.da-vis-hidden {
+    visibility: hidden;
+}
+
+/* Top banner styles */
+.da-app-banner {
+    background-color: map-get($theme-colors, "uw-purple");
+    background-image: url('/static/data_aggregator/img/uw-logo-white.png');
+    background-position: left 1rem center;
+    background-repeat: no-repeat;
+    background-size: 60px;
+    color: map-get($theme-colors, "white-text");
+    min-height: 100px;
+    padding: 0.5rem 0;
+
+    a {
+        color: map-get($theme-colors, "uw-metallic");
+    }
+
+    a:focus,
+    a:hover {
+        color: map-get($theme-colors, "white-text");
+        text-decoration: underline;
+    }
+}
+
+.da-app-title {
+    font-size: 2rem;
+    margin-bottom: 0;
+    padding-left: 85px;
+    padding-top: 25px;
+}
+
+.da-login-info {
+    text-align: right;
+}
+
+/* branding styles */
+.da-page-header {
+    font-size: 2rem;
+    padding: 1.5rem 0;
+}
+
+/* footer styles */
+
+.da-footer {
+    background-color: map-get($theme-colors, "uw-purple");
+    border-top: 3px solid map-get($theme-colors, "banner-border");
+    color: map-get($theme-colors, "white-text");
+    font-size: 0.75rem;
+    min-height: 100px;
+    min-width: 100%;
+    padding: 1.5rem 0;
+    text-align: center;
+
+    a {
+        color: map-get($theme-colors, "white-text");
+        text-decoration: underline;
+    }
+
+    a:hover,
+    a:focus {
+        color: map-get($theme-colors, "uw-metallic");
+    }
+}
+
+.da-footer-wordmark {
+    background: url('/static/data_aggregator/img/uw-sprite.svg') no-repeat 0 -434px transparent;
+    display: inline-block;
+    margin-bottom: 1rem;
+    min-height: 16px;
+    overflow: hidden;
+    text-indent: -9999px;
+    width: 335px;
+}
+
+.da-footer-links {
+    font-size: 0.8725rem;
+    padding: 0.5rem 0;
+}
+
+.da-logout-link {
+    font-size: 0.75rem;
+}

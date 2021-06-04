@@ -1,6 +1,6 @@
 <template>
     <div class="top-right-corner">
-      <b-badge variant="light">
+      <b-badge variant="secondary">
         Current Time: {{currentTime | iso_date}}
       </b-badge>
     </div>
@@ -36,7 +36,7 @@ export default {
 <style lang="scss" scoped>
     .top-right-corner {
       position: absolute;
-      top: 30px;
+      top: 0px;
       right: 30px;
     }
 </style>
