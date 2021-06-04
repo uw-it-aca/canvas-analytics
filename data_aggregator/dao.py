@@ -65,12 +65,10 @@ class CanvasDAO():
             self, canvas_course_id, student_id, analytic_type):
         if analytic_type == AnalyticTypes.assignment:
             return self.analytics.get_student_assignments_for_course(
-                student_id, canvas_course_id,
-                term=self.curr_term, week=self.curr_week)
+                student_id, canvas_course_id)
         elif analytic_type == AnalyticTypes.participation:
             return self.analytics.get_student_summaries_by_course(
-                canvas_course_id, student_id=student_id,
-                term=self.curr_term, week=self.curr_week)
+                canvas_course_id, student_id=student_id)
         else:
             raise ValueError(f"Unknown analytic type: {analytic_type}")
 
