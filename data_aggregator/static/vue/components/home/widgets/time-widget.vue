@@ -8,7 +8,7 @@
 
 <script>
 import {mapState, mapMutations} from 'vuex';
-import utilitiesMixin from '../../mixins/utilities_mixin';
+import utilitiesMixin from '../../../mixins/utilities_mixin';
 import moment from 'moment';
 
 export default {

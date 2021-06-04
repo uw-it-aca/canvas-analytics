@@ -6,7 +6,7 @@
 
 <script>
 import {mapState, mapMutations} from 'vuex';
-import utilities from "../../../js/utilities.js";
+import utilities from "../../../../js/utilities.js";
 import moment from 'moment';
 
 export default {
