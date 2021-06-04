@@ -104,16 +104,34 @@ class User(models.Model):
 class JobManager(models.Manager):
 
     def claim_batch_of_jobs(self, jobtype, batchsize=None):
+        # check for pending jobs to claim
         jobs = (self.get_queryset()
                 .select_related()
                 .filter(type__type=jobtype)
                 .filter(pid=None)
                 .filter(target_date_end__gte=timezone.now())
                 .filter(target_date_start__lte=timezone.now()))
+
+        if jobs.count() == 0:
+            # Check to see if we can instead reclaim jobs in case another
+            # process crashed and left the db in a stale state. This only
+            # works since there is only one daemon process per job type so
+            # worker cronjobs aren't competing with each other.
+            jobs = (self.get_queryset()
+                    .select_related()
+                    .filter(type__type=jobtype)
+                    .filter(end=None)  # not completed
+                    .filter(message='')  # not failed
+                    .filter(target_date_end__gte=timezone.now())
+                    .filter(target_date_start__lte=timezone.now()))
+            logging.warning(f"Reclaiming {jobs.count()} jobs.")
+
         if batchsize is not None:
             jobs = jobs[:batchsize]
+
         for job in jobs:
             job.claim_job()
+
         return jobs
 
 
@@ -155,7 +173,16 @@ class Job(models.Model):
 
     @property
     def status(self):
-        if (not self.pid and not self.start and not self.end and
+        # The order of these checks matters. We always want to display
+        # completed and failed jobs, while pending, claimed, and running
+        # jobs may expire.
+        if (self.pid and self.start and self.end and not self.message):
+            return JobStatusTypes.completed
+        elif (self.message):
+            return JobStatusTypes.failed
+        elif self.target_date_end < timezone.now():
+            return JobStatusTypes.expired
+        elif (not self.pid and not self.start and not self.end and
                 not self.message):
             return JobStatusTypes.pending
         elif (self.pid and not self.start and not self.end and
@@ -163,20 +190,17 @@ class Job(models.Model):
             return JobStatusTypes.claimed
         elif (self.pid and self.start and not self.end and not self.message):
             return JobStatusTypes.running
-        elif (self.pid and self.start and self.end and not self.message):
-            return JobStatusTypes.completed
-        elif (self.message):
-            return JobStatusTypes.failed
-        elif self.target_date_end < timezone.now():
-            return JobStatusTypes.expired
 
     def claim_job(self, *args, **kwargs):
         self.pid = os.getpid()
+        self.start = None
         super(Job, self).save(*args, **kwargs)
 
     def start_job(self, *args, **kwargs):
         if self.pid:
             self.start = timezone.now()
+            self.end = None
+            self.message = ''
             super(Job, self).save(*args, **kwargs)
         else:
             logging.warning("Trying to start a job that was never claimed "
@@ -186,6 +210,7 @@ class Job(models.Model):
     def end_job(self, *args, **kwargs):
         if self.pid and self.start:
             self.end = timezone.now()
+            self.message = ''
             super(Job, self).save(*args, **kwargs)
         else:
             logging.warning("Trying to end a job that was never started "
