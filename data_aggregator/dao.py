@@ -1,4 +1,5 @@
 import logging
+import os
 from django.conf import settings
 from data_aggregator.models import Assignment, Course, Participation, \
     Term, User, Week
@@ -35,6 +36,8 @@ class CanvasDAO():
         sws_term = get_current_term()
         self.curr_term = sws_term.canvas_sis_id()
         self.curr_week = get_week_of_term(sws_term.first_day_quarter)
+        os.environ["GCS_BASE_PATH"] = \
+            "{}/{}/".format(self.curr_term, self.curr_week)
 
     @retry(DataFailureException, tries=5, delay=10, backoff=2,
            status_codes=[0, 403, 408, 500])
