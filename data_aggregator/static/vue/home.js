@@ -7,13 +7,15 @@ import ActiveRangePicker from './components/home/active-range-picker.vue';
 import JobsTable from './components/home/jobs-table.vue';
 import JobsFilter from './components/home/jobs-filter.vue';
 import Chart from './components/home/chart.vue';
-import TimeWidget from './components/home/time-widget.vue';
+import TimeDifferenceWidget from './components/home/widgets/time-difference-widget.vue';
+import TimeWidget from './components/home/widgets/time-widget.vue';
 
 Vue.component('jobs-table', JobsTable);
 Vue.component('jobs-filter', JobsFilter);
 Vue.component('active-range-picker', ActiveRangePicker);
 Vue.component('chart', Chart);
 Vue.component('time-widget', TimeWidget);
+Vue.component('time-difference-widget', TimeDifferenceWidget);
 
 // date range picker component - https://innologica.github.io/vue2-daterange-picker/
 import DateRangePicker from 'vue2-daterange-picker';

@@ -1,4 +1,5 @@
 import os
+import logging
 from datetime import datetime, date
 from django.db import models
 from django.utils import timezone
@@ -150,7 +151,7 @@ class Job(models.Model):
     start = models.DateTimeField(null=True)
     end = models.DateTimeField(null=True)
     message = models.TextField()
-    created = models.DateField(auto_now_add=True)
+    created = models.DateTimeField(auto_now_add=True)
 
     @property
     def status(self):
@@ -174,12 +175,22 @@ class Job(models.Model):
         super(Job, self).save(*args, **kwargs)
 
     def start_job(self, *args, **kwargs):
-        self.start = timezone.now()
-        super(Job, self).save(*args, **kwargs)
+        if self.pid:
+            self.start = timezone.now()
+            super(Job, self).save(*args, **kwargs)
+        else:
+            logging.warning("Trying to start a job that was never claimed "
+                            "by a process. Unable to start a job that doesn't "
+                            "have a set pid.")
 
     def end_job(self, *args, **kwargs):
-        self.end = timezone.now()
-        super(Job, self).save(*args, **kwargs)
+        if self.pid and self.start:
+            self.end = timezone.now()
+            super(Job, self).save(*args, **kwargs)
+        else:
+            logging.warning("Trying to end a job that was never started "
+                            "and/or claimed. Perhaps this was a running "
+                            "job that was restarted.")
 
 
 class Assignment(models.Model):
