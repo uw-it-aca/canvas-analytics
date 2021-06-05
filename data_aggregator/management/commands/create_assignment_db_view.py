@@ -27,7 +27,7 @@ def create(sis_term_id, week):
     cursor.execute(
         '''
         {create_action} AS
-        SELECT 
+        SELECT
             data_aggregator_term.id AS term_id,
             data_aggregator_week.id AS week_id,
             a.course_id,
