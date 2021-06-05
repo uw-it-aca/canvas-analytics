@@ -48,27 +48,12 @@ def create(sis_term_id, week):
             a.submitted_at,
             a.third_quartile,
             a.title
-        FROM
-            data_aggregator_assignment a
-        LEFT JOIN (
-            SELECT b.user_id, b.assignment_id, MAX(week) as max_week
-            FROM  data_aggregator_assignment b
-            JOIN data_aggregator_week on
-                b.week_id = data_aggregator_week.id
-            JOIN data_aggregator_term on
-                data_aggregator_week.term_id = data_aggregator_term.id
-            WHERE
-                data_aggregator_week.week <= {week} AND
-                data_aggregator_term.sis_term_id = '{sis_term_id}'
-            GROUP BY b.user_id, assignment_id
-        ) b
-        ON (a.assignment_id = b.assignment_id AND
-            a.user_id = b.user_id)
-        JOIN data_aggregator_week on
-            a.week_id = data_aggregator_week.id
-        JOIN data_aggregator_term on
-            data_aggregator_week.term_id = data_aggregator_term.id
-        WHERE data_aggregator_week.week = b.max_week
+        FROM data_aggregator_assignment a
+        JOIN data_aggregator_week ON a.week_id = data_aggregator_week.id
+        JOIN data_aggregator_term ON
+          data_aggregator_week.term_id = data_aggregator_term.id
+        WHERE data_aggregator_week.week = {week} AND
+          data_aggregator_term.sis_term_id = '{sis_term_id}'
         '''.format(create_action=create_action,
                    week=week,
                    sis_term_id=sis_term_id)

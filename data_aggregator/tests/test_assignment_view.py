@@ -54,7 +54,7 @@ class TestAssignmentView(TestCase):
         week = 2
         self.assertEqual(
             get_row_count(get_view_name(sis_term_id, week, label)),
-            100)
+            12)
 
     def test_row_status(self):
         """
@@ -85,17 +85,17 @@ class TestAssignmentView(TestCase):
             get_row_count_where_status_equals(
                 get_view_name(sis_term_id, week, label),
                 "missing"),
-            3)
+            1)
         self.assertEqual(
             get_row_count_where_status_equals(
                 get_view_name(sis_term_id, week, label),
                 "late"),
-            14)
+            9)
         self.assertEqual(
             get_row_count_where_status_equals(
                 get_view_name(sis_term_id, week, label),
                 "on_time"),
-            83)
+            2)
 
 
 if __name__ == "__main__":

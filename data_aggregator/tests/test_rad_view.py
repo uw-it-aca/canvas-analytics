@@ -58,7 +58,7 @@ class TestRadView(TestCase):
         week = 2
         self.assertEqual(
             get_row_count(get_view_name(sis_term_id, week, label)),
-            20)
+            6)
 
 
 if __name__ == "__main__":
