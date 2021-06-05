@@ -58,10 +58,6 @@ const store = new Vuex.Store({
       startDate: null,
       endDate: null,
     },
-    jobDateRange: {
-      startDate: null,
-      endDate: null,
-    }
   },
   mutations: {
     setRefreshTime(state, value) {
@@ -111,15 +107,6 @@ const store = new Vuex.Store({
     },
     setActiveRangeEndDate(state, value) {
       state.activeDateRange.endDate = value;
-    },
-    setJobDateRange(state, value) {
-      state.jobDateRange = value;
-    },
-    setJobRangeStartDate(state, value) {
-      state.jobDateRange.startDate = value;
-    },
-    setJobRangeEndDate(state, value) {
-      state.jobDateRange.endDate = value;
     },
     addVarToState(state, {name, value}) {
       state[name] = value;
@@ -213,7 +200,6 @@ new Vue({
     ...mapState({
       refreshTime: (state) => state.refreshTime,
       activeDateRange: (state) => state.activeDateRange,
-      jobDateRange: (state) => state.jobDateRange,
       perPage: (state) => state.perPage,
       currPage: (state) => state.currPage,
       sortBy: (state) => state.sortBy,
@@ -229,7 +215,7 @@ new Vue({
     },
     selectionChangeTriggers: function() {
       // refresh if any of these change
-      return this.activeDateRange, this.jobDateRange,
+      return this.activeDateRange,
         this.currPage, this.perPage, this.sortBy, this.sortDesc, this.jobType,
         this.jobStatus;
     },
@@ -250,10 +236,6 @@ new Vue({
         "activeDateRange": {
           "startDate": utilities.parseIsoDateStr(this.activeDateRange.startDate),
           "endDate": utilities.parseIsoDateStr(this.activeDateRange.endDate),
-        },
-        "jobDateRange": {
-          "startDate": utilities.parseIsoDateStr(this.jobDateRange.startDate),
-          "endDate": utilities.parseIsoDateStr(this.jobDateRange.endDate),
         },
         "perPage": this.perPage,
         "currPage": this.currPage,
@@ -293,10 +275,6 @@ new Vue({
           "startDate": utilities.parseIsoDateStr(this.activeDateRange.startDate),
           "endDate": utilities.parseIsoDateStr(this.activeDateRange.endDate),
         },
-        "jobDateRange": {
-          "startDate": utilities.parseIsoDateStr(this.jobDateRange.startDate),
-          "endDate": utilities.parseIsoDateStr(this.jobDateRange.endDate),
-        },
         "jobType": this.jobType,
       })
       .then(response => {
@@ -331,12 +309,6 @@ new Vue({
         params['jobType'] = this.$store.state.jobType.join(",");
       if(this.$store.state.jobStatus.length > 0)
         params['jobStatus'] = this.$store.state.jobStatus.join(",");
-      if(this.$store.state.jobDateRange.startDate)
-        params['jobStartDate'] = utilities.toIsoDateStr(
-          this.$store.state.jobDateRange.startDate);
-      if(this.$store.state.jobDateRange.endDate)
-        params['jobEndDate'] = utilities.toIsoDateStr(
-          this.$store.state.jobDateRange.endDate)
       let queryParams = Object.keys(params).map(function(k) {
         return encodeURIComponent(k) + '=' + encodeURIComponent(params[k])
       }).join('&')

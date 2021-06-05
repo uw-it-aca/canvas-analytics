@@ -108,42 +108,8 @@
               placeholder="All">
             </multiselect>
           </td>
-          <td colspan="2">
-            <date-range-picker
-              ref="jobspicker"
-              v-model="jobDateRange"
-              :opens="'left'"
-              :locale-data="dateLocale"
-              :singleDatePicker="false"
-              :showDropdowns="true"
-              :showWeekNumbers="true"
-              :ranges="false"
-              :timePicker="true"
-              :timePicker24Hour="true"
-              :linkedCalendars="true"
-              :autoApply="false"
-            >
-              <template v-slot:input="picker">
-                <template v-if="picker.startDate && picker.endDate">
-                  {{ picker.startDate | iso_date }} - {{ picker.endDate | iso_date}}
-                </template>
-                <template v-else>
-                  <span class="picker-placeholder"><b-icon-calendar></b-icon-calendar>  All</span>
-                </template>
-              </template>
-
-              <div slot="footer" slot-scope="data" class="picker-footer">
-                <span>
-                  {{data.rangeText}}
-                </span>
-                <span style="margin-left: auto">
-                  <a @click="data.clickCancel" class="btn btn-light btn-sm">Cancel</a>
-                  <a @click="clearJobDataPicker" class="btn btn-light btn-sm">Clear</a>
-                  <a @click="data.clickApply" v-if="!data.in_selection" class="btn btn-primary btn-sm">Apply</a>
-                </span>
-              </div>
-            </date-range-picker>
-          </td>
+          <td></td>
+          <td></td>
           <td></td>
         </template>
 
@@ -307,14 +273,6 @@ export default {
         this.$store.commit('setCurrPage', value);
       }
     },
-    jobDateRange: {
-      get () {
-        return this.$store.state.jobDateRange;
-      },
-      set (value) {
-        this.$store.commit('setJobDateRange', value);
-      }
-    },
   },
   methods: {
     handleAction: function() {
@@ -424,10 +382,6 @@ export default {
     },
     select: function() {
       this.allSelected = false;
-    },
-    clearJobDataPicker: function() {
-      this.jobDateRange = {startDate: null, endDate: null};
-      this.$refs.jobspicker.togglePicker(false);
     },
     _getColumnWidth: function(fieldKey) {
       if (fieldKey == "selected")

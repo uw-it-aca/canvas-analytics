@@ -4,8 +4,6 @@ from data_aggregator.views.api import RESTDispatch
 from data_aggregator.utilities import get_default_target_start, \
     get_default_target_end
 from django.db.models import F, Q, BooleanField, Value
-from django.utils import timezone
-from datetime import datetime, time
 
 
 def get_filtered_jobs_list(filters):
@@ -19,20 +17,13 @@ def get_filtered_jobs_list(filters):
     if activeDateRange:
         jobs = jobs.filter(
             target_date_start__lte=activeDateRange["endDate"]
-        )
-        jobs = jobs.filter(
+        ).filter(
             target_date_end__gte=activeDateRange["startDate"]
-        )
-
-    jobDateRange = filters.get('jobDateRange')
-    if jobDateRange.get("startDate") and \
-            jobDateRange.get("endDate"):
-        jobs = jobs.filter(
-            Q(start__lte=jobDateRange["endDate"]) |
+        ).filter(
+            Q(start__lte=activeDateRange["endDate"]) |
             Q(start__isnull=True)
-        )
-        jobs = jobs.filter(
-            Q(end__gte=jobDateRange["startDate"]) |
+        ).filter(
+            Q(end__gte=activeDateRange["startDate"]) |
             Q(end__isnull=True)
         )
 
