@@ -1,5 +1,5 @@
 from django.utils import timezone
-from datetime import date, datetime, timedelta, time
+from datetime import date, datetime, timedelta
 
 
 def datestring_to_datetime(date_str):
