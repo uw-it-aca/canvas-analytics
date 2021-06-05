@@ -20,10 +20,10 @@ def get_filtered_jobs_list(filters):
         ).filter(
             target_date_end__gte=activeDateRange["startDate"]
         ).filter(
-            Q(start__lte=activeDateRange["endDate"]) |
+            Q(start__gte=activeDateRange["startDate"]) |
             Q(start__isnull=True)
         ).filter(
-            Q(end__gte=activeDateRange["startDate"]) |
+            Q(end__lte=activeDateRange["endDate"]) |
             Q(end__isnull=True)
         )
 
