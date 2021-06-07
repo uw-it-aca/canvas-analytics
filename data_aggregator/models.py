@@ -278,3 +278,31 @@ class Participation(models.Model):
             models.UniqueConstraint(fields=['user', 'course', 'week'],
                                     name='unique_participation')
         ]
+
+
+class RadDbView(models.Model):
+    class Meta:
+        abstract = True
+
+    @classmethod
+    def setDb_table(Class, tableName):
+        class Meta:
+            managed = False
+            db_table = tableName
+
+        attrs = {
+            '__module__': Class.__module__,
+            'Meta': Meta
+        }
+        return type(tableName, (Class,), attrs)
+
+    canvas_user_id = models.BigIntegerField(unique=True, primary_key=True)
+    full_name = models.TextField(null=True)
+    term = models.TextField(null=True)
+    week = models.IntegerField()
+    assignment_score = \
+        models.DecimalField(null=True, max_digits=13, decimal_places=3)
+    participation_score = \
+        models.DecimalField(null=True, max_digits=13, decimal_places=3)
+    grade = \
+        models.DecimalField(null=True, max_digits=13, decimal_places=3)

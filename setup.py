@@ -29,7 +29,10 @@ setup(
         'django-webpack-loader==0.7.0',
         'djangorestframework>=3.12.2,<4.0',
         'psycopg2~=2.8',
-        'uw-gcs-clients>=1.0.3'
+        'uw-gcs-clients>=1.0.3',
+        'boto3>=1.17.88,<2.0.0'
+        'google-cloud-storage>=1.37.1,<2.0',
+        'google-api-core>=1.26.3,<2.0',
     ],
     license='Apache License, Version 2.0',
     description='Collects data about UW Canvas usage',
