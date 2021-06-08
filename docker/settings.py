@@ -21,8 +21,12 @@ else:
     RESTCLIENTS_DAO_CACHE_CLASS = 'data_aggregator.cache.DataAggregatorGCSCache'
     if os.getenv('ENV') == 'test':
         GCS_BUCKET_NAME = 'canvas-analytics-test'
+        RAD_METADATA_BUCKET_NAME = 'canvas-analytics-test'
+        IDP_BUCKET_NAME = 'uw-idp-data-files'
     elif os.getenv('ENV') == 'prod':
         GCS_BUCKET_NAME = 'canvas-analytics'
+        RAD_METADATA_BUCKET_NAME = 'canvas-analytics'
+        IDP_BUCKET_NAME = 'uw-idp-data-files'
     GCS_REPLACE = False  # replace contents if already exists
     GCS_TIMEOUT = 5  # request timeout in seconds
     GCS_NUM_RETRIES = 3  # number of request retries

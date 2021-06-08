@@ -83,6 +83,10 @@ cronjob:
       schedule: "15 8 * * 0" # At 12:15am PST on Sunday
       command: ["/scripts/management_command.sh"]
       args: ["create_rad_db_view"]
+    - name: crt-rad-data
+      schedule: "30 8 * * 0" # At 12:30am PST on Sunday
+      command: ["/scripts/management_command.sh"]
+      args: ["create_rad_data_file"]
 daemon:
   enabled: true
   daemons:
