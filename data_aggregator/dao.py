@@ -50,6 +50,13 @@ class CanvasDAO():
     @retry(DataFailureException, tries=5, delay=10, backoff=2,
            status_codes=[0, 403, 408, 500])
     def download_student_ids_for_course(self, canvas_course_id):
+        """
+        Download list of student ids in a canvas course
+
+        :param canvas_course_id: canvas course id to download list of students
+            for
+        :type canvas_course_id: int
+        """
         stus = self.enrollments.get_enrollments_for_course(
                     canvas_course_id,
                     params={
@@ -62,6 +69,12 @@ class CanvasDAO():
     @retry(DataFailureException, tries=5, delay=10, backoff=2,
            status_codes=[0, 403, 408, 500])
     def download_course(self, canvas_course_id):
+        """
+        Download canvas course metadata
+
+        :param canvas_course_id: canvas course id to download metadata for
+        :type canvas_course_id: int
+        """
         try:
             return self.courses.get_course(canvas_course_id)
         except Exception as e:
@@ -71,6 +84,17 @@ class CanvasDAO():
            status_codes=[0, 403, 408, 500])
     def download_raw_analytics_for_student(
             self, canvas_course_id, student_id, analytic_type):
+        """
+        Download raw analytics for a given canvas course id and student
+
+        :param canvas_course_id: canvas course id to download analytics for
+        :type canvas_course_id: int
+        :param student_id: canvas user id to download analytic for
+        :type student_id: int
+        :param analytic_type: 
+        :type analytic_type: str (AnalyticTypes.assignment or
+            AnalyticTypes.participation)
+        """
         if analytic_type == AnalyticTypes.assignment:
             return self.analytics.get_student_assignments_for_course(
                 student_id, canvas_course_id)
@@ -82,6 +106,15 @@ class CanvasDAO():
 
     def download_raw_analytics_for_course(
             self, canvas_course_id, analytic_type):
+        """
+        Download raw analytics for a given canvas course id
+
+        :param canvas_course_id: canvas course id to download analytics for
+        :type canvas_course_id: int
+        :param analytic_type: 
+        :type analytic_type: str (AnalyticTypes.assignment or
+            AnalyticTypes.participation)
+        """
         students_ids = self.download_student_ids_for_course(canvas_course_id)
         analytics = []
         for student_id in students_ids:
@@ -101,6 +134,15 @@ class CanvasDAO():
         return analytics
 
     def save_assignments_to_db(self, assignment_dicts, job):
+        """
+        Save list of assignment dictionaries to the db
+
+        :param assignment_dicts: List of dictionaries containing
+            assignment analytic info
+        :type assignment_dicts: dict
+        :param job: Job associated with the assignment analytics to save
+        :type job: data_aggregator.models.Job
+        """
 
         def save(assign_objs, canvas_course_id, create=True):
             if create:
@@ -200,6 +242,15 @@ class CanvasDAO():
             logging.info("No assignment records to load.")
 
     def save_participations_to_db(self, participation_dicts, job):
+        """
+        Save list of participation dictionaries to the db
+
+        :param participation_dicts: List of dictionaries containing
+            participation analytic info
+        :type participation_dicts: dict
+        :param job: Job associated with the participation analytics to save
+        :type job: data_aggregator.models.Job
+        """
 
         def save(partic_objs, canvas_course_id, create=True):
             if create:
@@ -292,6 +343,12 @@ class CanvasDAO():
                 logging.info("No participation records to load.")
 
     def download_course_provisioning_report(self, sis_term_id):
+        """
+        Download canvas course provisioning report
+
+        :param sis_term_id: sis term id to load course report for
+        :type sis_term_id: numeric
+        """
         # get canvas term using sis-term-id
         canvas_term = self.terms.get_term_by_sis_id(sis_term_id)
         # get courses provisioning report for canvas term
@@ -303,6 +360,12 @@ class CanvasDAO():
         return sis_data
 
     def download_user_provisioning_report(self, sis_term_id):
+        """
+        Download canvas sis user provisioning report
+
+        :param sis_term_id: sis term id to load users report for
+        :type sis_term_id: numeric
+        """
         # get canvas term using sis-term-id
         canvas_term = self.terms.get_term_by_sis_id(sis_term_id)
         # get users provisioning report for canvas term
@@ -329,26 +392,36 @@ class LoadRadDao():
         self.curr_week = get_week_of_term(sws_term.first_day_quarter)
 
     def _configure_pandas(self):
+        """
+        Configure global pandas options
+        """
         pd.options.mode.use_inf_as_na = True
         pd.options.display.max_rows = 500
         pd.options.display.precision = 3
         pd.options.display.float_format = '{:.3f}'.format
 
     def _zero_range(self, x):
-        '''
+        """
         Check range of series x is non-zero.
         Helper for rescaling.
         May choke if all x is na.
-        '''
+        """
         zr = False
         if x.min() == x.max():
             zr = True
         return zr
 
     def _rescale_range(self, x, min=-5, max=5):
-        '''
+        """
         Scale numbers to an arbitray min/max range.
-        '''
+
+        :param x: Numeric value to rescale
+        :type x: numeric
+        :param min: Mimimum scaled value
+        :type min: numeric
+        :param max: Maximum scaled value
+        :type max: numeric
+        """
         if self._zero_range(x):
             return np.mean([min, max])
         elif x.isnull().all():
@@ -360,6 +433,14 @@ class LoadRadDao():
             return x
 
     def download_from_gcs_bucket(self, url_key):
+        """
+        Downloads file a given url_key path from the configured GCS bucket.
+
+        :param url_key: Path of the content to upload
+        :type url_key: str
+        :param content: Content to upload
+        :type content: str or file object
+        """
         bucket = self.gcs_client.get_bucket(self.gcs_bucket_name)
         try:
             blob = bucket.get_blob(url_key)
@@ -371,6 +452,14 @@ class LoadRadDao():
             raise
 
     def download_from_s3_bucket(self, url_key):
+        """
+        Downloads file a given url_key path from the configured S3 bucket.
+
+        :param url_key: Path of the content to upload
+        :type url_key: str
+        :param content: Content to upload
+        :type content: str or file object
+        """
         idp_obj = self.s3_client.get_object(Bucket=self.s3_bucket_name,
                                             Key=url_key)
         content = BytesIO(idp_obj['Body'].read())
@@ -380,9 +469,9 @@ class LoadRadDao():
         """
         Upload a string or file-like object contents to GCS bucket
 
-        :param url_key: URL response to cache
+        :param url_key: Path of the content to upload
         :type url_key: str
-        :param content: Content to cache
+        :param content: Content to upload
         :type content: str or file object
         """
         bucket = self.gcs_client.get_bucket(self.gcs_bucket_name)
@@ -392,14 +481,17 @@ class LoadRadDao():
         blob.custom_time = datetime.now(timezone.utc)
         if isinstance(content, IOBase):
             blob.upload_from_file(content,
-                                  num_retries=5,
-                                  timeout=30)
+                                  num_retries=settings.GCS_NUM_RETRIES,
+                                  timeout=settings.GCS_TIMEOUT)
         else:
             blob.upload_from_string(str(content),
-                                    num_retries=5,
-                                    timeout=30)
+                                    num_retries=settings.GCS_NUM_RETRIES,
+                                    timeout=settings.GCS_TIMEOUT)
 
     def get_student_categories_df(self):
+        """
+        Download student categories file from the configured GCS bucket
+        """
         users = User.objects.all().values("canvas_user_id", "login_id")
         users_df = pd.DataFrame(users)
 
@@ -420,6 +512,9 @@ class LoadRadDao():
         return sdb_df
 
     def get_pred_proba_scores_df(self):
+        """
+        Download predicted probabilities file from the configured GCS bucket
+        """
         url_key = ("application_metadata/predicted_probabilites/"
                    "{}-pred-proba.csv".format(self.curr_term))
         content = self.download_from_gcs_bucket(url_key)
@@ -431,16 +526,20 @@ class LoadRadDao():
         return probs_df
 
     def get_rad_dbview_df(self):
+        """
+        Query RAD canvas data from the canvas-analytics RAD db view for the
+        current term and week
+        """
         view_name = get_view_name(self.curr_term, self.curr_week, "rad")
         rad_db_model = RadDbView.setDb_table(view_name)
         rad_canvas_qs = rad_db_model.objects.all().values()
         return pd.DataFrame(rad_canvas_qs)
 
     def get_idp_df(self):
-        '''
+        """
         Returns a pandas dataframe containing the contents of the
         last idp object found in the s3 bucket.
-        '''
+        """
         bucket_objects = \
             self.s3_client.list_objects_v2(Bucket=self.s3_bucket_name)
         last_idp_file = bucket_objects['Contents'][-1]['Key']
@@ -454,7 +553,11 @@ class LoadRadDao():
         idp_df['sign_in'] = self._rescale_range(idp_df['sign_in'])
         return idp_df
 
-    def get_rad_cavas_df(self):
+    def get_rad_df(self):
+        """
+        Returns a pandas dataframe containing the contents of the
+        rad data file
+        """
         # get rad canvas data
         rad_canvas_df = self.get_rad_dbview_df()
         # get student categories

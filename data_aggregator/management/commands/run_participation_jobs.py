@@ -1,3 +1,4 @@
+import logging
 from data_aggregator.models import Participation
 from data_aggregator.management.commands._base import RunJobCommand
 from data_aggregator.dao import CanvasDAO, AnalyticTypes
@@ -22,4 +23,5 @@ class Command(RunJobCommand):
         old_participations.delete()
         # save participations to db
         canvas_dao.save_participations_to_db(participations, job)
-        print("Saved {} participation entries".format(len(participations)))
+        logging.debug("Saved {} participation entries"
+                      .format(len(participations)))

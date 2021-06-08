@@ -1,3 +1,4 @@
+import logging
 from data_aggregator.models import Assignment
 from data_aggregator.management.commands._base import RunJobCommand
 from data_aggregator.dao import CanvasDAO, AnalyticTypes
@@ -22,4 +23,4 @@ class Command(RunJobCommand):
         old_assignments.delete()
         # save assignments to db
         canvas_dao.save_assignments_to_db(assignments, job)
-        print("Saved {} assignment entries".format(len(assignments)))
+        logging.debug("Saved {} assignment entries".format(len(assignments)))

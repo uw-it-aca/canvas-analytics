@@ -124,7 +124,8 @@ class JobManager(models.Manager):
                     .filter(message='')  # not failed
                     .filter(target_date_end__gte=timezone.now())
                     .filter(target_date_start__lte=timezone.now()))
-            logging.warning(f"Reclaiming {jobs.count()} jobs.")
+            if jobs.count() > 0:
+                logging.warning(f"Reclaiming {jobs.count()} jobs.")
 
         if batchsize is not None:
             jobs = jobs[:batchsize]

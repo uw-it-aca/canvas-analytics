@@ -9,7 +9,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         lrd = LoadRadDao()
-        rcd = lrd.get_rad_cavas_df()
+        rcd = lrd.get_rad_df()
         file_name = "rad_data/{}-week-{}-rad-data.csv".format(lrd.curr_term,
                                                               lrd.curr_week)
         file_obj = rcd.to_csv(sep=",", index=False, encoding="UTF-8")
