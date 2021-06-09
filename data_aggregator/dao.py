@@ -387,6 +387,8 @@ class LoadRadDao():
                                 aws_access_key_id=settings.AWS_ACCESS_ID,
                                 aws_secret_access_key=settings.AWS_ACCESS_KEY)
         self.s3_bucket_name = settings.IDP_BUCKET_NAME
+        self.gcs_timeout = getattr(settings, "GCS_TIMEOUT", 60)
+        self.gcs_num_retries = getattr(settings, "GCS_NUM_RETRIES", 3)
         sws_term = get_current_term()
         self.curr_term = sws_term.canvas_sis_id()
         self.curr_week = get_week_of_term(sws_term.first_day_quarter)
@@ -443,8 +445,11 @@ class LoadRadDao():
         """
         bucket = self.gcs_client.get_bucket(self.gcs_bucket_name)
         try:
-            blob = bucket.get_blob(url_key)
-            content = blob.download_as_string()
+            blob = bucket.get_blob(
+                url_key,
+                timeout=self.gcs_timeout)
+            content = blob.download_as_string(
+                timeout=self.gcs_timeout)
             if content:
                 return content.decode('utf-8')
         except NotFound as ex:
@@ -475,25 +480,34 @@ class LoadRadDao():
         :type content: str or file object
         """
         bucket = self.gcs_client.get_bucket(self.gcs_bucket_name)
-        blob = bucket.get_blob(url_key)
+        blob = bucket.get_blob(
+            url_key,
+            timeout=self.gcs_timeout)
         if not blob:
             blob = bucket.blob(url_key)
         blob.custom_time = datetime.now(timezone.utc)
         if isinstance(content, IOBase):
-            blob.upload_from_file(content,
-                                  num_retries=settings.GCS_NUM_RETRIES,
-                                  timeout=settings.GCS_TIMEOUT)
+            blob.upload_from_file(
+                content,
+                num_retries=self.gcs_num_retries,
+                timeout=self.gcs_timeout)
         else:
-            blob.upload_from_string(str(content),
-                                    num_retries=settings.GCS_NUM_RETRIES,
-                                    timeout=settings.GCS_TIMEOUT)
+            blob.upload_from_string(
+                str(content),
+                num_retries=self.gcs_num_retries,
+                timeout=self.gcs_timeout)
+
+    def get_users_df(self):
+        users = User.objects.all().values("canvas_user_id", "login_id")
+        users_df = pd.DataFrame(users)
+        users_df.rename(columns={'login_id': 'uw_netid'}, inplace=True)
+        return users_df
 
     def get_student_categories_df(self):
         """
         Download student categories file from the configured GCS bucket
         """
-        users = User.objects.all().values("canvas_user_id", "login_id")
-        users_df = pd.DataFrame(users)
+        users_df = self.get_users_df()
 
         url_key = ("application_metadata/student_categories/"
                    "{}-netid-name-stunum-categories.csv"
@@ -503,11 +517,11 @@ class LoadRadDao():
         sdb_df = pd.read_csv(StringIO(content))
         i = list(sdb_df.columns[sdb_df.columns.str.startswith('regis_')])
         i.extend(['yrq', 'enroll_status', 'dept_abbrev',
-                 'course_no', 'section_id', 'course_id'])
+                  'course_no', 'section_id', 'course_id'])
         sdb_df.drop(columns=i, inplace=True)
         sdb_df.drop_duplicates(inplace=True)
-        sdb_df = sdb_df.merge(users_df.rename(
-            columns={'login_id': 'uw_netid'}), how='left', on='uw_netid')
+
+        sdb_df = sdb_df.merge(users_df, how='left', on='uw_netid')
         sdb_df.fillna(value={'canvas_user_id': -99}, inplace=True)
         return sdb_df
 
@@ -523,7 +537,44 @@ class LoadRadDao():
             StringIO(content),
             usecols=['system_key', 'pred0'])
         probs_df['pred0'] = probs_df['pred0'].transform(self._rescale_range)
+        probs_df.rename(columns={'pred0': 'pred'},
+                        inplace=True)
         return probs_df
+
+    def get_eop_advisers_df(self):
+        """
+        Download eop advisors file from the configured GCS bucket
+        """
+        url_key = ("application_metadata/eop_advisers/"
+                   "{}-eop-advisers.csv".format(self.curr_term))
+        content = self.download_from_gcs_bucket(url_key)
+        eop_df = pd.read_csv(
+            StringIO(content),
+            usecols=['student_no', 'adviser_name', 'staff_id'])
+        # strip any whitespace
+        eop_df['adviser_name'] = eop_df['adviser_name'].str.strip()
+        eop_df['staff_id'] = eop_df['staff_id'].str.strip()
+        return eop_df
+
+    def get_iss_advisers_df(self):
+        """
+        Download iss advisors file from the configured GCS bucket
+        """
+        url_key = ("application_metadata/iss_advisers/"
+                   "{}-iss-advisers.csv".format(self.curr_term))
+        content = self.download_from_gcs_bucket(url_key)
+        iss_df = pd.read_csv(
+            StringIO(content),
+            usecols=['Student_number', 'Adviser',
+                     'Adviser_NetID'])
+        iss_df.rename(columns={'Student_number': 'student_no',
+                               'Adviser': 'adviser_name',
+                               'Adviser_NetID': 'staff_id'},
+                      inplace=True)
+        # strip any whitespace
+        iss_df['adviser_name'] = iss_df['adviser_name'].str.strip()
+        iss_df['staff_id'] = iss_df['staff_id'].str.strip()
+        return iss_df
 
     def get_rad_dbview_df(self):
         """
@@ -533,12 +584,16 @@ class LoadRadDao():
         view_name = get_view_name(self.curr_term, self.curr_week, "rad")
         rad_db_model = RadDbView.setDb_table(view_name)
         rad_canvas_qs = rad_db_model.objects.all().values()
-        return pd.DataFrame(rad_canvas_qs)
+        rad_df = pd.DataFrame(rad_canvas_qs)
+        rad_df.rename(columns={'assignment_score': 'assignments',
+                               'grade': 'grades',
+                               'participation_score': 'activity'},
+                      inplace=True)
+        return rad_df
 
     def get_idp_df(self):
         """
-        Returns a pandas dataframe containing the contents of the
-        last idp object found in the s3 bucket.
+        Download latest idp file found in the s3 bucket.
         """
         bucket_objects = \
             self.s3_client.list_objects_v2(Bucket=self.s3_bucket_name)
@@ -559,17 +614,30 @@ class LoadRadDao():
         rad data file
         """
         # get rad canvas data
-        rad_canvas_df = self.get_rad_dbview_df()
+        rad_df = self.get_rad_dbview_df()
         # get student categories
         sdb_df = self.get_student_categories_df()
         # get idp data
         idp_df = self.get_idp_df()
         # get predicted probabilities
         probs_df = self.get_pred_proba_scores_df()
+        # get eop advisors
+        eop_advisors_df = self.get_eop_advisers_df()
+        # get iss advisors
+        iss_advisors_df = self.get_iss_advisers_df()
+        # merge advisors
+        merged_advisors_df = \
+            pd.merge(eop_advisors_df, iss_advisors_df, how='left',
+                     on=['student_no', 'staff_id', 'adviser_name'])
 
         # merge to create the final dataset
-        joined_canvas_df = (pd.merge(sdb_df, rad_canvas_df, how='left',
-                                     on='canvas_user_id')
-                              .merge(idp_df, how='left', on='uw_netid')
-                              .merge(probs_df, how='left', on='system_key'))
+        joined_canvas_df = (
+            pd.merge(sdb_df, rad_df, how='left', on='canvas_user_id')
+              .merge(idp_df, how='left', on='uw_netid')
+              .merge(probs_df, how='left', on='system_key')
+              .merge(merged_advisors_df, how='left', on='student_no'))
+        joined_canvas_df = joined_canvas_df[
+            ['uw_netid', 'student_no', 'student_name_lowc', 'premajor',
+             'activity', 'assignments', 'grades', 'pred', 'adviser_name',
+             'staff_id', 'sign_in', 'stem', 'incoming_freshman']]
         return joined_canvas_df
