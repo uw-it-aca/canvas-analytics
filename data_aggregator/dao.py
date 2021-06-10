@@ -390,21 +390,11 @@ class LoadRadDAO(AbstractBaseDao):
 
     def __init__(self):
         self._configure_pandas()
-        self.gcs_client = self._get_gcs_client()
         self.gcs_bucket_name = settings.RAD_METADATA_BUCKET_NAME
-        self.s3_client = self._get_s3_client()
         self.s3_bucket_name = settings.IDP_BUCKET_NAME
         self.gcs_timeout = getattr(settings, "GCS_TIMEOUT", 60)
         self.gcs_num_retries = getattr(settings, "GCS_NUM_RETRIES", 3)
         self.curr_term, self.curr_week = self.get_current_term_and_week()
-
-    def _get_gcs_client(self):
-        return storage.Client()
-
-    def _get_s3_client(self):
-        return client('s3',
-                      aws_access_key_id=settings.AWS_ACCESS_ID,
-                      aws_secret_access_key=settings.AWS_ACCESS_KEY)
 
     def _configure_pandas(self):
         """
@@ -447,6 +437,14 @@ class LoadRadDAO(AbstractBaseDao):
             x += min
         return x
 
+    def get_gcs_client(self):
+        return storage.Client()
+
+    def get_s3_client(self):
+        return client('s3',
+                      aws_access_key_id=settings.AWS_ACCESS_ID,
+                      aws_secret_access_key=settings.AWS_ACCESS_KEY)
+
     def download_from_gcs_bucket(self, url_key):
         """
         Downloads file a given url_key path from the configured GCS bucket.
@@ -456,7 +454,8 @@ class LoadRadDAO(AbstractBaseDao):
         :param content: Content to upload
         :type content: str or file object
         """
-        bucket = self.gcs_client.get_bucket(self.gcs_bucket_name)
+        gcs_client = self.get_gcs_client()
+        bucket = gcs_client.get_bucket(self.gcs_bucket_name)
         try:
             blob = bucket.get_blob(
                 url_key,
@@ -478,8 +477,9 @@ class LoadRadDAO(AbstractBaseDao):
         :param content: Content to upload
         :type content: str or file object
         """
-        idp_obj = self.s3_client.get_object(Bucket=self.s3_bucket_name,
-                                            Key=url_key)
+        s3_client = self.get_s3_client()
+        idp_obj = s3_client.get_object(Bucket=self.s3_bucket_name,
+                                       Key=url_key)
         content = BytesIO(idp_obj['Body'].read())
         return content
 
@@ -492,7 +492,8 @@ class LoadRadDAO(AbstractBaseDao):
         :param content: Content to upload
         :type content: str or file object
         """
-        bucket = self.gcs_client.get_bucket(self.gcs_bucket_name)
+        gcs_client = self.get_gcs_client()
+        bucket = gcs_client.get_bucket(self.gcs_bucket_name)
         blob = bucket.get_blob(
             url_key,
             timeout=self.gcs_timeout)

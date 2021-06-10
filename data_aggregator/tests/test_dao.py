@@ -263,8 +263,18 @@ class TestLoadRadDAO(TestCase):
         create_rad(sis_term_id, week)
         super().setUpTestData()
 
+    def _get_test_load_rad_dao(self):
+        lrd = LoadRadDAO()
+        lrd.get_current_term_and_week = \
+            MagicMock(return_value=("2013-spring", 1))
+        lrd.curr_term = "2013-spring"
+        lrd.curr_week = 1
+        lrd._get_gcs_client = MagicMock()
+        lrd._get_s3_client = MagicMock()
+        return lrd
+
     def _get_mock_student_categories_df(self):
-        lrd = self.get_test_load_rad_dao()
+        lrd = self._get_test_load_rad_dao()
         mock_student_cat_file = \
             os.path.join(
                 os.path.dirname(__file__),
@@ -275,7 +285,7 @@ class TestLoadRadDAO(TestCase):
         return mock_student_categories_df
 
     def _get_mock_pred_proba_df(self):
-        lrd = self.get_test_load_rad_dao()
+        lrd = self._get_test_load_rad_dao()
         mock_pred_proba_file = \
             os.path.join(os.path.dirname(__file__),
                          'test_data/2013-spring-pred-proba.csv')
@@ -285,7 +295,7 @@ class TestLoadRadDAO(TestCase):
         return mock_pred_proba_df
 
     def _get_mock_eop_advisers_df(self):
-        lrd = self.get_test_load_rad_dao()
+        lrd = self._get_test_load_rad_dao()
         mock_eop_advisers_file = \
             os.path.join(os.path.dirname(__file__),
                          'test_data/2013-spring-eop-advisers.csv')
@@ -296,7 +306,7 @@ class TestLoadRadDAO(TestCase):
         return mock_eop_advisers_df
 
     def _get_mock_iss_advisers_df(self):
-        lrd = self.get_test_load_rad_dao()
+        lrd = self._get_test_load_rad_dao()
         mock_iss_advisers_file = \
             os.path.join(os.path.dirname(__file__),
                          'test_data/2013-spring-iss-advisers.csv')
@@ -307,7 +317,7 @@ class TestLoadRadDAO(TestCase):
         return mock_iss_advisers_df
 
     def _get_mock_idp_df(self):
-        lrd = self.get_test_load_rad_dao()
+        lrd = self._get_test_load_rad_dao()
         mock_idp_file = \
             os.path.join(os.path.dirname(__file__),
                          'test_data/netid_logins_2013.csv')
@@ -318,16 +328,8 @@ class TestLoadRadDAO(TestCase):
         mock_idp_df = lrd.get_idp_df()
         return mock_idp_df
 
-    def get_test_load_rad_dao(self):
-        lrd = LoadRadDAO()
-        lrd.get_current_term_and_week = \
-            MagicMock(return_value=("2013-spring", 1))
-        lrd.curr_term = "2013-spring"
-        lrd.curr_week = 1
-        return lrd
-
     def test__zero_range(self):
-        lrd = self.get_test_load_rad_dao()
+        lrd = self._get_test_load_rad_dao()
         df = pd.DataFrame([5, 10, 15], columns=['test'])
         self.assertFalse(lrd._zero_range(df['test']))
         df = pd.DataFrame([0, 0, 1], columns=['test'])
@@ -336,7 +338,7 @@ class TestLoadRadDAO(TestCase):
         self.assertTrue(lrd._zero_range(df['test']))
 
     def test__rescale_range(self):
-        lrd = self.get_test_load_rad_dao()
+        lrd = self._get_test_load_rad_dao()
         df = pd.DataFrame([5, 10, 15], columns=['test'])
         self.assertEqual(lrd._rescale_range(df['test']).to_list(),
                          [-5.0, 0.0, 5.0])
@@ -351,14 +353,14 @@ class TestLoadRadDAO(TestCase):
                          [np.nan, np.nan, np.nan])
 
     def test_get_users_df(self):
-        lrd = self.get_test_load_rad_dao()
+        lrd = self._get_test_load_rad_dao()
         mock_users_df = lrd.get_users_df()
         self.assertEqual(
             mock_users_df.columns.values.tolist(),
             ["canvas_user_id", "uw_netid"])
 
     def test_get_rad_dbview_df(self):
-        lrd = self.get_test_load_rad_dao()
+        lrd = self._get_test_load_rad_dao()
         mock_rad_dbview_df = lrd.get_rad_dbview_df()
         self.assertEqual(
             mock_rad_dbview_df.columns.values.tolist(),
@@ -398,7 +400,7 @@ class TestLoadRadDAO(TestCase):
             ["uw_netid", "sign_in"])
 
     def test_get_rad_df(self):
-        lrd = self.get_test_load_rad_dao()
+        lrd = self._get_test_load_rad_dao()
         lrd.get_student_categories_df = \
             MagicMock(return_value=self._get_mock_student_categories_df())
         lrd.get_idp_df = \
