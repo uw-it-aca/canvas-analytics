@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from data_aggregator.dao import LoadRadDao
+from data_aggregator.dao import LoadRadDAO
 
 
 class Command(BaseCommand):
@@ -8,7 +8,7 @@ class Command(BaseCommand):
             "into RAD.")
 
     def handle(self, *args, **options):
-        lrd = LoadRadDao()
+        lrd = LoadRadDAO()
         rcd = lrd.get_rad_df()
         file_name = "rad_data/{}-week-{}-rad-data.csv".format(lrd.curr_term,
                                                               lrd.curr_week)

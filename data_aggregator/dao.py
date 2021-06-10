@@ -29,7 +29,18 @@ class AnalyticTypes():
     participation = "participation"
 
 
-class CanvasDAO():
+class AbstractBaseDao():
+
+    def get_current_term_and_week(self):
+        """
+        Return tuple containing current sis-term-id and week number
+        """
+        sws_term = get_current_term()
+        return sws_term.canvas_sis_id(), \
+            get_week_of_term(sws_term.first_day_quarter)
+
+
+class CanvasDAO(AbstractBaseDao):
     """
     Query canvas for analytics
     """
@@ -41,9 +52,7 @@ class CanvasDAO():
         self.analytics = Analytics()
         self.reports = Reports()
         self.terms = Terms()
-        sws_term = get_current_term()
-        self.curr_term = sws_term.canvas_sis_id()
-        self.curr_week = get_week_of_term(sws_term.first_day_quarter)
+        self.curr_term, self.curr_week = self.get_current_term_and_week()
         os.environ["GCS_BASE_PATH"] = \
             "{}/{}/".format(self.curr_term, self.curr_week)
 
@@ -91,7 +100,7 @@ class CanvasDAO():
         :type canvas_course_id: int
         :param student_id: canvas user id to download analytic for
         :type student_id: int
-        :param analytic_type: 
+        :param analytic_type:
         :type analytic_type: str (AnalyticTypes.assignment or
             AnalyticTypes.participation)
         """
@@ -111,7 +120,7 @@ class CanvasDAO():
 
         :param canvas_course_id: canvas course id to download analytics for
         :type canvas_course_id: int
-        :param analytic_type: 
+        :param analytic_type:
         :type analytic_type: str (AnalyticTypes.assignment or
             AnalyticTypes.participation)
         """
@@ -377,21 +386,25 @@ class CanvasDAO():
         return sis_data
 
 
-class LoadRadDao():
+class LoadRadDAO(AbstractBaseDao):
 
     def __init__(self):
         self._configure_pandas()
-        self.gcs_client = storage.Client()
+        self.gcs_client = self._get_gcs_client()
         self.gcs_bucket_name = settings.RAD_METADATA_BUCKET_NAME
-        self.s3_client = client('s3',
-                                aws_access_key_id=settings.AWS_ACCESS_ID,
-                                aws_secret_access_key=settings.AWS_ACCESS_KEY)
+        self.s3_client = self._get_s3_client()
         self.s3_bucket_name = settings.IDP_BUCKET_NAME
         self.gcs_timeout = getattr(settings, "GCS_TIMEOUT", 60)
         self.gcs_num_retries = getattr(settings, "GCS_NUM_RETRIES", 3)
-        sws_term = get_current_term()
-        self.curr_term = sws_term.canvas_sis_id()
-        self.curr_week = get_week_of_term(sws_term.first_day_quarter)
+        self.curr_term, self.curr_week = self.get_current_term_and_week()
+
+    def _get_gcs_client(self):
+        return storage.Client()
+
+    def _get_s3_client(self):
+        return client('s3',
+                      aws_access_key_id=settings.AWS_ACCESS_ID,
+                      aws_secret_access_key=settings.AWS_ACCESS_KEY)
 
     def _configure_pandas(self):
         """
@@ -417,22 +430,22 @@ class LoadRadDao():
         """
         Scale numbers to an arbitray min/max range.
 
-        :param x: Numeric value to rescale
-        :type x: numeric
+        :param x: Pandas numeric column to rescale
+        :type x: Pandas column
         :param min: Mimimum scaled value
         :type min: numeric
         :param max: Maximum scaled value
         :type max: numeric
         """
         if self._zero_range(x):
-            return np.mean([min, max])
+            x[::] = np.mean([min, max])
         elif x.isnull().all():
-            return np.nan
+            x[::] = np.nan
         else:
             x += -(x.min())
             x /= x.max() / (max - min)
             x += min
-            return x
+        return x
 
     def download_from_gcs_bucket(self, url_key):
         """
@@ -498,6 +511,9 @@ class LoadRadDao():
                 timeout=self.gcs_timeout)
 
     def get_users_df(self):
+        """
+        Get pandas dataframe with users table contents
+        """
         users = User.objects.all().values("canvas_user_id", "login_id")
         users_df = pd.DataFrame(users)
         users_df.rename(columns={'login_id': 'uw_netid'}, inplace=True)
@@ -506,6 +522,7 @@ class LoadRadDao():
     def get_student_categories_df(self):
         """
         Download student categories file from the configured GCS bucket
+        and return pandas dataframe with contents
         """
         users_df = self.get_users_df()
 
@@ -528,6 +545,7 @@ class LoadRadDao():
     def get_pred_proba_scores_df(self):
         """
         Download predicted probabilities file from the configured GCS bucket
+        and return pandas dataframe with contents
         """
         url_key = ("application_metadata/predicted_probabilites/"
                    "{}-pred-proba.csv".format(self.curr_term))
@@ -544,6 +562,7 @@ class LoadRadDao():
     def get_eop_advisers_df(self):
         """
         Download eop advisors file from the configured GCS bucket
+        and return pandas dataframe with contents
         """
         url_key = ("application_metadata/eop_advisers/"
                    "{}-eop-advisers.csv".format(self.curr_term))
@@ -559,6 +578,7 @@ class LoadRadDao():
     def get_iss_advisers_df(self):
         """
         Download iss advisors file from the configured GCS bucket
+        and return pandas dataframe with contents
         """
         url_key = ("application_metadata/iss_advisers/"
                    "{}-iss-advisers.csv".format(self.curr_term))
@@ -579,7 +599,7 @@ class LoadRadDao():
     def get_rad_dbview_df(self):
         """
         Query RAD canvas data from the canvas-analytics RAD db view for the
-        current term and week
+        current term and week and return pandas dataframe with contents
         """
         view_name = get_view_name(self.curr_term, self.curr_week, "rad")
         rad_db_model = RadDbView.setDb_table(view_name)
@@ -591,17 +611,26 @@ class LoadRadDao():
                       inplace=True)
         return rad_df
 
-    def get_idp_df(self):
+    def get_last_idp_file(self):
         """
-        Download latest idp file found in the s3 bucket.
+        Get latest idp file from AWS bucket and return pandas dataframe
+        with contents
         """
         bucket_objects = \
             self.s3_client.list_objects_v2(Bucket=self.s3_bucket_name)
         last_idp_file = bucket_objects['Contents'][-1]['Key']
+        return last_idp_file
+
+    def get_idp_df(self):
+        """
+        Download latest idp file found in the s3 bucket and return pandas
+        dataframe with contents
+        """
+        last_idp_file = self.get_last_idp_file()
         logging.info(f'Using {last_idp_file} as idp file.')
         content = self.download_from_s3_bucket(last_idp_file)
         idp_df = pd.read_csv(content,
-                             header=0,
+                             header=None,
                              names=['uw_netid', 'sign_in'])
         # normalize sign-in score
         idp_df['sign_in'] = np.log(idp_df['sign_in']+1)
@@ -610,7 +639,7 @@ class LoadRadDao():
 
     def get_rad_df(self):
         """
-        Returns a pandas dataframe containing the contents of the
+        Get a pandas dataframe containing the contents of the
         rad data file
         """
         # get rad canvas data
@@ -625,17 +654,15 @@ class LoadRadDao():
         eop_advisors_df = self.get_eop_advisers_df()
         # get iss advisors
         iss_advisors_df = self.get_iss_advisers_df()
-        # merge advisors
-        merged_advisors_df = \
-            pd.merge(eop_advisors_df, iss_advisors_df, how='left',
-                     on=['student_no', 'staff_id', 'adviser_name'])
-
+        # combine advisors
+        combined_advisors_df = \
+            pd.concat([eop_advisors_df, iss_advisors_df])
         # merge to create the final dataset
         joined_canvas_df = (
             pd.merge(sdb_df, rad_df, how='left', on='canvas_user_id')
               .merge(idp_df, how='left', on='uw_netid')
               .merge(probs_df, how='left', on='system_key')
-              .merge(merged_advisors_df, how='left', on='student_no'))
+              .merge(combined_advisors_df, how='left', on='student_no'))
         joined_canvas_df = joined_canvas_df[
             ['uw_netid', 'student_no', 'student_name_lowc', 'premajor',
              'activity', 'assignments', 'grades', 'pred', 'adviser_name',

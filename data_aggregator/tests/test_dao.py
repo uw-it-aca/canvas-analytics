@@ -1,8 +1,18 @@
+import os
 import unittest
+import pandas as pd
+import numpy as np
+from io import StringIO
 from django.test import TestCase
-from data_aggregator.dao import AnalyticTypes, CanvasDAO
+from data_aggregator.dao import AnalyticTypes, CanvasDAO, LoadRadDAO
 from mock import patch, MagicMock
 from restclients_core.exceptions import DataFailureException
+from data_aggregator.management.commands.create_assignment_db_view \
+    import create as create_assignment
+from data_aggregator.management.commands.create_participation_db_view \
+    import create as create_participation
+from data_aggregator.management.commands.create_rad_db_view \
+    import create as create_rad
 
 
 class TestAnalyticTypes(TestCase):
@@ -14,9 +24,15 @@ class TestAnalyticTypes(TestCase):
 
 class TestCanvasDAO(TestCase):
 
+    def get_test_canvas_dao(self):
+        cd = CanvasDAO()
+        cd.get_current_term_and_week = \
+            MagicMock(return_value=("2021-spring", 1))
+        return cd
+
     @patch('uw_canvas.enrollments.Enrollments')
     def test_download_student_ids_for_course(self, MockEnrollment):
-        cd = CanvasDAO()
+        cd = self.get_test_canvas_dao()
         mock_enrollment_inst = MockEnrollment.return_value
         mock_return_values = []
         for user_id in [1234, 1234, 5432, 5432, 3456]:
@@ -35,7 +51,7 @@ class TestCanvasDAO(TestCase):
 
     @patch('uw_canvas.courses.Courses')
     def test_download_course(self, MockCourse):
-        cd = CanvasDAO()
+        cd = self.get_test_canvas_dao()
         mock_course_inst = MockCourse.return_value
         mock_course_inst.get_course.return_value = \
             mock_course_inst
@@ -50,7 +66,7 @@ class TestCanvasDAO(TestCase):
 
     @patch('uw_canvas.analytics.Analytics')
     def test_download_raw_analytics_for_student(self, MockAnalytics):
-        cd = CanvasDAO()
+        cd = self.get_test_canvas_dao()
         mock_analytics_inst = MockAnalytics.return_value
         mock_analytics_inst.get_student_assignments_for_course.return_value = \
             [{'assignment_1': 0,
@@ -88,10 +104,8 @@ class TestCanvasDAO(TestCase):
             mock_analytics_inst.get_student_summaries_by_course.called, True)
 
     @patch('uw_canvas.analytics.Analytics')
-    @patch('uw_canvas.enrollments.Enrollments')
-    def test_download_raw_analytics_for_course(
-                self, MockAnalytics, MockEnrollment):
-        cd = CanvasDAO()
+    def test_download_raw_analytics_for_course(self, MockAnalytics):
+        cd = self.get_test_canvas_dao()
         cd.download_student_ids_for_course = MagicMock()
         cd.download_student_ids_for_course.return_value = \
             [12345]
@@ -158,7 +172,7 @@ class TestCanvasDAO(TestCase):
     @patch('uw_canvas.reports.Reports')
     @patch('uw_canvas.terms.Terms')
     def test_download_course_provisioning_report(self, MockReports, MockTerms):
-        cd = CanvasDAO()
+        cd = self.get_test_canvas_dao()
         mock_terms_inst = MockTerms.return_value
         mock_terms_inst.get_term_by_sis_id.return_value = \
             MagicMock(term_id="2021-spring")
@@ -192,7 +206,7 @@ class TestCanvasDAO(TestCase):
     @patch('uw_canvas.reports.Reports')
     @patch('uw_canvas.terms.Terms')
     def test_download_user_provisioning_report(self, MockReports, MockTerms):
-        cd = CanvasDAO()
+        cd = self.get_test_canvas_dao()
         mock_terms_inst = MockTerms.return_value
         mock_terms_inst.get_term_by_sis_id.return_value = \
             MagicMock(term_id="2021-spring")
@@ -222,6 +236,185 @@ class TestCanvasDAO(TestCase):
         self.assertEqual(
             mock_reports_inst.delete_report.called,
             True)
+
+
+class TestLoadRadDAO(TestCase):
+
+    fixtures = ['data_aggregator/fixtures/mock_data/da_assignment.json',
+                'data_aggregator/fixtures/mock_data/da_course.json',
+                'data_aggregator/fixtures/mock_data/da_job.json',
+                'data_aggregator/fixtures/mock_data/da_jobtype.json',
+                'data_aggregator/fixtures/mock_data/da_participation.json',
+                'data_aggregator/fixtures/mock_data/da_term.json',
+                'data_aggregator/fixtures/mock_data/da_user.json',
+                'data_aggregator/fixtures/mock_data/da_week.json']
+
+    @classmethod
+    def setUpTestData(cls):
+        # Set up data for the whole TestCase
+        sis_term_id = "2013-spring"
+        week = 1
+        create_assignment(sis_term_id, week)
+        create_participation(sis_term_id, week)
+        create_rad(sis_term_id, week)
+        week = 2
+        create_assignment(sis_term_id, week)
+        create_participation(sis_term_id, week)
+        create_rad(sis_term_id, week)
+        super().setUpTestData()
+
+    def _get_mock_student_categories_df(self):
+        lrd = self.get_test_load_rad_dao()
+        mock_student_cat_file = \
+            os.path.join(
+                os.path.dirname(__file__),
+                'test_data/2013-spring-netid-name-stunum-categories.csv')
+        mock_student_cat = open(mock_student_cat_file).read()
+        lrd.download_from_gcs_bucket = MagicMock(return_value=mock_student_cat)
+        mock_student_categories_df = lrd.get_student_categories_df()
+        return mock_student_categories_df
+
+    def _get_mock_pred_proba_df(self):
+        lrd = self.get_test_load_rad_dao()
+        mock_pred_proba_file = \
+            os.path.join(os.path.dirname(__file__),
+                         'test_data/2013-spring-pred-proba.csv')
+        mock_pred_proba = open(mock_pred_proba_file).read()
+        lrd.download_from_gcs_bucket = MagicMock(return_value=mock_pred_proba)
+        mock_pred_proba_df = lrd.get_pred_proba_scores_df()
+        return mock_pred_proba_df
+
+    def _get_mock_eop_advisers_df(self):
+        lrd = self.get_test_load_rad_dao()
+        mock_eop_advisers_file = \
+            os.path.join(os.path.dirname(__file__),
+                         'test_data/2013-spring-eop-advisers.csv')
+        mock_eop_advisers = open(mock_eop_advisers_file).read()
+        lrd.download_from_gcs_bucket = \
+            MagicMock(return_value=mock_eop_advisers)
+        mock_eop_advisers_df = lrd.get_eop_advisers_df()
+        return mock_eop_advisers_df
+
+    def _get_mock_iss_advisers_df(self):
+        lrd = self.get_test_load_rad_dao()
+        mock_iss_advisers_file = \
+            os.path.join(os.path.dirname(__file__),
+                         'test_data/2013-spring-iss-advisers.csv')
+        mock_iss_advisers = open(mock_iss_advisers_file).read()
+        lrd.download_from_gcs_bucket = \
+            MagicMock(return_value=mock_iss_advisers)
+        mock_iss_advisers_df = lrd.get_iss_advisers_df()
+        return mock_iss_advisers_df
+
+    def _get_mock_idp_df(self):
+        lrd = self.get_test_load_rad_dao()
+        mock_idp_file = \
+            os.path.join(os.path.dirname(__file__),
+                         'test_data/netid_logins_2013.csv')
+        lrd.get_last_idp_file = MagicMock(return_value=mock_idp_file)
+        mock_idp_data = open(mock_idp_file).read()
+        lrd.download_from_s3_bucket = \
+            MagicMock(return_value=StringIO(mock_idp_data))
+        mock_idp_df = lrd.get_idp_df()
+        return mock_idp_df
+
+    def get_test_load_rad_dao(self):
+        lrd = LoadRadDAO()
+        lrd.get_current_term_and_week = \
+            MagicMock(return_value=("2013-spring", 1))
+        lrd.curr_term = "2013-spring"
+        lrd.curr_week = 1
+        return lrd
+
+    def test__zero_range(self):
+        lrd = self.get_test_load_rad_dao()
+        df = pd.DataFrame([5, 10, 15], columns=['test'])
+        self.assertFalse(lrd._zero_range(df['test']))
+        df = pd.DataFrame([0, 0, 1], columns=['test'])
+        self.assertFalse(lrd._zero_range(df['test']))
+        df = pd.DataFrame([5, 5, 5], columns=['test'])
+        self.assertTrue(lrd._zero_range(df['test']))
+
+    def test__rescale_range(self):
+        lrd = self.get_test_load_rad_dao()
+        df = pd.DataFrame([5, 10, 15], columns=['test'])
+        self.assertEqual(lrd._rescale_range(df['test']).to_list(),
+                         [-5.0, 0.0, 5.0])
+        df = pd.DataFrame([10, 10, 10], columns=['test'])
+        self.assertEqual(lrd._rescale_range(df['test']).to_list(),
+                         [0.0, 0.0, 0.0])
+        df = pd.DataFrame([0, 0, 20, 30, 40], columns=['test'])
+        self.assertEqual(lrd._rescale_range(df['test']).to_list(),
+                         [-5.0, -5.0, 0, 2.5, 5.0])
+        df = pd.DataFrame([None, None, None], columns=['test'])
+        self.assertEqual(lrd._rescale_range(df['test']).to_list(),
+                         [np.nan, np.nan, np.nan])
+
+    def test_get_users_df(self):
+        lrd = self.get_test_load_rad_dao()
+        mock_users_df = lrd.get_users_df()
+        self.assertEqual(
+            mock_users_df.columns.values.tolist(),
+            ["canvas_user_id", "uw_netid"])
+
+    def test_get_rad_dbview_df(self):
+        lrd = self.get_test_load_rad_dao()
+        mock_rad_dbview_df = lrd.get_rad_dbview_df()
+        self.assertEqual(
+            mock_rad_dbview_df.columns.values.tolist(),
+            ["canvas_user_id", "full_name", "term", "week", "assignments",
+             "activity", "grades"])
+
+    def test_get_student_categories_df(self):
+        mock_student_categories_df = self._get_mock_student_categories_df()
+        self.assertEqual(
+            mock_student_categories_df.columns.values.tolist(),
+            ["system_key", "uw_netid", "student_no", "student_name_lowc",
+             "eop_student", "incoming_freshman", "international_student",
+             "stem", "premajor", "isso", "canvas_user_id"])
+
+    def test_get_pred_proba_scores_df(self):
+        mock_pred_proba_df = self._get_mock_pred_proba_df()
+        self.assertEqual(
+            mock_pred_proba_df.columns.values.tolist(),
+            ["system_key", "pred"])
+
+    def test_get_eop_advisers_df(self):
+        mock_eop_advisers_df = self._get_mock_eop_advisers_df()
+        self.assertEqual(
+            mock_eop_advisers_df.columns.values.tolist(),
+            ["student_no", "adviser_name", "staff_id"])
+
+    def test_get_iss_advisers_df(self):
+        mock_iss_advisers_df = self._get_mock_iss_advisers_df()
+        self.assertEqual(
+            mock_iss_advisers_df.columns.values.tolist(),
+            ["student_no", "adviser_name", "staff_id"])
+
+    def test_get_idp_df(self):
+        mock_idp_df = self._get_mock_idp_df()
+        self.assertEqual(
+            mock_idp_df.columns.values.tolist(),
+            ["uw_netid", "sign_in"])
+
+    def test_get_rad_df(self):
+        lrd = self.get_test_load_rad_dao()
+        lrd.get_student_categories_df = \
+            MagicMock(return_value=self._get_mock_student_categories_df())
+        lrd.get_idp_df = \
+            MagicMock(return_value=self._get_mock_idp_df())
+        lrd.get_pred_proba_scores_df = \
+            MagicMock(return_value=self._get_mock_pred_proba_df())
+        lrd.get_eop_advisers_df = \
+            MagicMock(return_value=self._get_mock_eop_advisers_df())
+        lrd.get_iss_advisers_df = \
+            MagicMock(return_value=self._get_mock_iss_advisers_df())
+        mock_rad_df = lrd.get_rad_df()
+        self.assertEqual(mock_rad_df.columns.values.tolist(),
+                         ["uw_netid", "student_no", "student_name_lowc",
+                          "premajor", "activity", "assignments", "grades",
+                          "pred", "adviser_name", "staff_id", "sign_in",
+                          "stem", "incoming_freshman"])
 
 
 if __name__ == "__main__":
