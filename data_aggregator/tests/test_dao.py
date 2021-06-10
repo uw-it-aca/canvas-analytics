@@ -340,17 +340,21 @@ class TestLoadRadDAO(TestCase):
     def test__rescale_range(self):
         lrd = self._get_test_load_rad_dao()
         df = pd.DataFrame([5, 10, 15], columns=['test'])
-        self.assertEqual(lrd._rescale_range(df['test']).to_list(),
-                         [-5.0, 0.0, 5.0])
+        np.testing.assert_array_equal(
+            lrd._rescale_range(df['test']).to_list(),
+            [-5.0, 0.0, 5.0])
         df = pd.DataFrame([10, 10, 10], columns=['test'])
-        self.assertEqual(lrd._rescale_range(df['test']).to_list(),
-                         [0.0, 0.0, 0.0])
+        np.testing.assert_array_equal(
+            lrd._rescale_range(df['test']).to_list(),
+            [0.0, 0.0, 0.0])
         df = pd.DataFrame([0, 0, 20, 30, 40], columns=['test'])
-        self.assertEqual(lrd._rescale_range(df['test']).to_list(),
-                         [-5.0, -5.0, 0, 2.5, 5.0])
+        np.testing.assert_array_equal(
+            lrd._rescale_range(df['test']).to_list(),
+            [-5.0, -5.0, 0, 2.5, 5.0])
         df = pd.DataFrame([None, None, None], columns=['test'])
-        self.assertEqual(lrd._rescale_range(df['test']).to_list(),
-                         [np.nan, np.nan, np.nan])
+        np.testing.assert_array_equal(
+            lrd._rescale_range(df['test']).to_list(),
+            [np.nan, np.nan, np.nan])
 
     def test_get_users_df(self):
         lrd = self._get_test_load_rad_dao()
