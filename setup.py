@@ -33,6 +33,7 @@ setup(
         'boto3>=1.17.88,<2.0.0'
         'google-cloud-storage>=1.37.1,<2.0',
         'google-api-core>=1.26.3,<2.0',
+        'pandas>=1.2.4,<2.0',
     ],
     license='Apache License, Version 2.0',
     description='Collects data about UW Canvas usage',
