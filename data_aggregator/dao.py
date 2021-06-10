@@ -390,8 +390,9 @@ class LoadRadDAO(AbstractBaseDao):
 
     def __init__(self):
         self._configure_pandas()
-        self.gcs_bucket_name = settings.RAD_METADATA_BUCKET_NAME
-        self.s3_bucket_name = settings.IDP_BUCKET_NAME
+        self.gcs_bucket_name = \
+            getattr(settings, "RAD_METADATA_BUCKET_NAME", "")
+        self.s3_bucket_name = getattr(settings, "IDP_BUCKET_NAME", "")
         self.gcs_timeout = getattr(settings, "GCS_TIMEOUT", 60)
         self.gcs_num_retries = getattr(settings, "GCS_NUM_RETRIES", 3)
         self.curr_term, self.curr_week = self.get_current_term_and_week()
