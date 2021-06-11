@@ -29,7 +29,108 @@ class AnalyticTypes():
     participation = "participation"
 
 
-class AbstractBaseDao():
+class BaseDao():
+
+    def __init__(self, *args, **kwargs):
+        self.configure_pandas()
+
+    def configure_pandas(self):
+        """
+        Configure global pandas options
+        """
+        pd.options.mode.use_inf_as_na = True
+        pd.options.display.max_rows = 500
+        pd.options.display.precision = 3
+        pd.options.display.float_format = '{:.3f}'.format
+
+    def get_gcs_client(self):
+        return storage.Client()
+
+    def get_s3_client(self):
+        return client('s3',
+                      aws_access_key_id=settings.AWS_ACCESS_ID,
+                      aws_secret_access_key=settings.AWS_ACCESS_KEY)
+
+    def get_gcs_bucket_name(self):
+        return getattr(settings, "RAD_METADATA_BUCKET_NAME", "")
+
+    def get_s3_bucket_name(self):
+        return getattr(settings, "IDP_BUCKET_NAME", "")
+
+    def get_gcs_timeout(self):
+        return getattr(settings, "GCS_TIMEOUT", 60)
+    
+    def get_gcs_num_retries(self):
+        return getattr(settings, "GCS_NUM_RETRIES", 3)
+
+    def download_from_gcs_bucket(self, url_key):
+        """
+        Downloads file a given url_key path from the configured GCS bucket.
+
+        :param url_key: Path of the content to upload
+        :type url_key: str
+        :param content: Content to upload
+        :type content: str or file object
+        """
+        gcs_client = self.get_gcs_client()
+        gcs_bucket_name = self.get_gcs_bucket_name()
+        bucket = gcs_client.get_bucket(gcs_bucket_name)
+        try:
+            blob = bucket.get_blob(
+                url_key,
+                timeout=self.get_gcs_timeout())
+            content = blob.download_as_string(
+                timeout=self.get_gcs_timeout())
+            if content:
+                return content.decode('utf-8')
+        except NotFound as ex:
+            logging.error("gcp {}: {}".format(url_key, ex))
+            raise
+
+    def download_from_s3_bucket(self, url_key):
+        """
+        Downloads file a given url_key path from the configured S3 bucket.
+
+        :param url_key: Path of the content to upload
+        :type url_key: str
+        :param content: Content to upload
+        :type content: str or file object
+        """
+        s3_client = self.get_s3_client()
+        s3_bucket_name = self.get_s3_bucket_name()
+        idp_obj = s3_client.get_object(Bucket=s3_bucket_name,
+                                       Key=url_key)
+        content = BytesIO(idp_obj['Body'].read())
+        return content
+
+    def upload_to_gcs_bucket(self, url_key, content):
+        """
+        Upload a string or file-like object contents to GCS bucket
+
+        :param url_key: Path of the content to upload
+        :type url_key: str
+        :param content: Content to upload
+        :type content: str or file object
+        """
+        gcs_client = self.get_gcs_client()
+        gcs_bucket_name = self.get_gcs_bucket_name()
+        bucket = gcs_client.get_bucket(gcs_bucket_name)
+        blob = bucket.get_blob(
+            url_key,
+            timeout=self.get_gcs_timeout())
+        if not blob:
+            blob = bucket.blob(url_key)
+        blob.custom_time = datetime.now(timezone.utc)
+        if isinstance(content, IOBase):
+            blob.upload_from_file(
+                content,
+                num_retries=self.get_gcs_num_retries(),
+                timeout=self.get_gcs_timeout())
+        else:
+            blob.upload_from_string(
+                str(content),
+                num_retries=self.get_gcs_num_retries(),
+                timeout=self.get_gcs_timeout())
 
     def get_current_term_and_week(self):
         """
@@ -40,7 +141,7 @@ class AbstractBaseDao():
             get_week_of_term(sws_term.first_day_quarter)
 
 
-class CanvasDAO(AbstractBaseDao):
+class CanvasDAO(BaseDao):
     """
     Query canvas for analytics
     """
@@ -55,6 +156,8 @@ class CanvasDAO(AbstractBaseDao):
         self.curr_term, self.curr_week = self.get_current_term_and_week()
         os.environ["GCS_BASE_PATH"] = \
             "{}/{}/".format(self.curr_term, self.curr_week)
+        super().__init__()
+
 
     @retry(DataFailureException, tries=5, delay=10, backoff=2,
            status_codes=[0, 403, 408, 500])
@@ -386,25 +489,11 @@ class CanvasDAO(AbstractBaseDao):
         return sis_data
 
 
-class LoadRadDAO(AbstractBaseDao):
+class LoadRadDAO(BaseDao):
 
     def __init__(self):
-        self._configure_pandas()
-        self.gcs_bucket_name = \
-            getattr(settings, "RAD_METADATA_BUCKET_NAME", "")
-        self.s3_bucket_name = getattr(settings, "IDP_BUCKET_NAME", "")
-        self.gcs_timeout = getattr(settings, "GCS_TIMEOUT", 60)
-        self.gcs_num_retries = getattr(settings, "GCS_NUM_RETRIES", 3)
         self.curr_term, self.curr_week = self.get_current_term_and_week()
-
-    def _configure_pandas(self):
-        """
-        Configure global pandas options
-        """
-        pd.options.mode.use_inf_as_na = True
-        pd.options.display.max_rows = 500
-        pd.options.display.precision = 3
-        pd.options.display.float_format = '{:.3f}'.format
+        super().__init__()
 
     def _zero_range(self, x):
         """
@@ -460,9 +549,9 @@ class LoadRadDAO(AbstractBaseDao):
         try:
             blob = bucket.get_blob(
                 url_key,
-                timeout=self.gcs_timeout)
+                timeout=self.get_gcs_timeout())
             content = blob.download_as_string(
-                timeout=self.gcs_timeout)
+                timeout=self.get_gcs_timeout())
             if content:
                 return content.decode('utf-8')
         except NotFound as ex:
@@ -479,7 +568,8 @@ class LoadRadDAO(AbstractBaseDao):
         :type content: str or file object
         """
         s3_client = self.get_s3_client()
-        idp_obj = s3_client.get_object(Bucket=self.s3_bucket_name,
+        s3_bucket_name = self.get_s3_bucket_name()
+        idp_obj = s3_client.get_object(Bucket=s3_bucket_name,
                                        Key=url_key)
         content = BytesIO(idp_obj['Body'].read())
         return content
@@ -497,20 +587,20 @@ class LoadRadDAO(AbstractBaseDao):
         bucket = gcs_client.get_bucket(self.gcs_bucket_name)
         blob = bucket.get_blob(
             url_key,
-            timeout=self.gcs_timeout)
+            timeout=self.get_gcs_timeout())
         if not blob:
             blob = bucket.blob(url_key)
         blob.custom_time = datetime.now(timezone.utc)
         if isinstance(content, IOBase):
             blob.upload_from_file(
                 content,
-                num_retries=self.gcs_num_retries,
-                timeout=self.gcs_timeout)
+                num_retries=self.get_gcs_num_retries(),
+                timeout=self.get_gcs_timeout())
         else:
             blob.upload_from_string(
                 str(content),
-                num_retries=self.gcs_num_retries,
-                timeout=self.gcs_timeout)
+                num_retries=self.gcs_num_retries(),
+                timeout=self.get_gcs_timeout())
 
     def get_users_df(self):
         """
@@ -534,6 +624,7 @@ class LoadRadDAO(AbstractBaseDao):
         content = self.download_from_gcs_bucket(url_key)
 
         sdb_df = pd.read_csv(StringIO(content))
+        
         i = list(sdb_df.columns[sdb_df.columns.str.startswith('regis_')])
         i.extend(['yrq', 'enroll_status'])
         sdb_df.drop(columns=i, inplace=True)
@@ -617,8 +708,10 @@ class LoadRadDAO(AbstractBaseDao):
         Get latest idp file from AWS bucket and return pandas dataframe
         with contents
         """
+        s3_client = self.get_s3_client()
+        s3_bucket_name = self.get_s3_bucket_name()
         bucket_objects = \
-            self.s3_client.list_objects_v2(Bucket=self.s3_bucket_name)
+            s3_client.list_objects_v2(Bucket=s3_bucket_name)
         last_idp_file = bucket_objects['Contents'][-1]['Key']
         return last_idp_file
 
