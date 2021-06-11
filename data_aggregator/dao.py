@@ -16,7 +16,7 @@ from uw_canvas.terms import Terms
 
 import numpy as np
 import pandas as pd
-from io import IOBase, StringIO, BytesIO
+from io import IOBase, StringIO
 from boto3 import client
 from google.cloud import storage
 from google.cloud.exceptions import NotFound
@@ -59,7 +59,7 @@ class BaseDao():
 
     def get_gcs_timeout(self):
         return getattr(settings, "GCS_TIMEOUT", 60)
-    
+
     def get_gcs_num_retries(self):
         return getattr(settings, "GCS_NUM_RETRIES", 3)
 
@@ -100,7 +100,7 @@ class BaseDao():
         s3_bucket_name = self.get_s3_bucket_name()
         idp_obj = s3_client.get_object(Bucket=s3_bucket_name,
                                        Key=url_key)
-        content = BytesIO(idp_obj['Body'].read())
+        content = idp_obj['Body'].read()
         return content
 
     def upload_to_gcs_bucket(self, url_key, content):
@@ -157,7 +157,6 @@ class CanvasDAO(BaseDao):
         os.environ["GCS_BASE_PATH"] = \
             "{}/{}/".format(self.curr_term, self.curr_week)
         super().__init__()
-
 
     @retry(DataFailureException, tries=5, delay=10, backoff=2,
            status_codes=[0, 403, 408, 500])
@@ -527,81 +526,6 @@ class LoadRadDAO(BaseDao):
             x += min
         return x
 
-    def get_gcs_client(self):
-        return storage.Client()
-
-    def get_s3_client(self):
-        return client('s3',
-                      aws_access_key_id=settings.AWS_ACCESS_ID,
-                      aws_secret_access_key=settings.AWS_ACCESS_KEY)
-
-    def download_from_gcs_bucket(self, url_key):
-        """
-        Downloads file a given url_key path from the configured GCS bucket.
-
-        :param url_key: Path of the content to upload
-        :type url_key: str
-        :param content: Content to upload
-        :type content: str or file object
-        """
-        gcs_client = self.get_gcs_client()
-        bucket = gcs_client.get_bucket(self.gcs_bucket_name)
-        try:
-            blob = bucket.get_blob(
-                url_key,
-                timeout=self.get_gcs_timeout())
-            content = blob.download_as_string(
-                timeout=self.get_gcs_timeout())
-            if content:
-                return content.decode('utf-8')
-        except NotFound as ex:
-            logging.error("gcp {}: {}".format(url_key, ex))
-            raise
-
-    def download_from_s3_bucket(self, url_key):
-        """
-        Downloads file a given url_key path from the configured S3 bucket.
-
-        :param url_key: Path of the content to upload
-        :type url_key: str
-        :param content: Content to upload
-        :type content: str or file object
-        """
-        s3_client = self.get_s3_client()
-        s3_bucket_name = self.get_s3_bucket_name()
-        idp_obj = s3_client.get_object(Bucket=s3_bucket_name,
-                                       Key=url_key)
-        content = BytesIO(idp_obj['Body'].read())
-        return content
-
-    def upload_to_gcs_bucket(self, url_key, content):
-        """
-        Upload a string or file-like object contents to GCS bucket
-
-        :param url_key: Path of the content to upload
-        :type url_key: str
-        :param content: Content to upload
-        :type content: str or file object
-        """
-        gcs_client = self.get_gcs_client()
-        bucket = gcs_client.get_bucket(self.gcs_bucket_name)
-        blob = bucket.get_blob(
-            url_key,
-            timeout=self.get_gcs_timeout())
-        if not blob:
-            blob = bucket.blob(url_key)
-        blob.custom_time = datetime.now(timezone.utc)
-        if isinstance(content, IOBase):
-            blob.upload_from_file(
-                content,
-                num_retries=self.get_gcs_num_retries(),
-                timeout=self.get_gcs_timeout())
-        else:
-            blob.upload_from_string(
-                str(content),
-                num_retries=self.gcs_num_retries(),
-                timeout=self.get_gcs_timeout())
-
     def get_users_df(self):
         """
         Get pandas dataframe with users table contents
@@ -624,7 +548,7 @@ class LoadRadDAO(BaseDao):
         content = self.download_from_gcs_bucket(url_key)
 
         sdb_df = pd.read_csv(StringIO(content))
-        
+
         i = list(sdb_df.columns[sdb_df.columns.str.startswith('regis_')])
         i.extend(['yrq', 'enroll_status'])
         sdb_df.drop(columns=i, inplace=True)
@@ -723,7 +647,7 @@ class LoadRadDAO(BaseDao):
         last_idp_file = self.get_last_idp_file()
         logging.info(f'Using {last_idp_file} as idp file.')
         content = self.download_from_s3_bucket(last_idp_file)
-        idp_df = pd.read_csv(content,
+        idp_df = pd.read_csv(StringIO(content),
                              header=None,
                              names=['uw_netid', 'sign_in'])
         # normalize sign-in score
@@ -758,7 +682,8 @@ class LoadRadDAO(BaseDao):
               .merge(probs_df, how='left', on='system_key')
               .merge(combined_advisors_df, how='left', on='student_no'))
         joined_canvas_df = joined_canvas_df[
-            ['uw_netid', 'student_no', 'student_name_lowc', 'premajor',
-             'activity', 'assignments', 'grades', 'pred', 'adviser_name',
-             'staff_id', 'sign_in', 'stem', 'incoming_freshman']]
+            ['uw_netid', 'student_no', 'student_name_lowc', 'activity',
+             'assignments', 'grades', 'pred', 'adviser_name',
+             'staff_id', 'sign_in', 'stem', 'incoming_freshman', 'premajor',
+             'eop_student', 'international_student', 'isso']]
         return joined_canvas_df

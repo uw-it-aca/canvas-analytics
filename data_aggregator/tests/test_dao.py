@@ -2,9 +2,8 @@ import os
 import unittest
 import pandas as pd
 import numpy as np
-from io import StringIO
 from django.test import TestCase
-from data_aggregator.dao import AnalyticTypes, CanvasDAO, LoadRadDAO
+from data_aggregator.dao import AnalyticTypes, CanvasDAO, LoadRadDAO, BaseDao
 from mock import patch, MagicMock
 from restclients_core.exceptions import DataFailureException
 from data_aggregator.management.commands.create_assignment_db_view \
@@ -13,6 +12,52 @@ from data_aggregator.management.commands.create_participation_db_view \
     import create as create_participation
 from data_aggregator.management.commands.create_rad_db_view \
     import create as create_rad
+
+
+class TestBaseDao(TestCase):
+
+    def get_test_base_dao(self):
+        # mock gcs blob
+        mock_gcs_blob = MagicMock()
+        mock_gcs_blob.upload_from_file = MagicMock(return_value=True)
+        mock_gcs_blob.download_as_string = \
+            MagicMock(return_value=b"test-return-value")
+        # mock gcs bucket
+        mock_gcs_bucket = MagicMock()
+        mock_gcs_bucket.get_blob = MagicMock(return_value=mock_gcs_blob)
+        # mock gcs client
+        mock_gcs_client = MagicMock()
+        mock_gcs_client.get_bucket = MagicMock(return_value=mock_gcs_bucket)
+
+        # mock content
+        mock_s3_content = MagicMock()
+        mock_s3_content.read = MagicMock(return_value="test-return-value")
+        # mock s3 obj
+        mock_s3_obj = MagicMock()
+        mock_s3_obj.__getitem__.side_effect = \
+            MagicMock(return_value=mock_s3_content)
+        # mock s3 client
+        mock_s3_client = MagicMock()
+        mock_s3_client.get_object = MagicMock(return_value=mock_s3_obj)
+
+        # mock base dao
+        base_dao = BaseDao()
+        base_dao.get_gcs_bucket_name = \
+            MagicMock(return_value="test_gcs_bucket")
+        base_dao.get_gcs_client = MagicMock(return_value=mock_gcs_client)
+        base_dao.get_s3_bucket_name = MagicMock(return_value="test_s3_bucket")
+        base_dao.get_s3_client = MagicMock(return_value=mock_s3_client)
+        return base_dao
+
+    def test_download_from_gcs_bucket(self):
+        base_dao = self.get_test_base_dao()
+        content = base_dao.download_from_gcs_bucket("test_url_key")
+        self.assertEqual(content, "test-return-value")
+
+    def test_download_from_s3_bucket(self):
+        base_dao = self.get_test_base_dao()
+        content = base_dao.download_from_s3_bucket("test_url_key")
+        self.assertEqual(content, "test-return-value")
 
 
 class TestAnalyticTypes(TestCase):
@@ -324,7 +369,7 @@ class TestLoadRadDAO(TestCase):
         lrd.get_last_idp_file = MagicMock(return_value=mock_idp_file)
         mock_idp_data = open(mock_idp_file).read()
         lrd.download_from_s3_bucket = \
-            MagicMock(return_value=StringIO(mock_idp_data))
+            MagicMock(return_value=mock_idp_data)
         mock_idp_df = lrd.get_idp_df()
         return mock_idp_df
 
@@ -418,9 +463,10 @@ class TestLoadRadDAO(TestCase):
         mock_rad_df = lrd.get_rad_df()
         self.assertEqual(mock_rad_df.columns.values.tolist(),
                          ["uw_netid", "student_no", "student_name_lowc",
-                          "premajor", "activity", "assignments", "grades",
-                          "pred", "adviser_name", "staff_id", "sign_in",
-                          "stem", "incoming_freshman"])
+                          "activity", "assignments", "grades", "pred",
+                          "adviser_name", "staff_id", "sign_in", "stem",
+                          "incoming_freshman", "premajor", "eop_student",
+                          "international_student", "isso"])
 
 
 if __name__ == "__main__":
