@@ -7,8 +7,23 @@ class Command(BaseCommand):
     help = ("Loads normalized Canvas assignment and participation analytics "
             "into RAD.")
 
+    def add_arguments(self, parser):
+        parser.add_argument("--sis_term_id",
+                            type=str,
+                            help=("Term to generate RAD file for."),
+                            default=None,
+                            required=False)
+        parser.add_argument("--week",
+                            type=int,
+                            help=("Week to generate RAD file for."),
+                            default=None,
+                            required=False)
+
     def handle(self, *args, **options):
-        lrd = LoadRadDAO()
+        sis_term_id = options["sis_term_id"]
+        week = options["week"]
+
+        lrd = LoadRadDAO(sis_term_id=sis_term_id, week=week)
         rcd = lrd.get_rad_df()
         file_name = "rad_data/{}-week-{}-rad-data.csv".format(lrd.curr_term,
                                                               lrd.curr_week)

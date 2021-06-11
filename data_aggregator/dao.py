@@ -101,7 +101,7 @@ class BaseDao():
         idp_obj = s3_client.get_object(Bucket=s3_bucket_name,
                                        Key=url_key)
         content = idp_obj['Body'].read()
-        return content
+        return content.decode('utf-8')
 
     def upload_to_gcs_bucket(self, url_key, content):
         """
@@ -132,13 +132,26 @@ class BaseDao():
                 num_retries=self.get_gcs_num_retries(),
                 timeout=self.get_gcs_timeout())
 
-    def get_current_term_and_week(self):
+    def get_current_term_and_week(self, sis_term_id=None, week=None):
         """
         Return tuple containing current sis-term-id and week number
         """
-        sws_term = get_current_term()
-        return sws_term.canvas_sis_id(), \
-            get_week_of_term(sws_term.first_day_quarter)
+        if sis_term_id is not None and week is not None:
+            return sis_term_id, week
+        else:
+            sws_term = get_current_term()
+            curr_term, curr_week = \
+                sws_term.canvas_sis_id(), \
+                get_week_of_term(sws_term.first_day_quarter)
+            if sis_term_id:
+                curr_term = sis_term_id
+            else:
+                curr_term = curr_term
+            if week:
+                curr_week = week
+            else:
+                curr_week = curr_week
+            return curr_term, curr_week
 
 
 class CanvasDAO(BaseDao):
@@ -146,14 +159,16 @@ class CanvasDAO(BaseDao):
     Query canvas for analytics
     """
 
-    def __init__(self):
+    def __init__(self, sis_term_id=None, week=None):
         self.canvas = Canvas()
         self.courses = Courses()
         self.enrollments = Enrollments()
         self.analytics = Analytics()
         self.reports = Reports()
         self.terms = Terms()
-        self.curr_term, self.curr_week = self.get_current_term_and_week()
+        self.curr_term, self.curr_week = \
+            self.get_current_term_and_week(sis_term_id=sis_term_id,
+                                           week=week)
         os.environ["GCS_BASE_PATH"] = \
             "{}/{}/".format(self.curr_term, self.curr_week)
         super().__init__()
@@ -490,8 +505,10 @@ class CanvasDAO(BaseDao):
 
 class LoadRadDAO(BaseDao):
 
-    def __init__(self):
-        self.curr_term, self.curr_week = self.get_current_term_and_week()
+    def __init__(self, sis_term_id=None, week=None):
+        self.curr_term, self.curr_week = \
+            self.get_current_term_and_week(sis_term_id=sis_term_id,
+                                           week=week)
         super().__init__()
 
     def _zero_range(self, x):
