@@ -535,8 +535,7 @@ class LoadRadDAO(AbstractBaseDao):
 
         sdb_df = pd.read_csv(StringIO(content))
         i = list(sdb_df.columns[sdb_df.columns.str.startswith('regis_')])
-        i.extend(['yrq', 'enroll_status', 'dept_abbrev',
-                  'course_no', 'section_id', 'course_id'])
+        i.extend(['yrq', 'enroll_status'])
         sdb_df.drop(columns=i, inplace=True)
         sdb_df.drop_duplicates(inplace=True)
 
