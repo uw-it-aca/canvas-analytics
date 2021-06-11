@@ -31,7 +31,7 @@ class TestBaseDao(TestCase):
 
         # mock content
         mock_s3_content = MagicMock()
-        mock_s3_content.read = MagicMock(return_value="test-return-value")
+        mock_s3_content.read = MagicMock(return_value=b"test-return-value")
         # mock s3 obj
         mock_s3_obj = MagicMock()
         mock_s3_obj.__getitem__.side_effect = \
