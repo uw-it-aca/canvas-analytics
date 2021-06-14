@@ -5,7 +5,6 @@ import numpy as np
 from django.test import TestCase
 from data_aggregator.dao import AnalyticTypes, CanvasDAO, LoadRadDAO, BaseDao
 from mock import patch, MagicMock
-from restclients_core.exceptions import DataFailureException
 from data_aggregator.management.commands.create_assignment_db_view \
     import create as create_assignment
 from data_aggregator.management.commands.create_participation_db_view \
@@ -161,58 +160,29 @@ class TestCanvasDAO(TestCase):
         mock_analytics_inst.get_student_summaries_by_course.return_value = \
             [{"participation_1": 0}]
         cd.analytics = mock_analytics_inst
-        self.assertEqual(cd.download_raw_analytics_for_course(
-            34567, AnalyticTypes.assignment),
-            [{'assignment_1': 0,
-              'canvas_course_id': 34567,
-              'canvas_user_id': 12345},
-             {'assignment_2': 1,
-              'canvas_course_id': 34567,
-              'canvas_user_id': 12345}])
-        self.assertEqual(cd.download_raw_analytics_for_course(
-            76543, AnalyticTypes.participation),
-            [{'participation_1': 0,
-              'canvas_course_id': 76543,
-              'canvas_user_id': 12345}])
+        test_result = [a for a in
+                       cd.download_raw_analytics_for_course(
+                           34567, AnalyticTypes.assignment)]
+        self.assertEqual(test_result,
+                         [{'assignment_1': 0,
+                           'canvas_course_id': 34567,
+                           'canvas_user_id': 12345},
+                          {'assignment_2': 1,
+                           'canvas_course_id': 34567,
+                           'canvas_user_id': 12345}])
+        test_result = [a for a in
+                       cd.download_raw_analytics_for_course(
+                           76543, AnalyticTypes.participation)]
+        self.assertEqual(test_result,
+                         [{'participation_1': 0,
+                           'canvas_course_id': 76543,
+                           'canvas_user_id': 12345}])
 
         # check that the mocked methods were called
         self.assertEqual(
             cd.download_student_ids_for_course.called, True)
         self.assertEqual(
             mock_analytics_inst.get_student_summaries_by_course.called, True)
-
-        # mock skipping requests with 404 error
-        cd.download_student_ids_for_course = MagicMock()
-        cd.download_student_ids_for_course.side_effect = \
-            DataFailureException("/bad/url", 404, 'not found')
-        with self.assertRaises(DataFailureException):
-            cd.download_student_ids_for_course.return_value = \
-                [{"assignment_1": 0}, {"assignment_2": 1}]
-            self.assertEqual(cd.download_raw_analytics_for_course(
-                34567, AnalyticTypes.assignment),
-                [{'assignment_1': 0,
-                  'canvas_course_id': 34567,
-                  'canvas_user_id': 12345},
-                 {'assignment_2': 1,
-                  'canvas_course_id': 34567,
-                  'canvas_user_id': 12345}])
-            cd.download_student_ids_for_course.return_value = \
-                [{"participation_1": 0}]
-            self.assertEqual(cd.download_raw_analytics_for_course(
-                34567, AnalyticTypes.participation),
-                [{'participation_1': 0,
-                  'canvas_course_id': 76543,
-                  'canvas_user_id': 12345}])
-            self.assertNotEqual(cd.download_raw_analytics_for_course(
-                                34567, AnalyticTypes.participation), [])
-
-        # mock 500 error
-        cd.download_student_ids_for_course = MagicMock()
-        cd.download_student_ids_for_course.side_effect = \
-            DataFailureException("/good/url", 500, 'server error')
-        with self.assertRaises(DataFailureException):
-            cd.download_raw_analytics_for_course(
-                                            34567, AnalyticTypes.assignment)
 
     @patch('uw_canvas.reports.Reports')
     @patch('uw_canvas.terms.Terms')

@@ -159,13 +159,14 @@ class CanvasDAO(BaseDao):
     Query canvas for analytics
     """
 
-    def __init__(self, sis_term_id=None, week=None):
+    def __init__(self, sis_term_id=None, week=None, page_size=250):
         self.canvas = Canvas()
         self.courses = Courses()
         self.enrollments = Enrollments()
         self.analytics = Analytics()
         self.reports = Reports()
         self.terms = Terms()
+        self.page_size = page_size
         self.curr_term, self.curr_week = \
             self.get_current_term_and_week(sis_term_id=sis_term_id,
                                            week=week)
@@ -217,16 +218,17 @@ class CanvasDAO(BaseDao):
         :type canvas_course_id: int
         :param student_id: canvas user id to download analytic for
         :type student_id: int
-        :param analytic_type:
+        :param analytic_type: type of analytics to download
         :type analytic_type: str (AnalyticTypes.assignment or
             AnalyticTypes.participation)
         """
         if analytic_type == AnalyticTypes.assignment:
             return self.analytics.get_student_assignments_for_course(
-                student_id, canvas_course_id)
+                student_id, canvas_course_id, per_page=self.page_size)
         elif analytic_type == AnalyticTypes.participation:
             return self.analytics.get_student_summaries_by_course(
-                canvas_course_id, student_id=student_id)
+                canvas_course_id, student_id=student_id,
+                per_page=self.page_size)
         else:
             raise ValueError(f"Unknown analytic type: {analytic_type}")
 
@@ -242,7 +244,6 @@ class CanvasDAO(BaseDao):
             AnalyticTypes.participation)
         """
         students_ids = self.download_student_ids_for_course(canvas_course_id)
-        analytics = []
         for student_id in students_ids:
             try:
                 res = self.download_raw_analytics_for_student(
@@ -250,14 +251,13 @@ class CanvasDAO(BaseDao):
                 for analytic in res:
                     analytic["canvas_user_id"] = student_id
                     analytic["canvas_course_id"] = canvas_course_id
-                    analytics.append(analytic)
+                    yield analytic
             except DataFailureException as e:
                 if e.status == 404:
                     logging.warning(e)
                     continue
                 else:
                     raise
-        return analytics
 
     def save_assignments_to_db(self, assignment_dicts, job):
         """
@@ -287,15 +287,12 @@ class CanvasDAO(BaseDao):
 
         if assignment_dicts:
             canvas_course_id = assignment_dicts[0]["canvas_course_id"]
-            curr_term = get_current_term()
-            term = Term.objects.get(year=curr_term.year,
-                                    quarter=curr_term.quarter)
+            term = Term.objects.get(sis_term_id=self.curr_term)
             course = (Course.objects.get(
                         canvas_course_id=canvas_course_id,
                         term=term))
-            curr_week = get_week_of_term(curr_term.first_day_quarter)
             week, _ = Week.objects.get_or_create(
-                week=curr_week,
+                week=self.curr_week,
                 term=term)
             assign_objs_create = []
             assign_objs_update = []
@@ -315,10 +312,11 @@ class CanvasDAO(BaseDao):
                                    assignment_id=assignment_id,
                                    week=week))
                     logging.warning(
-                        "Found existing assignment entry for user: {}, "
-                        "week: {}, year: {}, quarter: {} course: {}"
-                        .format(student_id, curr_week, curr_term.year,
-                                curr_term.quarter, canvas_course_id))
+                        "Found existing assignment entry for "
+                        "canvas_course_id: {}, user: {}, sis-term-id: {}, "
+                        "week: {}"
+                        .format(canvas_course_id, student_id, self.curr_term,
+                                self.curr_week))
                     assign_objs_update.append(assign)
                 except Assignment.DoesNotExist:
                     assign = Assignment()
@@ -348,16 +346,6 @@ class CanvasDAO(BaseDao):
                     assign.submitted_at = \
                         submission.get('submitted_at')
                 assign.course = course
-                if (len(assign_objs_create) > 0 and
-                        len(assign_objs_create) % 50 == 0):
-                    # create new assignment entries
-                    save(assign_objs_create, canvas_course_id, create=True)
-                    assign_objs_create = []
-                if (len(assign_objs_update) > 0 and
-                        len(assign_objs_update) % 50 == 0):
-                    # update existing assignment entries
-                    save(assign_objs_update, canvas_course_id, create=False)
-                    assign_objs_update = []
             if assign_objs_create:
                 # create new assignment entries
                 save(assign_objs_create, canvas_course_id, create=True)
@@ -393,15 +381,12 @@ class CanvasDAO(BaseDao):
 
         if participation_dicts:
             canvas_course_id = participation_dicts[0]["canvas_course_id"]
-            curr_term = get_current_term()
-            term = Term.objects.get(year=curr_term.year,
-                                    quarter=curr_term.quarter)
+            term = Term.objects.get(sis_term_id=self.curr_term)
             course = (Course.objects.get(
                         canvas_course_id=canvas_course_id,
                         term=term))
-            curr_week = get_week_of_term(curr_term.first_day_quarter)
             week, _ = Week.objects.get_or_create(
-                week=curr_week,
+                week=self.curr_week,
                 term=term)
             partic_objs_create = []
             partic_objs_update = []
@@ -419,10 +404,11 @@ class CanvasDAO(BaseDao):
                                                         week=week,
                                                         course=course))
                     logging.warning(
-                        "Found existing participation entry for user: {}, "
-                        "week: {}, year: {}, quarter: {} course: {}"
-                        .format(student_id, curr_week, curr_term.year,
-                                curr_term.quarter, canvas_course_id))
+                        "Found existing participation entry for "
+                        "canvas_course_id: {}, user: {}, sis-term-id: {}, "
+                        "week: {}"
+                        .format(canvas_course_id, student_id, self.curr_term,
+                                self.curr_week))
                     partic_objs_update.append(partic)
                 except Participation.DoesNotExist:
                     partic = Participation()
@@ -449,16 +435,6 @@ class CanvasDAO(BaseDao):
                     partic.time_floating = (i.get('tardiness_breakdown')
                                             .get('floating'))
                 partic.page_views = i.get('page_views')
-                if (len(partic_objs_create) > 0 and
-                        len(partic_objs_create) % 50 == 0):
-                    # create new participation entries
-                    save(partic_objs_create, canvas_course_id, create=True)
-                    partic_objs_create = []
-                if (len(partic_objs_update) > 0 and
-                        len(partic_objs_update) % 50 == 0):
-                    # update existing participation entries
-                    save(partic_objs_update, canvas_course_id, create=False)
-                    partic_objs_update = []
             if partic_objs_create:
                 # create new participation entries
                 save(partic_objs_create, canvas_course_id, create=True)
@@ -467,6 +443,41 @@ class CanvasDAO(BaseDao):
                 save(partic_objs_update, canvas_course_id, create=False)
             else:
                 logging.info("No participation records to load.")
+
+    def load_all_analytics_for_course(self, canvas_course_id,
+                                      analytic_type, job):
+        """
+        Download analytics for the given canvas_course_id and analytic_type
+        and save them to the database.
+
+        :param canvas_course_id: canvas course id to download analytics for
+        :type canvas_course_id: int
+        :param analytic_type: type of analytics to load
+        :type analytic_type: str (AnalyticTypes.assignment or
+            AnalyticTypes.participation)
+        :param job: Job associated with the analytics to save
+        :type job: data_aggregator.models.Job
+        """
+        analytics = []
+        for analytic in self.download_raw_analytics_for_course(
+                                            canvas_course_id, analytic_type):
+            analytics.append(analytic)
+            if analytics and len(analytics) == self.page_size:
+                if analytic_type == AnalyticTypes.assignment:
+                    # save assignments to db
+                    self.save_assignments_to_db(analytics, job)
+                elif analytic_type == AnalyticTypes.participation:
+                    # save participations to db
+                    self.save_participations_to_db(analytics, job)
+                logging.debug("Saved {} {} entries"
+                              .format(len(analytics), analytic_type))
+                analytics = []
+        if analytics and analytic_type == AnalyticTypes.assignment:
+            # save remaining assignments to db
+            self.save_assignments_to_db(analytics, job)
+        elif analytics and analytic_type == AnalyticTypes.participation:
+            # save remaining participations to db
+            self.save_assignments_to_db(analytics, job)
 
     def download_course_provisioning_report(self, sis_term_id):
         """
