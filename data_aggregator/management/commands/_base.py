@@ -3,6 +3,7 @@ import traceback
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from data_aggregator.models import Job
+from data_aggregator.dao import BaseDao
 from multiprocessing.dummy import Pool as ThreadPool
 
 
@@ -116,3 +117,31 @@ class CreateJobCommand(BaseCommand):
                                   "is active. YYYY-mm-ddTHH:MM:SS.ss"),
                             default=None,
                             required=False)
+
+
+class CreateDBViewCommand(BaseCommand):
+
+    def add_arguments(self, parser):
+        parser.add_argument("--sis_term_id",
+                            type=str,
+                            help=("Term to generate db view for."),
+                            default=None,
+                            required=False)
+        parser.add_argument("--week",
+                            type=int,
+                            help=("Week to generate db view for."),
+                            default=None,
+                            required=False)
+
+    def create(self, sis_term_id, week):
+        return NotImplementedError()
+
+    def handle(self, *args, **options):
+        """
+        Create db view for given term and week
+        """
+        sis_term_id = options["sis_term_id"]
+        week = options["week"]
+        term_obj, week_obj = BaseDao().get_latest_term_and_week(
+            sis_term_id=sis_term_id, week=week)
+        self.create(term_obj.sis_term_id, week_obj.week)

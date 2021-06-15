@@ -1,11 +1,10 @@
 import os
-from django.core.management.base import BaseCommand
-from uw_sws.term import get_current_term
-from data_aggregator.utilities import get_week_of_term, get_view_name
+from data_aggregator.management.commands._base import CreateDBViewCommand
+from data_aggregator.utilities import get_view_name
 from django.db import connection
 
 
-def create(sis_term_id, week):
+def _create(sis_term_id, week):
     """
     Create participation db view for given week and sis-term-id
     """
@@ -56,16 +55,9 @@ def create(sis_term_id, week):
     return True
 
 
-class Command(BaseCommand):
+class Command(CreateDBViewCommand):
 
     help = ("Creates participation db view for given week.")
 
-    def handle(self, *args, **options):
-        """
-        Create participation db view for current week
-        """
-        sws_term = get_current_term()
-
-        sis_term_id = sws_term.canvas_sis_id()
-        week = get_week_of_term(sws_term.first_day_quarter)
-        create(sis_term_id, week)
+    def create(self, sis_term_id, week):
+        _create(sis_term_id, week)

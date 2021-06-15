@@ -2,11 +2,10 @@ import logging
 import os
 from django.conf import settings
 from data_aggregator.models import Assignment, Course, Participation, \
-    Term, User, Week, RadDbView
-from data_aggregator.utilities import get_week_of_term, get_view_name
+    User, RadDbView, Term, Week
+from data_aggregator.utilities import get_view_name
 from restclients_core.exceptions import DataFailureException
 from restclients_core.util.retry import retry
-from uw_sws.term import get_current_term
 from uw_canvas import Canvas
 from uw_canvas.analytics import Analytics
 from uw_canvas.courses import Courses
@@ -132,26 +131,16 @@ class BaseDao():
                 num_retries=self.get_gcs_num_retries(),
                 timeout=self.get_gcs_timeout())
 
-    def get_current_term_and_week(self, sis_term_id=None, week=None):
-        """
-        Return tuple containing current sis-term-id and week number
-        """
-        if sis_term_id is not None and week is not None:
-            return sis_term_id, week
+    def get_latest_term_and_week(self, sis_term_id, week_num):
+        if sis_term_id is not None:
+            term = Term.objects.filter(sis_term_id=sis_term_id).first()
         else:
-            sws_term = get_current_term()
-            curr_term, curr_week = \
-                sws_term.canvas_sis_id(), \
-                get_week_of_term(sws_term.first_day_quarter)
-            if sis_term_id:
-                curr_term = sis_term_id
-            else:
-                curr_term = curr_term
-            if week:
-                curr_week = week
-            else:
-                curr_week = curr_week
-            return curr_term, curr_week
+            term = Term.objects.get_latest_term()
+        if week_num is not None:
+            week = Week.objects.filter(week=week_num).first()
+        else:
+            week = Week.objects.get_latest_week()
+        return term, week
 
 
 class CanvasDAO(BaseDao):
@@ -167,11 +156,9 @@ class CanvasDAO(BaseDao):
         self.reports = Reports()
         self.terms = Terms()
         self.page_size = page_size
-        self.curr_term, self.curr_week = \
-            self.get_current_term_and_week(sis_term_id=sis_term_id,
-                                           week=week)
+        self.term, self.week = self.get_latest_term_and_week(sis_term_id, week)
         os.environ["GCS_BASE_PATH"] = \
-            "{}/{}/".format(self.curr_term, self.curr_week)
+            "{}/{}/".format(self.term.sis_term_id, self.week.week)
         super().__init__()
 
     @retry(DataFailureException, tries=5, delay=10, backoff=2,
@@ -287,13 +274,9 @@ class CanvasDAO(BaseDao):
 
         if assignment_dicts:
             canvas_course_id = assignment_dicts[0]["canvas_course_id"]
-            term = Term.objects.get(sis_term_id=self.curr_term)
             course = (Course.objects.get(
                         canvas_course_id=canvas_course_id,
-                        term=term))
-            week, _ = Week.objects.get_or_create(
-                week=self.curr_week,
-                term=term)
+                        term=self.term))
             assign_objs_create = []
             assign_objs_update = []
             for i in assignment_dicts:
@@ -310,13 +293,13 @@ class CanvasDAO(BaseDao):
                     assign = (Assignment.objects
                               .get(user=user,
                                    assignment_id=assignment_id,
-                                   week=week))
+                                   week=self.week))
                     logging.warning(
                         "Found existing assignment entry for "
                         "canvas_course_id: {}, user: {}, sis-term-id: {}, "
                         "week: {}"
-                        .format(canvas_course_id, student_id, self.curr_term,
-                                self.curr_week))
+                        .format(canvas_course_id, student_id,
+                                self.term.sis_term_id, self.week.week))
                     assign_objs_update.append(assign)
                 except Assignment.DoesNotExist:
                     assign = Assignment()
@@ -324,7 +307,7 @@ class CanvasDAO(BaseDao):
                 assign.job = job
                 assign.user = user
                 assign.assignment_id = assignment_id
-                assign.week = week
+                assign.week = self.week
                 assign.title = i.get('title')
                 assign.unlock_at = i.get('unlock_at')
                 assign.points_possible = i.get('points_possible')
@@ -381,13 +364,9 @@ class CanvasDAO(BaseDao):
 
         if participation_dicts:
             canvas_course_id = participation_dicts[0]["canvas_course_id"]
-            term = Term.objects.get(sis_term_id=self.curr_term)
             course = (Course.objects.get(
                         canvas_course_id=canvas_course_id,
-                        term=term))
-            week, _ = Week.objects.get_or_create(
-                week=self.curr_week,
-                term=term)
+                        term=self.term))
             partic_objs_create = []
             partic_objs_update = []
             for i in participation_dicts:
@@ -401,21 +380,21 @@ class CanvasDAO(BaseDao):
                     continue
                 try:
                     partic = (Participation.objects.get(user=user,
-                                                        week=week,
+                                                        week=self.week,
                                                         course=course))
                     logging.warning(
                         "Found existing participation entry for "
                         "canvas_course_id: {}, user: {}, sis-term-id: {}, "
                         "week: {}"
-                        .format(canvas_course_id, student_id, self.curr_term,
-                                self.curr_week))
+                        .format(canvas_course_id, student_id,
+                                self.term.sis_term_id, self.week.week))
                     partic_objs_update.append(partic)
                 except Participation.DoesNotExist:
                     partic = Participation()
                     partic_objs_create.append(partic)
                 partic.job = job
                 partic.user = user
-                partic.week = week
+                partic.week = self.week
                 partic.course = course
                 partic.page_views = i.get('page_views')
                 partic.page_views_level = \
@@ -517,9 +496,7 @@ class CanvasDAO(BaseDao):
 class LoadRadDAO(BaseDao):
 
     def __init__(self, sis_term_id=None, week=None):
-        self.curr_term, self.curr_week = \
-            self.get_current_term_and_week(sis_term_id=sis_term_id,
-                                           week=week)
+        self.term, self.week = self.get_latest_term_and_week(sis_term_id, week)
         super().__init__()
 
     def _zero_range(self, x):
@@ -572,7 +549,7 @@ class LoadRadDAO(BaseDao):
 
         url_key = ("application_metadata/student_categories/"
                    "{}-netid-name-stunum-categories.csv"
-                   .format(self.curr_term))
+                   .format(self.term.sis_term_id))
         content = self.download_from_gcs_bucket(url_key)
 
         sdb_df = pd.read_csv(StringIO(content))
@@ -592,7 +569,7 @@ class LoadRadDAO(BaseDao):
         and return pandas dataframe with contents
         """
         url_key = ("application_metadata/predicted_probabilites/"
-                   "{}-pred-proba.csv".format(self.curr_term))
+                   "{}-pred-proba.csv".format(self.term.sis_term_id))
         content = self.download_from_gcs_bucket(url_key)
 
         probs_df = pd.read_csv(
@@ -609,7 +586,7 @@ class LoadRadDAO(BaseDao):
         and return pandas dataframe with contents
         """
         url_key = ("application_metadata/eop_advisers/"
-                   "{}-eop-advisers.csv".format(self.curr_term))
+                   "{}-eop-advisers.csv".format(self.term.sis_term_id))
         content = self.download_from_gcs_bucket(url_key)
         eop_df = pd.read_csv(
             StringIO(content),
@@ -625,7 +602,7 @@ class LoadRadDAO(BaseDao):
         and return pandas dataframe with contents
         """
         url_key = ("application_metadata/iss_advisers/"
-                   "{}-iss-advisers.csv".format(self.curr_term))
+                   "{}-iss-advisers.csv".format(self.term.sis_term_id))
         content = self.download_from_gcs_bucket(url_key)
         iss_df = pd.read_csv(
             StringIO(content),
@@ -645,7 +622,7 @@ class LoadRadDAO(BaseDao):
         Query RAD canvas data from the canvas-analytics RAD db view for the
         current term and week and return pandas dataframe with contents
         """
-        view_name = get_view_name(self.curr_term, self.curr_week, "rad")
+        view_name = get_view_name(self.term.sis_term_id, self.week.week, "rad")
         rad_db_model = RadDbView.setDb_table(view_name)
         rad_canvas_qs = rad_db_model.objects.all().values()
         rad_df = pd.DataFrame(rad_canvas_qs)

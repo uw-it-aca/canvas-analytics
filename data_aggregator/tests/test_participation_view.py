@@ -3,7 +3,7 @@ from django.test import TestCase
 from data_aggregator.utilities import get_view_name
 from data_aggregator.tests.db_utils import get_row_count
 from data_aggregator.management.commands.create_participation_db_view \
-    import create as create_participation
+    import _create as create_participation
 
 
 class TestParticipationView(TestCase):

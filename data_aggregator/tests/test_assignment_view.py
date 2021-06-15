@@ -4,7 +4,7 @@ from data_aggregator.utilities import get_view_name
 from data_aggregator.tests.db_utils import get_row_count, \
     get_row_count_where_status_equals
 from data_aggregator.management.commands.create_assignment_db_view \
-    import create as create_assignment
+    import _create as create_assignment
 
 
 class TestAssignmentView(TestCase):

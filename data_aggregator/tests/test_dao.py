@@ -6,11 +6,11 @@ from django.test import TestCase
 from data_aggregator.dao import AnalyticTypes, CanvasDAO, LoadRadDAO, BaseDao
 from mock import patch, MagicMock
 from data_aggregator.management.commands.create_assignment_db_view \
-    import create as create_assignment
+    import _create as create_assignment
 from data_aggregator.management.commands.create_participation_db_view \
-    import create as create_participation
+    import _create as create_participation
 from data_aggregator.management.commands.create_rad_db_view \
-    import create as create_rad
+    import _create as create_rad
 
 
 class TestBaseDao(TestCase):
@@ -67,6 +67,9 @@ class TestAnalyticTypes(TestCase):
 
 
 class TestCanvasDAO(TestCase):
+
+    fixtures = ['data_aggregator/fixtures/mock_data/da_term.json',
+                'data_aggregator/fixtures/mock_data/da_week.json']
 
     def get_test_canvas_dao(self):
         cd = CanvasDAO()

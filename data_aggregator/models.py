@@ -45,6 +45,17 @@ class TermManager(models.Manager):
             term.save()
         return term, created
 
+    def get_latest_term(self):
+        terms = Term.objects.all().order_by('-year')
+        if terms:
+            latest_year_terms = \
+                sorted(Term.objects.filter(year=terms.first().year),
+                    key=lambda x: x.term_number,
+                    reverse=True)
+            return latest_year_terms[0]
+        else:
+            raise ValueError("The Term table is empty.")
+
 
 class Term(models.Model):
     objects = TermManager()
@@ -68,7 +79,21 @@ class Term(models.Model):
         return utilities.get_term_number(self.quarter)
 
 
+class WeekManager(models.Manager):
+
+    def get_latest_week(self):
+        latest_term = Term.objects.get_latest_term()
+        latest_week_terms = \
+            sorted(Week.objects.filter(term=latest_term),
+                key=lambda x: x.week,
+                reverse=True)
+        if latest_week_terms:
+            return latest_week_terms[0]
+        else:
+            raise ValueError("No weeks for term {}".format(latest_term))
+
 class Week(models.Model):
+    objects = WeekManager()
     term = models.ForeignKey(Term,
                              on_delete=models.CASCADE)
     week = models.IntegerField()
