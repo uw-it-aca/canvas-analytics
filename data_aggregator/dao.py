@@ -261,6 +261,55 @@ class CanvasDAO(BaseDAO):
                 else:
                     raise
 
+    def download_course_provisioning_report(self, sis_term_id=None):
+        """
+        Download canvas course provisioning report
+
+        :param sis_term_id: sis term id to load course report for. (default is
+            the current term)
+        :type sis_term_id: str
+        """
+        term, _ = Term.objects.get_or_create_term(sis_term_id=sis_term_id)
+        # get canvas term using sis-term-id
+        canvas_term = self.terms.get_term_by_sis_id(term.sis_term_id)
+        # get courses provisioning report for canvas term
+        course_report = self.reports.create_course_provisioning_report(
+                    settings.ACADEMIC_CANVAS_ACCOUNT_ID,
+                    term_id=canvas_term.term_id,
+                    params={"created_by_sis": True})
+        logging.info("Downloading course provisioning report: term={}"
+                     .format(sis_term_id))
+        sis_data = self.reports.get_report_data(course_report)
+        self.reports.delete_report(course_report)
+        return sis_data
+
+    def download_user_provisioning_report(self, sis_term_id=None):
+        """
+        Download canvas sis user provisioning report
+
+        :param sis_term_id: sis term id to load users report for
+        :type sis_term_id: str
+        """
+        term, _ = Term.objects.get_or_create_term(sis_term_id=sis_term_id)
+        # get canvas term using sis-term-id
+        canvas_term = self.terms.get_term_by_sis_id(term.sis_term_id)
+        # get users provisioning repmiort for canvas term
+        user_report = self.reports.create_user_provisioning_report(
+                    settings.ACADEMIC_CANVAS_ACCOUNT_ID,
+                    term_id=canvas_term.term_id,
+                    params={"created_by_sis": True})
+        logging.info("Downloading user provisioning report: term={}"
+                     .format(sis_term_id))
+        sis_data = self.reports.get_report_data(user_report)
+        self.reports.delete_report(user_report)
+        return sis_data
+
+
+class RunJobDAO(BaseDAO):
+
+    def __init__(self):
+        super().__init__()
+
     def save_assignments_to_db(self, assignment_dicts, job):
         """
         Save list of assignment dictionaries to the db for the given job
@@ -276,16 +325,16 @@ class CanvasDAO(BaseDAO):
             if create:
                 if assign_objs:
                     Assignment.objects.bulk_create(assign_objs)
-                    logging.info(f"Created {len(assign_objs)} "
-                                 f"assignment records for Canvas course "
-                                 f"{canvas_course_id}.")
+                    logging.debug(f"Created {len(assign_objs)} "
+                                  f"assignment records for Canvas course "
+                                  f"{canvas_course_id}.")
             else:
                 if assign_objs:
                     for assign in assign_objs:
                         assign.save()
-                    logging.info(f"Updated {len(assign_objs)} "
-                                 f"assignment records for Canvas course "
-                                 f"{canvas_course_id}.")
+                    logging.debug(f"Updated {len(assign_objs)} "
+                                  f"assignment records for Canvas course "
+                                  f"{canvas_course_id}.")
 
         canvas_course_id = job.context["canvas_course_id"]
         sis_term_id = job.context["sis_term_id"]
@@ -373,15 +422,15 @@ class CanvasDAO(BaseDAO):
         def save(partic_objs, canvas_course_id, create=True):
             if create:
                 Participation.objects.bulk_create(partic_objs)
-                logging.info(f"Created {len(partic_objs)} "
-                             f"participation records for Canvas course "
-                             f"{canvas_course_id}.")
+                logging.debug(f"Created {len(partic_objs)} "
+                              f"participation records for Canvas course "
+                              f"{canvas_course_id}.")
             else:
                 for partic in partic_objs:
                     partic.save()
-                logging.info(f"Updated {len(partic_objs)} "
-                             f"participation records for Canvas course "
-                             f"{canvas_course_id}.")
+                logging.debug(f"Updated {len(partic_objs)} "
+                              f"participation records for Canvas course "
+                              f"{canvas_course_id}.")
 
         canvas_course_id = job.context["canvas_course_id"]
         sis_term_id = job.context["sis_term_id"]
@@ -468,11 +517,13 @@ class CanvasDAO(BaseDAO):
 
         self.set_gcs_base_path(sis_term_id, week_num)
 
+        cd = CanvasDAO()
+
         analytics = []
-        for analytic in self.download_raw_analytics_for_course(
+        for analytic in cd.download_raw_analytics_for_course(
                                             canvas_course_id, analytic_type):
             analytics.append(analytic)
-            if analytics and len(analytics) == self.page_size:
+            if analytics and len(analytics) == cd.page_size:
                 if analytic_type == AnalyticTypes.assignment:
                     # save assignments to db
                     self.save_assignments_to_db(analytics, job)
@@ -488,49 +539,6 @@ class CanvasDAO(BaseDAO):
         elif analytics and analytic_type == AnalyticTypes.participation:
             # save remaining participations to db
             self.save_participations_to_db(analytics, job)
-
-    def download_course_provisioning_report(self, sis_term_id=None):
-        """
-        Download canvas course provisioning report
-
-        :param sis_term_id: sis term id to load course report for. (default is
-            the current term)
-        :type sis_term_id: str
-        """
-        term, _ = Term.objects.get_or_create_term(sis_term_id=sis_term_id)
-        # get canvas term using sis-term-id
-        canvas_term = self.terms.get_term_by_sis_id(term.sis_term_id)
-        # get courses provisioning report for canvas term
-        course_report = self.reports.create_course_provisioning_report(
-                    settings.ACADEMIC_CANVAS_ACCOUNT_ID,
-                    term_id=canvas_term.term_id,
-                    params={"created_by_sis": True})
-        logging.info("Downloading course provisioning report: term={}"
-                     .format(sis_term_id))
-        sis_data = self.reports.get_report_data(course_report)
-        self.reports.delete_report(course_report)
-        return sis_data
-
-    def download_user_provisioning_report(self, sis_term_id=None):
-        """
-        Download canvas sis user provisioning report
-
-        :param sis_term_id: sis term id to load users report for
-        :type sis_term_id: str
-        """
-        term, _ = Term.objects.get_or_create_term(sis_term_id=sis_term_id)
-        # get canvas term using sis-term-id
-        canvas_term = self.terms.get_term_by_sis_id(term.sis_term_id)
-        # get users provisioning repmiort for canvas term
-        user_report = self.reports.create_user_provisioning_report(
-                    settings.ACADEMIC_CANVAS_ACCOUNT_ID,
-                    term_id=canvas_term.term_id,
-                    params={"created_by_sis": True})
-        logging.info("Downloading user provisioning report: term={}"
-                     .format(sis_term_id))
-        sis_data = self.reports.get_report_data(user_report)
-        self.reports.delete_report(user_report)
-        return sis_data
 
 
 class LoadRadDAO(BaseDAO):
