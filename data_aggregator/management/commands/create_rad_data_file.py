@@ -22,10 +22,5 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         sis_term_id = options["sis_term_id"]
         week_num = options["week"]
-
-        lrd = LoadRadDAO()
-        rcd = lrd.get_rad_df(sis_term_id=sis_term_id, week_num=week_num)
-        file_name = "rad_data/{}-week-{}-rad-data.csv".format(lrd.curr_term,
-                                                              lrd.curr_week)
-        file_obj = rcd.to_csv(sep=",", index=False, encoding="UTF-8")
-        lrd.upload_to_gcs_bucket(file_name, file_obj)
+        LoadRadDAO().create_rad_data_file(sis_term_id=sis_term_id,
+                                          week_num=week_num)

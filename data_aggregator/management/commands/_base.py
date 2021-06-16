@@ -44,7 +44,7 @@ class RunJobCommand(BaseCommand):
                 logging.error(tb)
             else:
                 # Just in case the trace back is empty
-                msg = "Unknown exception occured: {}".format(err)
+                msg = f"Unknown exception occured: {err}"
                 job.message = msg
                 logging.error(msg)
             job.save()
@@ -89,7 +89,7 @@ class RunJobCommand(BaseCommand):
                         logging.error(tb)
                     else:
                         # Just in case the trace back is empty
-                        msg = "Unknown exception occured: {}".format(err)
+                        msg = f"Unknown exception occured: {err}"
                         job.message = msg
                         logging.error(msg)
                     job.save()

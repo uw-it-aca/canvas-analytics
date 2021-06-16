@@ -1,9 +1,11 @@
 import logging
 import os
+from csv import DictReader
 from django.conf import settings
+from django.db import transaction, connection
 from data_aggregator.models import Assignment, Course, Participation, \
     User, RadDbView, Term, Week, AnalyticTypes
-from data_aggregator.utilities import get_view_name
+from data_aggregator.utilities import get_view_name, chunk_list
 from restclients_core.exceptions import DataFailureException
 from restclients_core.util.retry import retry
 from uw_canvas import Canvas
@@ -14,6 +16,7 @@ from uw_canvas.reports import Reports
 from uw_canvas.terms import Terms
 from uw_sws.term import get_current_term, get_term_after, \
     get_term_by_year_and_quarter
+from uw_pws import PWS
 
 import numpy as np
 import pandas as pd
@@ -25,6 +28,9 @@ from datetime import datetime, timezone
 
 
 class BaseDAO():
+    """
+    Data Access Object for common data access methods
+    """
 
     def __init__(self, *args, **kwargs):
         self.configure_pandas()
@@ -39,7 +45,7 @@ class BaseDAO():
         pd.options.display.float_format = '{:.3f}'.format
 
     def set_gcs_base_path(self, sis_term_id, week_num):
-        os.environ["GCS_BASE_PATH"] = "{}/{}/".format(sis_term_id, week_num)
+        os.environ["GCS_BASE_PATH"] = f"{sis_term_id}/{week_num}/"
 
     def get_gcs_client(self):
         return storage.Client()
@@ -82,7 +88,7 @@ class BaseDAO():
             if content:
                 return content.decode('utf-8')
         except NotFound as ex:
-            logging.error("gcp {}: {}".format(url_key, ex))
+            logging.error(f"gcp {url_key}: {ex}")
             raise
 
     def download_from_s3_bucket(self, url_key):
@@ -161,7 +167,7 @@ class BaseDAO():
 
 class CanvasDAO(BaseDAO):
     """
-    Query canvas for analytics
+    Data Access Object for accessing canvas data
     """
 
     def __init__(self, page_size=250):
@@ -276,8 +282,8 @@ class CanvasDAO(BaseDAO):
                     settings.ACADEMIC_CANVAS_ACCOUNT_ID,
                     term_id=canvas_term.term_id,
                     params={"created_by_sis": True})
-        logging.info("Downloading course provisioning report: term={}"
-                     .format(sis_term_id))
+        logging.info(f"Downloading course provisioning report: "
+                     f"term={sis_term_id}")
         sis_data = self.reports.get_report_data(course_report)
         self.reports.delete_report(course_report)
         return sis_data
@@ -298,17 +304,38 @@ class CanvasDAO(BaseDAO):
                     settings.ACADEMIC_CANVAS_ACCOUNT_ID,
                     term_id=canvas_term.term_id,
                     params={"created_by_sis": True})
-        logging.info("Downloading user provisioning report: term={}"
-                     .format(sis_term_id))
+        logging.info(f"Downloading user provisioning report: "
+                     f"term={sis_term_id}")
         sis_data = self.reports.get_report_data(user_report)
         self.reports.delete_report(user_report)
         return sis_data
 
 
-class RunJobDAO(BaseDAO):
+class JobDAO(BaseDAO):
+    """
+    Data Access Object for processing jobs stored in Job model table
+    """
 
     def __init__(self):
         super().__init__()
+
+    def delete_data_for_job(self, job):
+        """
+        Delete data associated with job
+
+        :param job: Job to delete data for
+        :type job: data_aggregator.models.Job
+        """
+        if job.type.type == AnalyticTypes.assignment:
+            # get assignment data associated with job
+            old_analytics = Assignment.objects.filter(job=job)
+        elif job.type.type == AnalyticTypes.participation:
+            # get participation data associated with job
+            old_analytics = Participation.objects.filter(job=job)
+        else:
+            raise ValueError(f"Unable to delete records. Unknown job type "
+                             f"{job.type.type}.")
+        old_analytics.delete()
 
     def save_assignments_to_db(self, assignment_dicts, job):
         """
@@ -365,11 +392,10 @@ class RunJobDAO(BaseDAO):
                                    assignment_id=assignment_id,
                                    week=week))
                     logging.warning(
-                        "Found existing assignment entry for "
-                        "canvas_course_id: {}, user: {}, sis-term-id: {}, "
-                        "week: {}"
-                        .format(canvas_course_id, student_id,
-                                sis_term_id, week_num))
+                        f"Found existing assignment entry for "
+                        f"canvas_course_id: {canvas_course_id}, "
+                        f"user: {student_id}, sis-term-id: {sis_term_id}, "
+                        f"week: {week_num}")
                     assign_objs_update.append(assign)
                 except Assignment.DoesNotExist:
                     assign = Assignment()
@@ -459,11 +485,10 @@ class RunJobDAO(BaseDAO):
                                                         week=week,
                                                         course=course))
                     logging.warning(
-                        "Found existing participation entry for "
-                        "canvas_course_id: {}, user: {}, sis-term-id: {}, "
-                        "week: {}"
-                        .format(canvas_course_id, student_id,
-                                sis_term_id, week_num))
+                        f"Found existing participation entry for "
+                        f"canvas_course_id: {canvas_course_id}, "
+                        f"user: {student_id}, sis-term-id: {sis_term_id}, "
+                        f"week: {week_num}")
                     partic_objs_update.append(partic)
                 except Participation.DoesNotExist:
                     partic = Participation()
@@ -499,7 +524,7 @@ class RunJobDAO(BaseDAO):
             else:
                 logging.info("No participation records to load.")
 
-    def load_all_analytics_for_job(self, job):
+    def run_analytics_job(self, job):
         """
         Download analytics for the given job
         and save them to the database.
@@ -515,10 +540,15 @@ class RunJobDAO(BaseDAO):
         week_num = job.context["week"]
         analytic_type = job.type.type
 
+        # in case gcs caching is enabled, set gcs base path env variable so
+        # that cached responses are ordered by term and week
         self.set_gcs_base_path(sis_term_id, week_num)
 
-        cd = CanvasDAO()
+        # delete existing assignment data in case of a job restart
+        self.delete_data_for_job(job)
 
+        cd = CanvasDAO()
+        
         analytics = []
         for analytic in cd.download_raw_analytics_for_course(
                                             canvas_course_id, analytic_type):
@@ -530,8 +560,8 @@ class RunJobDAO(BaseDAO):
                 elif analytic_type == AnalyticTypes.participation:
                     # save participations to db
                     self.save_participations_to_db(analytics, job)
-                logging.debug("Saved {} {} entries"
-                              .format(len(analytics), analytic_type))
+                logging.debug(f"Saved {len(analytics)} {analytic_type} "
+                              f"entries")
                 analytics = []
         if analytics and analytic_type == AnalyticTypes.assignment:
             # save remaining assignments to db
@@ -541,7 +571,388 @@ class RunJobDAO(BaseDAO):
             self.save_participations_to_db(analytics, job)
 
 
+class TaskDAO(BaseDAO):
+    """
+    Data Access Object for processing tasks necessary for running jobs
+    """
+
+    def create_or_update_courses(self, sis_term_id=None):
+        """
+        Create and or updates course list for a term
+
+        :param sis_term_id: sis term id to load courses for. (default is
+            the current term)
+        :type sis_term_id: str
+        """
+        term, _ = Term.objects.get_or_create_term_from_sis_term_id(
+            sis_term_id=sis_term_id)
+
+        cd = CanvasDAO()
+        # get provising data and load courses
+        sis_data = \
+            cd.download_course_provisioning_report(sis_term_id=sis_term_id)
+        course_count = 0
+        for row in DictReader(sis_data):
+            if not len(row):
+                continue
+            created_by_sis = row['created_by_sis']
+            if created_by_sis:
+                canvas_course_id = row['canvas_course_id']
+                # create / update course
+                course, created_course = Course.objects.get_or_create(
+                    canvas_course_id=canvas_course_id,
+                    term=term)
+                if created_course:
+                    logging.info(f"Created course - {canvas_course_id}")
+                else:
+                    logging.info(f"Updated course - {canvas_course_id}")
+                # we always update the course regardless if it is new or not
+                course.sis_course_id = row['course_id']
+                course.short_name = row['short_name']
+                course.long_name = row['long_name']
+                course.canvas_account_id = row['canvas_account_id']
+                course.sis_account_id = row['account_id']
+                course.status = row['status']
+                course.save()
+                course_count += 1
+        logging.info(f'Created and/or updated {course_count} courses.')
+
+    @transaction.atomic
+    def _create_users(self, user_dicts, batch_size=250):
+        """
+        Save list of new users to the database
+
+        :param user_dicts: list of users to save
+        :type user_dicts: list
+        :param batch_size: number of users to save at one time. (default=250)
+        :type batch_size: int
+        """
+        if user_dicts:
+            User.objects.bulk_create(user_dicts, batch_size=batch_size)
+
+    @transaction.atomic
+    def _update_users(self, user_dicts, batch_size=250):
+        """
+        Update list of users in the database
+
+        :param user_dicts: list of users to save
+        :type user_dicts: list
+        :param batch_size: number of users to save at one time. (default=250)
+        :type batch_size: int
+        """
+        if user_dicts:
+            User.objects.bulk_update(
+                user_dicts,
+                ["login_id", "sis_user_id", "first_name",
+                 "last_name", "full_name", "sortable_name",
+                 "email", "status"],
+                 batch_size=batch_size)
+
+    def create_or_update_users(self, sis_term_id=None):
+        """
+        Create and or updates users list for a term
+
+        :param sis_term_id: sis term id to load users for. (default is
+            the current term)
+        :type sis_term_id: str
+        """
+        cd = CanvasDAO()
+        # get provising data and load courses
+        sis_data = cd.download_user_provisioning_report(
+            sis_term_id=sis_term_id)
+
+        logging.info(f"Parsing Canvas user provisioning report "
+                     f"containing {len(sis_data)} rows.")
+
+        pws = PWS()
+        existing_users = {}
+        update = {}
+        create = {}
+        user_count = 0
+        for user in User.objects.all():
+            existing_users[int(user.canvas_user_id)] = user
+        for row in DictReader(sis_data):
+            if not len(row):
+                continue
+            created_by_sis = row['created_by_sis']
+            status = row['status']
+            sis_user_id = row['user_id']
+            if created_by_sis == "true" and status == "active" and \
+                    pws.valid_uwregid(sis_user_id):
+                # we need to cast the canvas_user_id from the file to an int
+                # so that the dictionary lookup works
+                canvas_user_id = int(row['canvas_user_id'])
+                user = existing_users.get(canvas_user_id)
+                if user:
+                    new_user = False
+                else:
+                    user = User()
+                    user.canvas_user_id = canvas_user_id
+                    new_user = True
+
+                user.sis_user_id = sis_user_id
+                user.login_id = row['login_id']
+                user.first_name = row['first_name']
+                user.last_name = row['last_name']
+                user.full_name = row['full_name']
+                user.sortable_name = row['sortable_name']
+                user.email = row['email']
+                user.status = status
+                if new_user:
+                    create[user.canvas_user_id] = user
+                else:
+                    update[user.canvas_user_id] = user
+                user_count += 1
+
+        users_to_create = list(create.values())
+        self._create_users(users_to_create, batch_size=cd.page_size)
+        logging.info(f"Created {len(users_to_create)} user(s).")
+        users_to_update = list(update.values())
+        self._update_users(users_to_update, batch_size=cd.page_size)
+        logging.info(f"Updated {len(users_to_update)} user(s).")
+
+    def create_rad_db_view(self, sis_term_id, week):
+        """
+        Create rad db view for given week and sis-term-id
+
+        :param sis_term_id: sis term id to create view for. (default is
+            the current term)
+        :type sis_term_id: str
+        :param week_num: week number to create view for . (default is
+            the current week of term)
+        :type week_num: int
+        """
+
+        view_name = get_view_name(sis_term_id, week, "rad")
+        assignments_view_name = get_view_name(sis_term_id,
+                                            week,
+                                            "assignments")
+        participations_view_name = get_view_name(sis_term_id,
+                                                week,
+                                                "participations")
+
+        cursor = connection.cursor()
+
+        env = os.getenv("ENV")
+        if env == "localdev" or not env:
+            create_action = f'CREATE VIEW "{view_name}"'
+            cursor.execute(f'DROP VIEW IF EXISTS "{view_name}"')
+        else:
+            create_action = f'CREATE OR REPLACE VIEW "{view_name}"'
+
+        cursor.execute(
+            f'''
+            {create_action} AS
+            WITH
+            avg_norm_ap AS (
+                SELECT
+                    norm_ap.user_id,
+                    AVG(normalized_assignment_score) AS assignment_score,
+                    AVG(normalized_participation_score) AS participation_score
+                FROM (
+                    SELECT
+                        p1.user_id,
+                        p1.course_id,
+                        p1.week_id,
+                            coalesce(
+                                cast((p1.participations - min_raw_participation_score) as decimal) /
+                                NULLIF( cast((max_raw_participation_score - min_raw_participation_score) as decimal) / 10, 0),
+                            0) - 5
+                        AS normalized_participation_score,
+                            coalesce(
+                                cast(((2 * p1.time_on_time + p1.time_late) - min_raw_assignment_score) as decimal) /
+                                NULLIF( cast((max_raw_assignment_score - min_raw_assignment_score) as decimal) / 10, 0)
+                                    , 0) - 5
+                        AS normalized_assignment_score
+                    FROM "{participations_view_name}" p1
+                    JOIN (
+                        SELECT
+                            course_id,
+                            MIN(p2.participations) AS min_raw_participation_score,
+                            MAX(p2.participations) AS max_raw_participation_score,
+                            MIN(2 * p2.time_on_time + p2.time_late) AS min_raw_assignment_score,
+                            MAX(2 * p2.time_on_time + p2.time_late) AS max_raw_assignment_score
+                        FROM "{participations_view_name}" p2
+                        GROUP BY 
+                            course_id
+                    ) raw_ap_bounds ON p1.course_id  = raw_ap_bounds.course_id
+                    GROUP BY
+                        p1.user_id,
+                        p1.course_id,
+                        p1.week_id,
+                        participations,
+                        p1.time_on_time,
+                        p1.time_late,
+                        normalized_participation_score,
+                        normalized_assignment_score
+                ) AS norm_ap
+                GROUP BY
+                    norm_ap.user_id
+            ),
+            avg_norm_gr AS (
+                SELECT DISTINCT
+                    a1.user_id,
+                    AVG(normalized_score) AS grade
+                FROM (
+                SELECT
+                    a2.user_id,
+                    CASE
+                    WHEN (COALESCE(a2.max_score, 0) - COALESCE(a2.min_score, 0)) = 0 THEN 0
+                    WHEN a2.score  IS NULL THEN -5
+                    ELSE ((10 * (COALESCE(a2.score, 0) - COALESCE(a2.min_score, 0))) /
+                            (COALESCE(a2.max_score, 0) - COALESCE(a2.min_score, 0))) - 5
+                    END AS normalized_score
+                FROM "{assignments_view_name}" a2
+                WHERE a2.status = 'on_time' OR a2.status = 'late' OR a2.status = 'missing'
+                GROUP BY a2.user_id, normalized_score 
+                ) a1
+                GROUP BY
+                    a1.user_id
+            )
+            SELECT DISTINCT
+                u.canvas_user_id,
+                u.full_name,
+                '{sis_term_id}' as term,
+                {week} as week,
+                assignment_score,
+                participation_score,
+                grade
+            FROM avg_norm_ap
+            JOIN avg_norm_gr ON avg_norm_ap.user_id = avg_norm_gr.user_id
+            JOIN data_aggregator_user u ON avg_norm_ap.user_id = u.id
+            '''  # noqa
+        )
+        return True
+
+    def create_participation_db_view(self, sis_term_id, week):
+        """
+        Create participation db view for given week and sis-term-id
+
+        :param sis_term_id: sis term id to create view for. (default is
+            the current term)
+        :type sis_term_id: str
+        :param week_num: week number to create view for . (default is
+            the current week of term)
+        :type week_num: int
+        """
+        view_name = get_view_name(sis_term_id, week, "participations")
+
+        cursor = connection.cursor()
+
+        env = os.getenv("ENV")
+        if env == "localdev" or not env:
+            create_action = f'CREATE VIEW "{view_name}"'
+            cursor.execute(f'DROP VIEW IF EXISTS "{view_name}"')
+        else:
+            create_action = f'CREATE MATERIALIZED VIEW "{view_name}"'
+
+        cursor.execute(
+            f'''
+            {create_action} AS
+            SELECT
+                data_aggregator_term.id AS term_id,
+                data_aggregator_week.id AS week_id,
+                p.course_id,
+                p.user_id,
+                p.participations AS participations,
+                p.participations_level AS participations_level,
+                p.page_views AS page_views,
+                p.page_views_level AS page_views_level,
+                p.time_tardy AS time_tardy,
+                p.time_on_time AS time_on_time,
+                p.time_late AS time_late,
+                p.time_missing AS time_missing,
+                p.time_floating AS time_floating
+            FROM
+                data_aggregator_participation p
+            JOIN data_aggregator_week on
+                p.week_id = data_aggregator_week.id
+            JOIN data_aggregator_term on
+                data_aggregator_week.term_id = data_aggregator_term.id
+            WHERE data_aggregator_week.week = {week}
+            AND data_aggregator_term.sis_term_id = '{sis_term_id}'
+            '''
+        )
+        return True
+
+    def create_assignment_db_view(self, sis_term_id, week):
+        """
+        Create assignment db view for given week and sis-term-id
+
+        :param sis_term_id: sis term id to create view for. (default is
+            the current term)
+        :type sis_term_id: str
+        :param week_num: week number to create view for . (default is
+            the current week of term)
+        :type week_num: int
+        """
+        view_name = get_view_name(sis_term_id, week, "assignments")
+
+        cursor = connection.cursor()
+
+        env = os.getenv("ENV")
+        if env == "localdev" or not env:
+            create_action = f'CREATE VIEW "{view_name}"'
+            cursor.execute(f'DROP VIEW IF EXISTS "{view_name}"')
+        else:
+            create_action = f'CREATE MATERIALIZED VIEW "{view_name}"'
+
+        cursor.execute(
+            f'''
+            {create_action} AS
+            SELECT
+                data_aggregator_term.id AS term_id,
+                data_aggregator_week.id AS week_id,
+                a.course_id,
+                a.user_id,
+                a.assignment_id,
+                a.score,
+                a.due_at,
+                a.points_possible,
+                a.status,
+                a.excused,
+                a.first_quartile,
+                a.max_score,
+                a.median,
+                a.min_score,
+                a.muted,
+                a.non_digital_submission,
+                a.posted_at,
+                a.submitted_at,
+                a.third_quartile,
+                a.title
+            FROM data_aggregator_assignment a
+            JOIN data_aggregator_week ON a.week_id = data_aggregator_week.id
+            JOIN data_aggregator_term ON
+            data_aggregator_week.term_id = data_aggregator_term.id
+            WHERE data_aggregator_week.week = {week} AND
+            data_aggregator_term.sis_term_id = '{sis_term_id}'
+            '''
+        )
+        return True
+
+    def create_terms(self, sis_term_id=None):
+        """
+        Creates current term and all future terms
+
+        :param sis_term_id: specify starting sis-term-id to load Term's for.
+            For example, if sis_term_id=Spring-2018, then Term Spring-2018 is
+            loaded as well as all later Terms in the sws. (defaults to current
+            term)
+        :type sis_term_id: str
+        """
+        sws_terms = self.get_sws_terms(sis_term_id=sis_term_id)
+        for sws_term in sws_terms:
+            term, created = \
+                Term.objects.get_or_create_from_sws_term(sws_term)
+            if created:
+                logging.info(f"Created term {term.sis_term_id}")
+
+
 class LoadRadDAO(BaseDAO):
+    """
+    Data Access Object for creating file for loading RAD
+    """
 
     def __init__(self):
         super().__init__()
@@ -599,9 +1010,8 @@ class LoadRadDAO(BaseDAO):
         term, _ = Term.objects.get_or_create_term_from_sis_term_id(
             sis_term_id=sis_term_id)
         users_df = self.get_users_df()
-        url_key = ("application_metadata/student_categories/"
-                   "{}-netid-name-stunum-categories.csv"
-                   .format(term.sis_term_id))
+        url_key = (f"application_metadata/student_categories/"
+                   f"{term.sis_term_id}-netid-name-stunum-categories.csv")
         content = self.download_from_gcs_bucket(url_key)
 
         sdb_df = pd.read_csv(StringIO(content))
@@ -626,8 +1036,8 @@ class LoadRadDAO(BaseDAO):
         """
         term, _ = Term.objects.get_or_create_term_from_sis_term_id(
             sis_term_id=sis_term_id)
-        url_key = ("application_metadata/predicted_probabilites/"
-                   "{}-pred-proba.csv".format(term.sis_term_id))
+        url_key = (f"application_metadata/predicted_probabilites/"
+                   f"{term.sis_term_id}-pred-proba.csv")
         content = self.download_from_gcs_bucket(url_key)
 
         probs_df = pd.read_csv(
@@ -649,8 +1059,8 @@ class LoadRadDAO(BaseDAO):
         """
         term, _ = Term.objects.get_or_create_term_from_sis_term_id(
             sis_term_id=sis_term_id)
-        url_key = ("application_metadata/eop_advisers/"
-                   "{}-eop-advisers.csv".format(term.sis_term_id))
+        url_key = (f"application_metadata/eop_advisers/"
+                   f"{term.sis_term_id}-eop-advisers.csv")
         content = self.download_from_gcs_bucket(url_key)
         eop_df = pd.read_csv(
             StringIO(content),
@@ -671,8 +1081,8 @@ class LoadRadDAO(BaseDAO):
         """
         term, _ = Term.objects.get_or_create_term_from_sis_term_id(
             sis_term_id=sis_term_id)
-        url_key = ("application_metadata/iss_advisers/"
-                   "{}-iss-advisers.csv".format(term.sis_term_id))
+        url_key = (f"application_metadata/iss_advisers/"
+                   f"{term.sis_term_id}-iss-advisers.csv")
         content = self.download_from_gcs_bucket(url_key)
         iss_df = pd.read_csv(
             StringIO(content),
@@ -781,3 +1191,24 @@ class LoadRadDAO(BaseDAO):
              'staff_id', 'sign_in', 'stem', 'incoming_freshman', 'premajor',
              'eop_student', 'international_student', 'isso']]
         return joined_canvas_df
+
+    def create_rad_data_file(self, sis_term_id=None, week_num=None):
+        """
+        Creates RAD data file and uploads it to the GCS bucket
+
+        :param sis_term_id: sis term id to create data frame for. (default is
+            the current term)
+        :type sis_term_id: str
+        :param week_num: week number to create data frame for . (default is
+            the current week of term)
+        :type week_num: int
+        """
+        term, _ = Term.objects.get_or_create_term_from_sis_term_id(
+            sis_term_id=sis_term_id)
+        week, _ = Week.objects.get_or_create_week(sis_term_id=sis_term_id,
+                                                  week_num=week_num)
+        rcd = self.get_rad_df(sis_term_id=sis_term_id, week_num=week_num)
+        file_name = (f"rad_data/{term.sis_term_id}-week-"
+                     f"{week.week}-rad-data.csv")
+        file_obj = rcd.to_csv(sep=",", index=False, encoding="UTF-8")
+        self.upload_to_gcs_bucket(file_name, file_obj)

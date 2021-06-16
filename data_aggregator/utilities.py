@@ -18,19 +18,18 @@ def datestring_to_datetime(date_str):
                 dt = timezone.make_aware(
                     datetime.strptime(date_str, fmt), timezone=timezone.utc)
                 if dt.year < 1900:
-                    err_msg = ('Date %s is out of range. '
-                               'Year must be year >= 1900.' % date_str)
+                    err_msg = (f"Date {date_str} is out of range. "
+                               f"Year must be year >= 1900.")
                     raise ValueError(err_msg)
                 return dt
             except ValueError:
                 pass
-        err_msg = 'Unsupported date format. %s' % date_str
+        err_msg = f"Unsupported date format. {date_str}"
         raise ValueError(err_msg)
     elif isinstance(date_str, datetime):
         return date_str  # already a date
     else:
-        raise ValueError("Got {0} expected str.".format(
-            type(date_str)))
+        raise ValueError(f"Got {date_str} expected str.")
 
 def get_relative_week(relative_date, cmp_dt=None):
     """
@@ -67,16 +66,13 @@ def get_term_number(quarter_name):
     try:
         return quarter_definitions[quarter_name.upper()]
     except KeyError:
-        raise ValueError("Quarter name {} not found. Options are "
-                         "WINTER, SPRING, SUMMER, and AUTUMN."
-                         .format(quarter_name))
+        raise ValueError(f"Quarter name {quarter_name} not found. Options are "
+                         f"WINTER, SPRING, SUMMER, and AUTUMN.")
 
 
 def get_view_name(sis_term_id, week, label):
-    view_name = ("{sis_term_id}_week_{week}_{label}"
-                 .format(sis_term_id=sis_term_id.replace("-", "_"),
-                         week=week,
-                         label=label))
+    sis_term_id = sis_term_id.replace("-", "_")
+    view_name = f"{sis_term_id}_week_{week}_{label}"
     return view_name
 
 
@@ -88,3 +84,7 @@ def get_default_target_end():
     now = timezone.now()
     tomorrow = now + timedelta(days=1)
     return tomorrow
+
+
+def chunk_list(seq, size):
+    return (seq[pos:pos + size] for pos in range(0, len(seq), size))

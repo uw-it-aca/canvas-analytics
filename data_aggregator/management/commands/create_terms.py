@@ -1,7 +1,5 @@
-import logging
 from django.core.management.base import BaseCommand
-from data_aggregator.dao import BaseDAO
-from data_aggregator.models import Term
+from data_aggregator.dao import TaskDAO
 
 
 class Command(BaseCommand):
@@ -11,16 +9,11 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("--sis_term_id",
                             type=str,
-                            help=("Starting term to create entries for."),
+                            help=("Starting term to create db entries for. "
+                                  "(defaults to current term)"),
                             default=None,
                             required=False)
 
     def handle(self, *args, **options):
         sis_term_id = options["sis_term_id"]
-
-        sws_terms = BaseDAO().get_sws_terms(sis_term_id=sis_term_id)
-        for sws_term in sws_terms:
-            term, created = \
-                Term.objects.get_or_create_from_sws_term(sws_term)
-            if created:
-                logging.info("Created term {}".format(term.sis_term_id))
+        TaskDAO().create_terms(sis_term_id=sis_term_id)
