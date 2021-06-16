@@ -19,7 +19,8 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         sis_term_id = options["sis_term_id"]
-        term, _ = Term.objects.get_or_create_term(sis_term_id=sis_term_id)
+        term, _ = Term.objects.get_or_create_term_from_sis_term_id(
+            sis_term_id=sis_term_id)
 
         cd = CanvasDAO()
         # get provising data and load courses

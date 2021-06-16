@@ -132,9 +132,9 @@ class BaseDAO():
 
     @retry(DataFailureException, tries=5, delay=10, backoff=2,
            status_codes=[0, 403, 408, 500])
-    def create_terms(self, sis_term_id=None):
+    def get_sws_terms(self, sis_term_id=None):
         """
-        Creates Term objects for existing sws-term onward.
+        Returns sws term objects for specified sis_term_id onward.
 
         :param sis_term_id: specify starting sis-term-id to load Term's for.
             For example, if sis_term_id=Spring-2018, then Term Spring-2018 is
@@ -148,17 +148,15 @@ class BaseDAO():
             year, quarter = sis_term_id.split("-")
             sws_term = get_term_by_year_and_quarter(int(year), quarter)
 
+        sws_terms = []
         while sws_term:
-            sis_term_id = sws_term.canvas_sis_id()
-            term, created = \
-                Term.objects.get_or_create_term(sis_term_id=sis_term_id)
-            if created:
-                logging.info("Created term {}".format(term.sis_term_id))
+            sws_terms.append(sws_term)
             try:
                 sws_term = get_term_after(sws_term)
             except DataFailureException:
                 # next term is not defined
                 break
+        return sws_terms
 
 
 class CanvasDAO(BaseDAO):
@@ -269,7 +267,8 @@ class CanvasDAO(BaseDAO):
             the current term)
         :type sis_term_id: str
         """
-        term, _ = Term.objects.get_or_create_term(sis_term_id=sis_term_id)
+        term, _ = Term.objects.get_or_create_term_from_sis_term_id(
+            sis_term_id=sis_term_id)
         # get canvas term using sis-term-id
         canvas_term = self.terms.get_term_by_sis_id(term.sis_term_id)
         # get courses provisioning report for canvas term
@@ -290,7 +289,8 @@ class CanvasDAO(BaseDAO):
         :param sis_term_id: sis term id to load users report for
         :type sis_term_id: str
         """
-        term, _ = Term.objects.get_or_create_term(sis_term_id=sis_term_id)
+        term, _ = Term.objects.get_or_create_term_from_sis_term_id(
+            sis_term_id=sis_term_id)
         # get canvas term using sis-term-id
         canvas_term = self.terms.get_term_by_sis_id(term.sis_term_id)
         # get users provisioning repmiort for canvas term
@@ -596,7 +596,8 @@ class LoadRadDAO(BaseDAO):
             the current term)
         :type sis_term_id: str
         """
-        term, _ = Term.objects.get_or_create_term(sis_term_id=sis_term_id)
+        term, _ = Term.objects.get_or_create_term_from_sis_term_id(
+            sis_term_id=sis_term_id)
         users_df = self.get_users_df()
         url_key = ("application_metadata/student_categories/"
                    "{}-netid-name-stunum-categories.csv"
@@ -623,7 +624,8 @@ class LoadRadDAO(BaseDAO):
             the current term)
         :type sis_term_id: str
         """
-        term, _ = Term.objects.get_or_create_term(sis_term_id=sis_term_id)
+        term, _ = Term.objects.get_or_create_term_from_sis_term_id(
+            sis_term_id=sis_term_id)
         url_key = ("application_metadata/predicted_probabilites/"
                    "{}-pred-proba.csv".format(term.sis_term_id))
         content = self.download_from_gcs_bucket(url_key)
@@ -645,7 +647,8 @@ class LoadRadDAO(BaseDAO):
             the current term)
         :type sis_term_id: str
         """
-        term, _ = Term.objects.get_or_create_term(sis_term_id=sis_term_id)
+        term, _ = Term.objects.get_or_create_term_from_sis_term_id(
+            sis_term_id=sis_term_id)
         url_key = ("application_metadata/eop_advisers/"
                    "{}-eop-advisers.csv".format(term.sis_term_id))
         content = self.download_from_gcs_bucket(url_key)
@@ -666,7 +669,8 @@ class LoadRadDAO(BaseDAO):
             the current term)
         :type sis_term_id: str
         """
-        term, _ = Term.objects.get_or_create_term(sis_term_id=sis_term_id)
+        term, _ = Term.objects.get_or_create_term_from_sis_term_id(
+            sis_term_id=sis_term_id)
         url_key = ("application_metadata/iss_advisers/"
                    "{}-iss-advisers.csv".format(term.sis_term_id))
         content = self.download_from_gcs_bucket(url_key)
@@ -695,7 +699,8 @@ class LoadRadDAO(BaseDAO):
             the current week of term)
         :type week_num: int
         """
-        term, _ = Term.objects.get_or_create_term(sis_term_id=sis_term_id)
+        term, _ = Term.objects.get_or_create_term_from_sis_term_id(
+            sis_term_id=sis_term_id)
         week, _ = Week.objects.get_or_create_week(sis_term_id=sis_term_id,
                                                   week_num=week_num)
         view_name = get_view_name(term.sis_term_id, week.week, "rad")

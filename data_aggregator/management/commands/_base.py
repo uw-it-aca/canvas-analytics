@@ -153,7 +153,7 @@ class CreateJobCommand(BaseCommand):
         job_type, _ = JobType.objects.get_or_create(type=analytic_type)
 
         if sis_term_id and week_num and canvas_course_id and sis_course_id:
-            logging.info(
+            logging.debug(
                 f"Adding {analytic_type} job for course "
                 f"{canvas_course_id}")
             job = Job()
@@ -166,20 +166,21 @@ class CreateJobCommand(BaseCommand):
                            'week': week_num}
             job.save()
         else:
-            term, _ = Term.objects.get_or_create_term(sis_term_id=sis_term_id)
+            term, _ = Term.objects.get_or_create_term_from_sis_term_id(
+                sis_term_id=sis_term_id)
             week, _ = Week.objects.get_or_create_week(sis_term_id=sis_term_id,
                                                       week_num=week_num)
             courses = Course.objects.filter(status='active').filter(term=term)
             course_count = courses.count()
             if course_count == 0:
-                logging.info(
+                logging.warning(
                     f'No active courses in term {term.sis_term_id} to '
                     f'create {analytic_type} jobs for.')
             else:
                 jobs_count = 0
                 for course in courses:
                     # create jobs
-                    logging.info(
+                    logging.debug(
                         f"Adding {analytic_type} jobs for course "
                         f"{course.sis_course_id} ({course.canvas_course_id})")
                     job = Job()
@@ -218,7 +219,8 @@ class CreateDBViewCommand(BaseCommand):
         """
         sis_term_id = options["sis_term_id"]
         week_num = options["week"]
-        term, _ = Term.objects.get_or_create_term(sis_term_id=sis_term_id)
+        term, _ = Term.objects.get_or_create_term_from_sis_term_id(
+            sis_term_id=sis_term_id)
         week, _ = Week.objects.get_or_create_week(sis_term_id=sis_term_id,
                                                     week_num=week_num)
         self.create(term.sis_term_id, week.week)

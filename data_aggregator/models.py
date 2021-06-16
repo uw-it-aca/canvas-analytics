@@ -10,7 +10,7 @@ from uw_sws import SWS_TIMEZONE
 
 class TermManager(models.Manager):
 
-    def get_or_create_term(self, sis_term_id=None):
+    def get_or_create_term_from_sis_term_id(self, sis_term_id=None):
         """
         Creates and/or queries for Term matching sis_term_id. If sis_term_id
         is not defined, creates and/or queries for Term object for current
@@ -19,14 +19,6 @@ class TermManager(models.Manager):
         :param sis_term_id: sis term id to return Term object for
         :type sis_term_id: str
         """
-
-        def sws_to_utc(dt):
-            if isinstance(dt, date):
-                # convert date to datetime
-                dt = datetime.combine(dt, datetime.min.time())
-                SWS_TIMEZONE.localize(dt)
-                return dt.astimezone(timezone.utc)
-
         if sis_term_id is None:
             # try to lookup the current term based on the date
             curr_date = timezone.now()
@@ -44,6 +36,24 @@ class TermManager(models.Manager):
         else:
             # lookup sws term object for current term
             sws_term = get_current_term()
+        return self.get_or_create_from_sws_term(sws_term)
+
+
+    def get_or_create_from_sws_term(self, sws_term):
+        """
+        Creates and/or queries for Term for sws_term object. If Term for
+        sws_term is not defined in the database, a Term object is created.
+
+        :param sws_term: sws_term object to create and or load
+        :type sws_term: uw_sws.term
+        """
+
+        def sws_to_utc(dt):
+            if isinstance(dt, date):
+                # convert date to datetime
+                dt = datetime.combine(dt, datetime.min.time())
+                SWS_TIMEZONE.localize(dt)
+                return dt.astimezone(timezone.utc)
 
         # get/create model for the term
         term, created = \
@@ -106,10 +116,11 @@ class WeekManager(models.Manager):
         :param week_num: week number to return Week object for
         :type week_num: int
         """
-        term, _ = Term.objects.get_or_create_term(sis_term_id=sis_term_id)
+        term, _ = Term.objects.get_or_create_term_from_sis_term_id(
+                                                    sis_term_id=sis_term_id)
         if week_num is None:
             # use current relative week number if not defined
-            week_num = utilities.get_week_of_term(term)
+            week_num = utilities.get_relative_week(term.first_day_quarter)
         week, created = Week.objects.get_or_create(term=term, week=week_num)
         return week, created
 

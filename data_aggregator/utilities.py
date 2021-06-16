@@ -32,16 +32,20 @@ def datestring_to_datetime(date_str):
         raise ValueError("Got {0} expected str.".format(
             type(date_str)))
 
-
-def get_week_of_term(term, cmp_dt=None):
-    first_day_quarter = term.first_day_quarter
+def get_relative_week(relative_date, cmp_dt=None):
+    """
+    Returns week number relative to supplied relative_date. If cmp_dt is
+    supplied, then returns number of weeks between supplied relative_date and
+    cmp_dt. If cmp_dt is not supplied, then returns number of weeks between
+    supplied relative_date and the current utc date.
+    """
     if cmp_dt is None:
         cmp_dt = timezone.now()
-    if isinstance(first_day_quarter, date):
-        first_day_quarter = timezone.make_aware(
-            datetime.combine(first_day_quarter, datetime.min.time()),
+    if isinstance(relative_date, date):
+        relative_date = timezone.make_aware(
+            datetime.combine(relative_date, datetime.min.time()),
             timezone=timezone.utc)
-    days = (cmp_dt - first_day_quarter).days
+    days = (cmp_dt - relative_date).days
     if days >= 0:
         return (days // 7) + 1
     return (days // 7)
