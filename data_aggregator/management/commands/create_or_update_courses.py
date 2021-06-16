@@ -2,7 +2,7 @@
 import logging
 from csv import DictReader
 from django.core.management.base import BaseCommand
-from data_aggregator.models import Course
+from data_aggregator.models import Course, Term
 from data_aggregator.dao import CanvasDAO
 
 
@@ -19,10 +19,12 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         sis_term_id = options["sis_term_id"]
-        cd = CanvasDAO(sis_term_id=sis_term_id)
+        term, _ = Term.objects.get_or_create_term(sis_term_id=sis_term_id)
+
+        cd = CanvasDAO()
         # get provising data and load courses
         sis_data = \
-            cd.download_course_provisioning_report()
+            cd.download_course_provisioning_report(sis_term_id=sis_term_id)
         course_count = 0
         for row in DictReader(sis_data):
             if not len(row):
@@ -33,7 +35,7 @@ class Command(BaseCommand):
                 # create / update course
                 course, created_course = Course.objects.get_or_create(
                     canvas_course_id=canvas_course_id,
-                    term=cd.term)
+                    term=term)
                 if created_course:
                     logging.info(f"Created course - {canvas_course_id}")
                 else:

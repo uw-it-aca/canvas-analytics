@@ -12,7 +12,8 @@ from uw_canvas.courses import Courses
 from uw_canvas.enrollments import Enrollments
 from uw_canvas.reports import Reports
 from uw_canvas.terms import Terms
-from uw_sws.term import get_current_term, get_term_after
+from uw_sws.term import get_current_term, get_term_after, \
+    get_term_by_year_and_quarter
 
 import numpy as np
 import pandas as pd
@@ -36,6 +37,9 @@ class BaseDAO():
         pd.options.display.max_rows = 500
         pd.options.display.precision = 3
         pd.options.display.float_format = '{:.3f}'.format
+
+    def set_gcs_base_path(self, sis_term_id, week_num):
+        os.environ["GCS_BASE_PATH"] = "{}/{}/".format(sis_term_id, week_num)
 
     def get_gcs_client(self):
         return storage.Client()
@@ -128,13 +132,26 @@ class BaseDAO():
 
     @retry(DataFailureException, tries=5, delay=10, backoff=2,
            status_codes=[0, 403, 408, 500])
-    def create_terms(self):
+    def create_terms(self, sis_term_id=None):
         """
         Creates Term objects for existing sws-term onward.
+
+        :param sis_term_id: specify starting sis-term-id to load Term's for.
+            For example, if sis_term_id=Spring-2018, then Term Spring-2018 is
+            loaded as well as all later Terms in the sws. (defaults to current
+            term)
+        :type sis_term_id: str
         """
-        sws_term = get_current_term()
+        if sis_term_id is None:
+            sws_term = get_current_term()
+        else:
+            year, quarter = sis_term_id.split("-")
+            sws_term = get_term_by_year_and_quarter(int(year), quarter)
+
         while sws_term:
-            term, created = Term.objects.get_or_create_term(sws_term)
+            sis_term_id = sws_term.canvas_sis_id()
+            term, created = \
+                Term.objects.get_or_create_term(sis_term_id=sis_term_id)
             if created:
                 logging.info("Created term {}".format(term.sis_term_id))
             try:
@@ -143,33 +160,13 @@ class BaseDAO():
                 # next term is not defined
                 break
 
-    def get_create_term_and_week(self, sis_term_id=None, week_num=None):
-        """
-        Returns Term and Week matching supplied sis_term_id and/or week_num.
-        If not sis_term_id is not supplied, returns Term object for the current
-        sws term. If week_num is not supplied, returns a Week object relative
-        to the first day of the supplied term.
-
-        :param sis_term_id: sis term id to retrieve Term object for. If not
-            supplied, returns Term object for the current sws term.
-        :type sis_term_id: str
-        :param week_num:  week number to retrieve Week object for. If not
-            supplied, returns a Week object relative to the first day of the
-            supplied term.
-        :type week_num: int
-        """
-        term, _ = Term.objects.get_or_create_term(sis_term_id=sis_term_id)
-        week, _ = Week.objects.get_or_create_week(sis_term_id=sis_term_id,
-                                                  week_num=week_num)
-        return term, week
-
 
 class CanvasDAO(BaseDAO):
     """
     Query canvas for analytics
     """
 
-    def __init__(self, sis_term_id=None, week_num=None, page_size=250):
+    def __init__(self, page_size=250):
         self.canvas = Canvas()
         self.courses = Courses()
         self.enrollments = Enrollments()
@@ -177,17 +174,7 @@ class CanvasDAO(BaseDAO):
         self.reports = Reports()
         self.terms = Terms()
         self.page_size = page_size
-        self.term, self.week = self.get_create_term_and_week(
-                                    sis_term_id=sis_term_id, week_num=week_num)
-        self.set_gcs_base_path(self.term.sis_term_id, self.week.week)
         super().__init__()
-
-    def set_gcs_base_path(self, sis_term_id=None, week_num=None):
-        if sis_term_id is None:
-            sis_term_id = self.term.sis_term_id
-        if week_num is None:
-            week_num = self.week.week
-        os.environ["GCS_BASE_PATH"] = "{}/{}/".format(sis_term_id, week_num)
 
     @retry(DataFailureException, tries=5, delay=10, backoff=2,
            status_codes=[0, 403, 408, 500])
@@ -403,7 +390,7 @@ class CanvasDAO(BaseDAO):
         if participation_dicts:
             course = (Course.objects.get(
                         canvas_course_id=canvas_course_id,
-                        term__sis_term_id=self.term))
+                        term__sis_term_id=sis_term_id))
             week = Week.objects.get(
                         term__sis_term_id=sis_term_id,
                         week=week_num)
@@ -475,7 +462,11 @@ class CanvasDAO(BaseDAO):
         :type job: data_aggregator.models.Job
         """
         canvas_course_id = job.context["canvas_course_id"]
+        sis_term_id = job.context["sis_term_id"]
+        week_num = job.context["week"]
         analytic_type = job.type.type
+
+        self.set_gcs_base_path(sis_term_id, week_num)
 
         analytics = []
         for analytic in self.download_raw_analytics_for_course(
@@ -502,13 +493,13 @@ class CanvasDAO(BaseDAO):
         """
         Download canvas course provisioning report
 
-        :param sis_term_id: sis term id to load course report for
+        :param sis_term_id: sis term id to load course report for. (default is
+            the current term)
         :type sis_term_id: str
         """
-        if sis_term_id is None:
-            sis_term_id = self.term.sis_term_id
+        term, _ = Term.objects.get_or_create_term(sis_term_id=sis_term_id)
         # get canvas term using sis-term-id
-        canvas_term = self.terms.get_term_by_sis_id(sis_term_id)
+        canvas_term = self.terms.get_term_by_sis_id(term.sis_term_id)
         # get courses provisioning report for canvas term
         course_report = self.reports.create_course_provisioning_report(
                     settings.ACADEMIC_CANVAS_ACCOUNT_ID,
@@ -527,10 +518,9 @@ class CanvasDAO(BaseDAO):
         :param sis_term_id: sis term id to load users report for
         :type sis_term_id: str
         """
-        if sis_term_id is None:
-            sis_term_id = self.term.sis_term_id
+        term, _ = Term.objects.get_or_create_term(sis_term_id=sis_term_id)
         # get canvas term using sis-term-id
-        canvas_term = self.terms.get_term_by_sis_id(sis_term_id)
+        canvas_term = self.terms.get_term_by_sis_id(term.sis_term_id)
         # get users provisioning repmiort for canvas term
         user_report = self.reports.create_user_provisioning_report(
                     settings.ACADEMIC_CANVAS_ACCOUNT_ID,
@@ -545,9 +535,7 @@ class CanvasDAO(BaseDAO):
 
 class LoadRadDAO(BaseDAO):
 
-    def __init__(self, sis_term_id=None, week_num=None):
-        self.term, self.week = self.get_create_term_and_week(
-                                    sis_term_id=sis_term_id, week_num=week_num)
+    def __init__(self):
         super().__init__()
 
     def _zero_range(self, x):
@@ -591,15 +579,20 @@ class LoadRadDAO(BaseDAO):
         users_df.rename(columns={'login_id': 'uw_netid'}, inplace=True)
         return users_df
 
-    def get_student_categories_df(self):
+    def get_student_categories_df(self, sis_term_id=None):
         """
         Download student categories file from the configured GCS bucket
         and return pandas dataframe with contents
+
+        :param sis_term_id: sis term id to create data frame for. (default is
+            the current term)
+        :type sis_term_id: str
         """
+        term, _ = Term.objects.get_or_create_term(sis_term_id=sis_term_id)
         users_df = self.get_users_df()
         url_key = ("application_metadata/student_categories/"
                    "{}-netid-name-stunum-categories.csv"
-                   .format(self.term.sis_term_id))
+                   .format(term.sis_term_id))
         content = self.download_from_gcs_bucket(url_key)
 
         sdb_df = pd.read_csv(StringIO(content))
@@ -613,13 +606,18 @@ class LoadRadDAO(BaseDAO):
         sdb_df.fillna(value={'canvas_user_id': -99}, inplace=True)
         return sdb_df
 
-    def get_pred_proba_scores_df(self):
+    def get_pred_proba_scores_df(self, sis_term_id=None):
         """
         Download predicted probabilities file from the configured GCS bucket
         and return pandas dataframe with contents
+
+        :param sis_term_id: sis term id to create data frame for. (default is
+            the current term)
+        :type sis_term_id: str
         """
+        term, _ = Term.objects.get_or_create_term(sis_term_id=sis_term_id)
         url_key = ("application_metadata/predicted_probabilites/"
-                   "{}-pred-proba.csv".format(self.term.sis_term_id))
+                   "{}-pred-proba.csv".format(term.sis_term_id))
         content = self.download_from_gcs_bucket(url_key)
 
         probs_df = pd.read_csv(
@@ -630,13 +628,18 @@ class LoadRadDAO(BaseDAO):
                         inplace=True)
         return probs_df
 
-    def get_eop_advisers_df(self):
+    def get_eop_advisers_df(self, sis_term_id=None):
         """
         Download eop advisors file from the configured GCS bucket
         and return pandas dataframe with contents
+
+        :param sis_term_id: sis term id to create data frame for. (default is
+            the current term)
+        :type sis_term_id: str
         """
+        term, _ = Term.objects.get_or_create_term(sis_term_id=sis_term_id)
         url_key = ("application_metadata/eop_advisers/"
-                   "{}-eop-advisers.csv".format(self.term.sis_term_id))
+                   "{}-eop-advisers.csv".format(term.sis_term_id))
         content = self.download_from_gcs_bucket(url_key)
         eop_df = pd.read_csv(
             StringIO(content),
@@ -646,13 +649,18 @@ class LoadRadDAO(BaseDAO):
         eop_df['staff_id'] = eop_df['staff_id'].str.strip()
         return eop_df
 
-    def get_iss_advisers_df(self):
+    def get_iss_advisers_df(self, sis_term_id=None):
         """
         Download iss advisors file from the configured GCS bucket
         and return pandas dataframe with contents
+
+        :param sis_term_id: sis term id to create data frame for. (default is
+            the current term)
+        :type sis_term_id: str
         """
+        term, _ = Term.objects.get_or_create_term(sis_term_id=sis_term_id)
         url_key = ("application_metadata/iss_advisers/"
-                   "{}-iss-advisers.csv".format(self.term.sis_term_id))
+                   "{}-iss-advisers.csv".format(term.sis_term_id))
         content = self.download_from_gcs_bucket(url_key)
         iss_df = pd.read_csv(
             StringIO(content),
@@ -667,12 +675,22 @@ class LoadRadDAO(BaseDAO):
         iss_df['staff_id'] = iss_df['staff_id'].str.strip()
         return iss_df
 
-    def get_rad_dbview_df(self):
+    def get_rad_dbview_df(self, sis_term_id=None, week_num=None):
         """
         Query RAD canvas data from the canvas-analytics RAD db view for the
         current term and week and return pandas dataframe with contents
+
+        :param sis_term_id: sis term id to create data frame for. (default is
+            the current term)
+        :type sis_term_id: str
+        :param week_num: week number to create data frame for . (default is
+            the current week of term)
+        :type week_num: int
         """
-        view_name = get_view_name(self.term.sis_term_id, self.week.week, "rad")
+        term, _ = Term.objects.get_or_create_term(sis_term_id=sis_term_id)
+        week, _ = Week.objects.get_or_create_week(sis_term_id=sis_term_id,
+                                                  week_num=week_num)
+        view_name = get_view_name(term.sis_term_id, week.week, "rad")
         rad_db_model = RadDbView.setDb_table(view_name)
         rad_canvas_qs = rad_db_model.objects.all().values()
         rad_df = pd.DataFrame(rad_canvas_qs)
@@ -710,23 +728,31 @@ class LoadRadDAO(BaseDAO):
         idp_df['sign_in'] = self._rescale_range(idp_df['sign_in'])
         return idp_df
 
-    def get_rad_df(self):
+    def get_rad_df(self, sis_term_id=None, week_num=None):
         """
         Get a pandas dataframe containing the contents of the
         rad data file
+
+        :param sis_term_id: sis term id to create data frame for. (default is
+            the current term)
+        :type sis_term_id: str
+        :param week_num: week number to create data frame for . (default is
+            the current week of term)
+        :type week_num: int
         """
         # get rad canvas data
-        rad_df = self.get_rad_dbview_df()
+        rad_df = self.get_rad_dbview_df(sis_term_id=sis_term_id,
+                                        week_num=week_num)
         # get student categories
-        sdb_df = self.get_student_categories_df()
+        sdb_df = self.get_student_categories_df(sis_term_id=sis_term_id)
         # get idp data
         idp_df = self.get_idp_df()
         # get predicted probabilities
-        probs_df = self.get_pred_proba_scores_df()
+        probs_df = self.get_pred_proba_scores_df(sis_term_id=sis_term_id)
         # get eop advisors
-        eop_advisors_df = self.get_eop_advisers_df()
+        eop_advisors_df = self.get_eop_advisers_df(sis_term_id=sis_term_id)
         # get iss advisors
-        iss_advisors_df = self.get_iss_advisers_df()
+        iss_advisors_df = self.get_iss_advisers_df(sis_term_id=sis_term_id)
         # combine advisors
         combined_advisors_df = \
             pd.concat([eop_advisors_df, iss_advisors_df])

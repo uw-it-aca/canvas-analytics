@@ -2,11 +2,10 @@ import logging
 import traceback
 from django.conf import settings
 from django.core.management.base import BaseCommand
-from data_aggregator.models import Job, JobType, Course
+from data_aggregator.models import Job, JobType, Course, Term, Week
 from data_aggregator.utilities import datestring_to_datetime
 from data_aggregator.utilities import get_default_target_start, \
     get_default_target_end
-from data_aggregator.dao import BaseDAO
 from multiprocessing.dummy import Pool as ThreadPool
 
 
@@ -167,8 +166,9 @@ class CreateJobCommand(BaseCommand):
                            'week': week_num}
             job.save()
         else:
-            term, week = BaseDAO().get_create_term_and_week(
-                sis_term_id=sis_term_id, week_num=week_num)
+            term, _ = Term.objects.get_or_create_term(sis_term_id=sis_term_id)
+            week, _ = Week.objects.get_or_create_week(sis_term_id=sis_term_id,
+                                                      week_num=week_num)
             courses = Course.objects.filter(status='active').filter(term=term)
             course_count = courses.count()
             if course_count == 0:
@@ -217,7 +217,8 @@ class CreateDBViewCommand(BaseCommand):
         Create db view for given term and week
         """
         sis_term_id = options["sis_term_id"]
-        week = options["week"]
-        term_obj, week_obj = BaseDAO().get_create_term_and_week(
-            sis_term_id=sis_term_id, week=week)
-        self.create(term_obj.sis_term_id, week_obj.week)
+        week_num = options["week"]
+        term, _ = Term.objects.get_or_create_term(sis_term_id=sis_term_id)
+        week, _ = Week.objects.get_or_create_week(sis_term_id=sis_term_id,
+                                                    week_num=week_num)
+        self.create(term.sis_term_id, week.week)
