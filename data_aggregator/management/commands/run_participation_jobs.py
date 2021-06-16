@@ -11,11 +11,9 @@ class Command(RunJobCommand):
             "be run as a cron that is constantly checking for new jobs.")
 
     def work(self, job):
-        canvas_course_id = job.context["canvas_course_id"]
         canvas_dao = CanvasDAO()
         # delete existing participations data in case of a job restart
         old_participations = Participation.objects.filter(job=job)
         old_participations.delete()
         # download and load all participation analytics for course
-        canvas_dao.load_all_analytics_for_course(
-            canvas_course_id, AnalyticTypes.participation, job)
+        canvas_dao.load_all_analytics_for_job(job)

@@ -60,6 +60,7 @@ class RunJobCommand(BaseCommand):
         """
         num_parallel_jobs = options["num_parallel_jobs"]
         job_batch_size = options["job_batch_size"]  # defaults to all jobs
+
         jobs = Job.objects.claim_batch_of_jobs(
             self.job_type,
             batchsize=job_batch_size
@@ -103,6 +104,11 @@ class CreateJobCommand(BaseCommand):
                             help=("Term to create jobs for."),
                             default=None,
                             required=False)
+        parser.add_argument("--week",
+                            type=int,
+                            help=("Week to create jobs for."),
+                            default=None,
+                            required=False)
         parser.add_argument("--canvas_course_id",
                             type=int,
                             help=("Canvas course id to create a job for."),
@@ -128,6 +134,7 @@ class CreateJobCommand(BaseCommand):
 
     def create(self, options, analytic_type):
         sis_term_id = options["sis_term_id"]
+        week_num = options["week"]
         canvas_course_id = options["canvas_course_id"]
         sis_course_id = options["sis_course_id"]
         target_start_time = options["target_start_time"]
@@ -146,7 +153,7 @@ class CreateJobCommand(BaseCommand):
         # get job type
         job_type, _ = JobType.objects.get_or_create(type=analytic_type)
 
-        if canvas_course_id and sis_course_id:
+        if sis_term_id and week_num and canvas_course_id and sis_course_id:
             logging.info(
                 f"Adding {analytic_type} job for course "
                 f"{canvas_course_id}")
@@ -155,11 +162,13 @@ class CreateJobCommand(BaseCommand):
             job.target_date_start = target_date_start
             job.target_date_end = target_date_end
             job.context = {'canvas_course_id': canvas_course_id,
-                           'sis_course_id': sis_course_id}
+                           'sis_course_id': sis_course_id,
+                           'sis_term_id': sis_term_id,
+                           'week': week_num}
             job.save()
         else:
-            term, _ = BaseDAO().get_current_term_and_week(
-                                                    sis_term_id=sis_term_id)
+            term, week = BaseDAO().get_create_term_and_week(
+                sis_term_id=sis_term_id, week_num=week_num)
             courses = Course.objects.filter(status='active').filter(term=term)
             course_count = courses.count()
             if course_count == 0:
@@ -178,7 +187,9 @@ class CreateJobCommand(BaseCommand):
                     job.target_date_start = target_date_start
                     job.target_date_end = target_date_end
                     job.context = {'canvas_course_id': course.canvas_course_id,
-                                   'sis_course_id': course.sis_course_id}
+                                   'sis_course_id': course.sis_course_id,
+                                   'sis_term_id': term.sis_term_id,
+                                   'week': week.week}
                     job.save()
                     jobs_count += 1
                 logging.info(f'Created {jobs_count} {analytic_type} jobs.')
@@ -207,6 +218,6 @@ class CreateDBViewCommand(BaseCommand):
         """
         sis_term_id = options["sis_term_id"]
         week = options["week"]
-        term_obj, week_obj = BaseDAO().get_current_term_and_week(
+        term_obj, week_obj = BaseDAO().get_create_term_and_week(
             sis_term_id=sis_term_id, week=week)
         self.create(term_obj.sis_term_id, week_obj.week)

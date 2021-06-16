@@ -186,11 +186,17 @@ class JobManager(models.Manager):
         return jobs
 
 
+class AnalyticTypes():
+
+    assignment = "assignment"
+    participation = "participation"
+
+
 class JobType(models.Model):
 
     JOB_CHOICES = (
-        ('assignment', 'AssignmentJob'),
-        ('participation', 'ParticipationJob'),
+        (AnalyticTypes.assignment, 'AssignmentJob'),
+        (AnalyticTypes.participation, 'ParticipationJob'),
     )
     type = models.CharField(max_length=64, choices=JOB_CHOICES)
 
