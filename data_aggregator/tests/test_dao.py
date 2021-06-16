@@ -3,7 +3,7 @@ import unittest
 import pandas as pd
 import numpy as np
 from django.test import TestCase
-from data_aggregator.dao import AnalyticTypes, CanvasDAO, LoadRadDAO, BaseDao
+from data_aggregator.dao import AnalyticTypes, CanvasDAO, LoadRadDAO, BaseDAO
 from mock import patch, MagicMock
 from data_aggregator.management.commands.create_assignment_db_view \
     import _create as create_assignment
@@ -13,7 +13,7 @@ from data_aggregator.management.commands.create_rad_db_view \
     import _create as create_rad
 
 
-class TestBaseDao(TestCase):
+class TestBaseDAO(TestCase):
 
     def get_test_base_dao(self):
         # mock gcs blob
@@ -40,7 +40,7 @@ class TestBaseDao(TestCase):
         mock_s3_client.get_object = MagicMock(return_value=mock_s3_obj)
 
         # mock base dao
-        base_dao = BaseDao()
+        base_dao = BaseDAO()
         base_dao.get_gcs_bucket_name = \
             MagicMock(return_value="test_gcs_bucket")
         base_dao.get_gcs_client = MagicMock(return_value=mock_gcs_client)
@@ -72,9 +72,7 @@ class TestCanvasDAO(TestCase):
                 'data_aggregator/fixtures/mock_data/da_week.json']
 
     def get_test_canvas_dao(self):
-        cd = CanvasDAO()
-        cd.get_current_term_and_week = \
-            MagicMock(return_value=("2021-spring", 1))
+        cd = CanvasDAO(sis_term_id="2013-spring", week_num=1)
         return cd
 
     @patch('uw_canvas.enrollments.Enrollments')
@@ -193,7 +191,7 @@ class TestCanvasDAO(TestCase):
         cd = self.get_test_canvas_dao()
         mock_terms_inst = MockTerms.return_value
         mock_terms_inst.get_term_by_sis_id.return_value = \
-            MagicMock(term_id="2021-spring")
+            MagicMock(term_id="2013-spring")
         cd.terms = mock_terms_inst
         mock_reports_inst = MockReports.return_value
         mock_reports_inst.create_course_provisioning_report.return_value = True
@@ -204,7 +202,7 @@ class TestCanvasDAO(TestCase):
 
         # call download_course_provisioning_report
         self.assertEqual(
-            cd.download_course_provisioning_report("2021-spring"),
+            cd.download_course_provisioning_report("2013-spring"),
             [{"entry1": ""}, {"entry2": ""}])
 
         # check that the mocked methods were called
@@ -227,7 +225,7 @@ class TestCanvasDAO(TestCase):
         cd = self.get_test_canvas_dao()
         mock_terms_inst = MockTerms.return_value
         mock_terms_inst.get_term_by_sis_id.return_value = \
-            MagicMock(term_id="2021-spring")
+            MagicMock(term_id="2013-spring")
         cd.terms = mock_terms_inst
         mock_reports_inst = MockReports.return_value
         mock_reports_inst.create_user_provisioning_report.return_value = True
@@ -238,7 +236,7 @@ class TestCanvasDAO(TestCase):
 
         # call download_user_provisioning_report
         self.assertEqual(
-            cd.download_user_provisioning_report("2021-spring"),
+            cd.download_user_provisioning_report("2013-spring"),
             [{"entry1": ""}, {"entry2": ""}])
 
         # check that the mocked methods were called
@@ -282,11 +280,7 @@ class TestLoadRadDAO(TestCase):
         super().setUpTestData()
 
     def _get_test_load_rad_dao(self):
-        lrd = LoadRadDAO()
-        lrd.get_current_term_and_week = \
-            MagicMock(return_value=("2013-spring", 1))
-        lrd.curr_term = "2013-spring"
-        lrd.curr_week = 1
+        lrd = LoadRadDAO(sis_term_id="2013-spring", week_num=1)
         lrd._get_gcs_client = MagicMock()
         lrd._get_s3_client = MagicMock()
         return lrd

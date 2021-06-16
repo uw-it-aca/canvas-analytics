@@ -5,7 +5,6 @@ from csv import DictReader
 from django.core.management.base import BaseCommand
 from data_aggregator.models import User
 from data_aggregator.dao import CanvasDAO
-from uw_sws.term import get_current_term
 from uw_pws import PWS
 
 
@@ -16,6 +15,13 @@ def chunker(seq, size):
 class Command(BaseCommand):
 
     help = ("Loads or updates list of students for the current term.")
+
+    def add_arguments(self, parser):
+        parser.add_argument("--sis_term_id",
+                            type=str,
+                            help=("Term to update users for."),
+                            default=None,
+                            required=False)
 
     @transaction.atomic
     def create_users(self, users, batch_size=100):
@@ -35,11 +41,11 @@ class Command(BaseCommand):
             print("Updated {} user(s)".format(len(users)))
 
     def handle(self, *args, **options):
-        # get the current term object from sws
-        sws_term = get_current_term()
+        sis_term_id = options["sis_term_id"]
+
+        cd = CanvasDAO(sis_term_id=sis_term_id)
         # get provising data and load courses
-        sis_data = CanvasDAO().download_user_provisioning_report(
-            sws_term.canvas_sis_id())
+        sis_data = cd.download_user_provisioning_report()
         user_count = 0
         update = {}
         create = {}

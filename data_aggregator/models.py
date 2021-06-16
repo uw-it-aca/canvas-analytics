@@ -4,26 +4,51 @@ from datetime import datetime, date
 from django.db import models
 from django.utils import timezone
 from data_aggregator import utilities
-from uw_sws.term import get_current_term
+from uw_sws.term import get_current_term, get_term_by_year_and_quarter
 from uw_sws import SWS_TIMEZONE
 
 
 class TermManager(models.Manager):
-    def get_create_current_term(self, canvas_term_id, sws_term=None):
+
+    def get_or_create_term(self, sis_term_id=None):
+        """
+        Creates and/or queries for Term matching sis_term_id. If sis_term_id
+        is not defined, creates and/or queries for Term object for current
+        sws term.
+
+        :param sis_term_id: sis term id to return Term object for
+        :type sis_term_id: str
+        """
 
         def sws_to_utc(dt):
             if isinstance(dt, date):
                 # convert date to datetime
                 dt = datetime.combine(dt, datetime.min.time())
-            SWS_TIMEZONE.localize(dt)
-            return dt.astimezone(timezone.utc)
+                SWS_TIMEZONE.localize(dt)
+                return dt.astimezone(timezone.utc)
+
+        if sis_term_id is None:
+            # try to lookup the current term based on the date
+            curr_date = timezone.now()
+            term = (Term.objects
+                    .filter(first_day_quarter__lte=curr_date)
+                    .filter(grade_submission_deadline__gte=curr_date)).first()
+            if term:
+                # return current term
+                return term, False
+
+        if sis_term_id:
+            # lookup sws term object for supplied sis term id
+            year, quarter = sis_term_id.split("-")
+            sws_term = get_term_by_year_and_quarter(int(year), quarter)
+        else:
+            # lookup sws term object for current term
+            sws_term = get_current_term()
 
         # get/create model for the term
-        term, created = Term.objects.get_or_create(
-            canvas_term_id=canvas_term_id)
+        term, created = \
+            Term.objects.get_or_create(sis_term_id=sws_term.canvas_sis_id())
         if created:
-            if not sws_term:
-                sws_term = get_current_term()
             # add current term info for course
             term.sis_term_id = sws_term.canvas_sis_id()
             term.year = sws_term.year
@@ -45,21 +70,10 @@ class TermManager(models.Manager):
             term.save()
         return term, created
 
-    def get_latest_term(self):
-        terms = Term.objects.all().order_by('-year')
-        if terms:
-            latest_year_terms = \
-                sorted(Term.objects.filter(year=terms.first().year),
-                    key=lambda x: x.term_number,
-                    reverse=True)
-            return latest_year_terms[0]
-        else:
-            raise ValueError("The Term table is empty.")
-
 
 class Term(models.Model):
+
     objects = TermManager()
-    canvas_term_id = models.IntegerField()
     sis_term_id = models.TextField(null=True)
     year = models.IntegerField(null=True)
     quarter = models.TextField(null=True)
@@ -81,18 +95,27 @@ class Term(models.Model):
 
 class WeekManager(models.Manager):
 
-    def get_latest_week(self):
-        latest_term = Term.objects.get_latest_term()
-        latest_week_terms = \
-            sorted(Week.objects.filter(term=latest_term),
-                key=lambda x: x.week,
-                reverse=True)
-        if latest_week_terms:
-            return latest_week_terms[0]
-        else:
-            raise ValueError("No weeks for term {}".format(latest_term))
+    def get_or_create_week(self, sis_term_id=None, week_num=None):
+        """
+        Creates and/or queries for Week matching sis_term_id and week_num.
+        If sis_term_id and/or week_num is not defined, creates and/or queries
+        for Week object for current sws term and/or week_num.
+
+        :param sis_term_id: sis term id to return Term object for
+        :type sis_term_id: str
+        :param week_num: week number to return Week object for
+        :type week_num: int
+        """
+        term, _ = Term.objects.get_or_create_term(sis_term_id=sis_term_id)
+        if week_num is None:
+            # use current relative week number if not defined
+            week_num = utilities.get_week_of_term(term)
+        week, created = Week.objects.get_or_create(term=term, week=week_num)
+        return week, created
+
 
 class Week(models.Model):
+
     objects = WeekManager()
     term = models.ForeignKey(Term,
                              on_delete=models.CASCADE)
@@ -103,6 +126,7 @@ class Week(models.Model):
 
 
 class Course(models.Model):
+
     canvas_course_id = models.BigIntegerField()
     sis_course_id = models.TextField(null=True)
     short_name = models.TextField(null=True)
@@ -115,6 +139,7 @@ class Course(models.Model):
 
 
 class User(models.Model):
+
     canvas_user_id = models.BigIntegerField(unique=True)
     login_id = models.TextField(null=True)
     sis_user_id = models.TextField(null=True)
@@ -162,6 +187,7 @@ class JobManager(models.Manager):
 
 
 class JobType(models.Model):
+
     JOB_CHOICES = (
         ('assignment', 'AssignmentJob'),
         ('participation', 'ParticipationJob'),
@@ -170,6 +196,7 @@ class JobType(models.Model):
 
 
 class JobStatusTypes():
+
     pending = "pending"
     claimed = "claimed"
     running = "running"
@@ -185,6 +212,7 @@ class JobStatusTypes():
 
 
 class Job(models.Model):
+
     objects = JobManager()
     type = models.ForeignKey(JobType,
                              on_delete=models.CASCADE)
@@ -245,6 +273,7 @@ class Job(models.Model):
 
 
 class Assignment(models.Model):
+
     course = models.ForeignKey(Course,
                                on_delete=models.CASCADE)
     job = models.ForeignKey(Job,
@@ -281,6 +310,7 @@ class Assignment(models.Model):
 
 
 class Participation(models.Model):
+
     course = models.ForeignKey(Course,
                                on_delete=models.CASCADE)
     job = models.ForeignKey(Job,
@@ -307,6 +337,7 @@ class Participation(models.Model):
 
 
 class RadDbView(models.Model):
+
     class Meta:
         abstract = True
 

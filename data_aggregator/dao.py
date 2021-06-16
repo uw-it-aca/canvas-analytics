@@ -12,6 +12,7 @@ from uw_canvas.courses import Courses
 from uw_canvas.enrollments import Enrollments
 from uw_canvas.reports import Reports
 from uw_canvas.terms import Terms
+from uw_sws.term import get_current_term, get_term_after
 
 import numpy as np
 import pandas as pd
@@ -28,7 +29,7 @@ class AnalyticTypes():
     participation = "participation"
 
 
-class BaseDao():
+class BaseDAO():
 
     def __init__(self, *args, **kwargs):
         self.configure_pandas()
@@ -131,24 +132,50 @@ class BaseDao():
                 num_retries=self.get_gcs_num_retries(),
                 timeout=self.get_gcs_timeout())
 
-    def get_latest_term_and_week(self, sis_term_id, week_num):
-        if sis_term_id is not None:
-            term = Term.objects.filter(sis_term_id=sis_term_id).first()
-        else:
-            term = Term.objects.get_latest_term()
-        if week_num is not None:
-            week = Week.objects.filter(week=week_num).first()
-        else:
-            week = Week.objects.get_latest_week()
+    @retry(DataFailureException, tries=5, delay=10, backoff=2,
+           status_codes=[0, 403, 408, 500])
+    def create_terms(self):
+        """
+        Creates Term objects for existing sws-term onward.
+        """
+        sws_term = get_current_term()
+        while sws_term:
+            term, created = Term.objects.get_or_create_term(sws_term)
+            if created:
+                logging.info("Created term {}".format(term.sis_term_id))
+            try:
+                sws_term = get_term_after(sws_term)
+            except DataFailureException:
+                # next term is not defined
+                break
+
+    def get_create_term_and_week(self, sis_term_id=None, week_num=None):
+        """
+        Returns Term and Week matching supplied sis_term_id and/or week_num.
+        If not sis_term_id is not supplied, returns Term object for the current
+        sws term. If week_num is not supplied, returns a Week object relative
+        to the first day of the supplied term.
+
+        :param sis_term_id: sis term id to retrieve Term object for. If not
+            supplied, returns Term object for the current sws term.
+        :type sis_term_id: str
+        :param week_num:  week number to retrieve Week object for. If not
+            supplied, returns a Week object relative to the first day of the
+            supplied term.
+        :type week_num: int
+        """
+        term, _ = Term.objects.get_or_create_term(sis_term_id=sis_term_id)
+        week, _ = Week.objects.get_or_create_week(sis_term_id=sis_term_id,
+                                                  week_num=week_num)
         return term, week
 
 
-class CanvasDAO(BaseDao):
+class CanvasDAO(BaseDAO):
     """
     Query canvas for analytics
     """
 
-    def __init__(self, sis_term_id=None, week=None, page_size=250):
+    def __init__(self, sis_term_id=None, week_num=None, page_size=250):
         self.canvas = Canvas()
         self.courses = Courses()
         self.enrollments = Enrollments()
@@ -156,10 +183,17 @@ class CanvasDAO(BaseDao):
         self.reports = Reports()
         self.terms = Terms()
         self.page_size = page_size
-        self.term, self.week = self.get_latest_term_and_week(sis_term_id, week)
-        os.environ["GCS_BASE_PATH"] = \
-            "{}/{}/".format(self.term.sis_term_id, self.week.week)
+        self.term, self.week = self.get_create_term_and_week(
+                                    sis_term_id=sis_term_id, week_num=week_num)
+        self.set_gcs_base_path(self.term.sis_term_id, self.week.week)
         super().__init__()
+
+    def set_gcs_base_path(self, sis_term_id=None, week_num=None):
+        if sis_term_id is None:
+            sis_term_id = self.term.sis_term_id
+        if week_num is None:
+            week_num = self.week.week
+        os.environ["GCS_BASE_PATH"] = "{}/{}/".format(sis_term_id, week_num)
 
     @retry(DataFailureException, tries=5, delay=10, backoff=2,
            status_codes=[0, 403, 408, 500])
@@ -456,47 +490,58 @@ class CanvasDAO(BaseDao):
             self.save_assignments_to_db(analytics, job)
         elif analytics and analytic_type == AnalyticTypes.participation:
             # save remaining participations to db
-            self.save_assignments_to_db(analytics, job)
+            self.save_participations_to_db(analytics, job)
 
-    def download_course_provisioning_report(self, sis_term_id):
+    def download_course_provisioning_report(self, sis_term_id=None):
         """
         Download canvas course provisioning report
 
         :param sis_term_id: sis term id to load course report for
-        :type sis_term_id: numeric
+        :type sis_term_id: str
         """
+        if sis_term_id is None:
+            sis_term_id = self.term.sis_term_id
         # get canvas term using sis-term-id
         canvas_term = self.terms.get_term_by_sis_id(sis_term_id)
         # get courses provisioning report for canvas term
-        user_report = self.reports.create_course_provisioning_report(
+        course_report = self.reports.create_course_provisioning_report(
                     settings.ACADEMIC_CANVAS_ACCOUNT_ID,
-                    term_id=canvas_term.term_id)
-        sis_data = self.reports.get_report_data(user_report)
-        self.reports.delete_report(user_report)
+                    term_id=canvas_term.term_id,
+                    params={"created_by_sis": True})
+        logging.info("Downloading course provisioning report: term={}"
+                     .format(sis_term_id))
+        sis_data = self.reports.get_report_data(course_report)
+        self.reports.delete_report(course_report)
         return sis_data
 
-    def download_user_provisioning_report(self, sis_term_id):
+    def download_user_provisioning_report(self, sis_term_id=None):
         """
         Download canvas sis user provisioning report
 
         :param sis_term_id: sis term id to load users report for
-        :type sis_term_id: numeric
+        :type sis_term_id: str
         """
+        if sis_term_id is None:
+            sis_term_id = self.term.sis_term_id
         # get canvas term using sis-term-id
         canvas_term = self.terms.get_term_by_sis_id(sis_term_id)
         # get users provisioning report for canvas term
         user_report = self.reports.create_user_provisioning_report(
                     settings.ACADEMIC_CANVAS_ACCOUNT_ID,
-                    term_id=canvas_term.term_id)
+                    term_id=canvas_term.term_id,
+                    params={"created_by_sis": True})
+        logging.info("Downloading user provisioning report: term={}"
+                     .format(sis_term_id))
         sis_data = self.reports.get_report_data(user_report)
         self.reports.delete_report(user_report)
         return sis_data
 
 
-class LoadRadDAO(BaseDao):
+class LoadRadDAO(BaseDAO):
 
-    def __init__(self, sis_term_id=None, week=None):
-        self.term, self.week = self.get_latest_term_and_week(sis_term_id, week)
+    def __init__(self, sis_term_id=None, week_num=None):
+        self.term, self.week = self.get_create_term_and_week(
+                                    sis_term_id=sis_term_id, week_num=week_num)
         super().__init__()
 
     def _zero_range(self, x):
@@ -546,7 +591,6 @@ class LoadRadDAO(BaseDao):
         and return pandas dataframe with contents
         """
         users_df = self.get_users_df()
-
         url_key = ("application_metadata/student_categories/"
                    "{}-netid-name-stunum-categories.csv"
                    .format(self.term.sis_term_id))

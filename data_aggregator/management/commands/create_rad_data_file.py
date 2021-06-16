@@ -21,9 +21,9 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         sis_term_id = options["sis_term_id"]
-        week = options["week"]
+        week_num = options["week"]
 
-        lrd = LoadRadDAO(sis_term_id=sis_term_id, week=week)
+        lrd = LoadRadDAO(sis_term_id=sis_term_id, week_num=week_num)
         rcd = lrd.get_rad_df()
         file_name = "rad_data/{}-week-{}-rad-data.csv".format(lrd.curr_term,
                                                               lrd.curr_week)

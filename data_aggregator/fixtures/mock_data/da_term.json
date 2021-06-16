@@ -3,7 +3,6 @@
 "model": "data_aggregator.term",
 "pk": 1,
 "fields": {
-  "canvas_term_id": 3842,
   "sis_term_id": "2013-winter",
   "year": 2013,
   "quarter": "winter",
@@ -23,7 +22,6 @@
  "model": "data_aggregator.term",
  "pk": 1,
  "fields": {
-  "canvas_term_id": 3842,
   "sis_term_id": "2013-spring",
   "year": 2013,
   "quarter": "spring",

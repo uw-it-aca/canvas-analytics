@@ -33,7 +33,8 @@ def datestring_to_datetime(date_str):
             type(date_str)))
 
 
-def get_week_of_term(first_day_quarter, cmp_dt=None):
+def get_week_of_term(term, cmp_dt=None):
+    first_day_quarter = term.first_day_quarter
     if cmp_dt is None:
         cmp_dt = timezone.now()
     if isinstance(first_day_quarter, date):
