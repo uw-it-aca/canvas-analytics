@@ -244,7 +244,7 @@ class Job(models.Model):
     @property
     def status(self):
         # The order of these checks matters. We always want to display
-        # completed and failed jobs, while pending, claimed, and running
+        # completed, failed, aand running jobs, while pending and claimed
         # jobs may expire.
         if (self.pid and self.start and self.end and not self.message):
             return JobStatusTypes.completed
