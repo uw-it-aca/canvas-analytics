@@ -63,6 +63,10 @@ cronjob:
       schedule: "0 8 * * *" # At 12:00am midnight PST
       command: ["/scripts/management_command.sh"]
       args: ["create_or_update_users"]
+    - name: add-terms
+      schedule: "30 7 * * 6" # At 11:30pm PST on Friday
+      command: ["/scripts/management_command.sh"]
+      args: ["create_terms"]
     - name: add-assign-jobs
       schedule: "30 8 * * 6" # At 12:30am PST on Saturday
       command: ["/scripts/management_command.sh"]
@@ -87,10 +91,6 @@ cronjob:
       schedule: "30 8 * * 0" # At 12:30am PST on Sunday
       command: ["/scripts/management_command.sh"]
       args: ["create_rad_data_file"]
-    - name: add-terms
-      schedule: "0 8 * * 1" # At 12:00am PST on Monday
-      command: ["/scripts/management_command.sh"]
-      args: ["create_terms"]
 daemon:
   enabled: true
   daemons:
