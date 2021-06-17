@@ -15,4 +15,4 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         sis_term_id = options["sis_term_id"]
-        return TaskDAO().create_or_update_courses(sis_term_id=sis_term_id)
+        TaskDAO().create_or_update_courses(sis_term_id=sis_term_id)
