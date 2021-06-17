@@ -1,4 +1,3 @@
-from data_aggregator.models import Assignment
 from data_aggregator.management.commands._base import RunJobCommand
 from data_aggregator.dao import JobDAO, AnalyticTypes
 

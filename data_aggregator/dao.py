@@ -5,7 +5,7 @@ from django.conf import settings
 from django.db import transaction, connection
 from data_aggregator.models import Assignment, Course, Participation, \
     User, RadDbView, Term, Week, AnalyticTypes
-from data_aggregator.utilities import get_view_name, chunk_list
+from data_aggregator.utilities import get_view_name
 from restclients_core.exceptions import DataFailureException
 from restclients_core.util.retry import retry
 from uw_canvas import Canvas
@@ -153,7 +153,6 @@ class BaseDAO():
         else:
             year, quarter = sis_term_id.split("-")
             sws_term = get_term_by_year_and_quarter(int(year), quarter)
-
         sws_terms = []
         while sws_term:
             sws_terms.append(sws_term)
@@ -548,7 +547,7 @@ class JobDAO(BaseDAO):
         self.delete_data_for_job(job)
 
         cd = CanvasDAO()
-        
+
         analytics = []
         for analytic in cd.download_raw_analytics_for_course(
                                             canvas_course_id, analytic_type):
@@ -591,6 +590,7 @@ class TaskDAO(BaseDAO):
         # get provising data and load courses
         sis_data = \
             cd.download_course_provisioning_report(sis_term_id=sis_term_id)
+
         course_count = 0
         for row in DictReader(sis_data):
             if not len(row):
@@ -616,6 +616,7 @@ class TaskDAO(BaseDAO):
                 course.save()
                 course_count += 1
         logging.info(f'Created and/or updated {course_count} courses.')
+        return course_count
 
     @transaction.atomic
     def _create_users(self, user_dicts, batch_size=250):
@@ -646,7 +647,7 @@ class TaskDAO(BaseDAO):
                 ["login_id", "sis_user_id", "first_name",
                  "last_name", "full_name", "sortable_name",
                  "email", "status"],
-                 batch_size=batch_size)
+                batch_size=batch_size)
 
     def create_or_update_users(self, sis_term_id=None):
         """
@@ -710,6 +711,7 @@ class TaskDAO(BaseDAO):
         users_to_update = list(update.values())
         self._update_users(users_to_update, batch_size=cd.page_size)
         logging.info(f"Updated {len(users_to_update)} user(s).")
+        return user_count
 
     def create_rad_db_view(self, sis_term_id, week):
         """
@@ -725,11 +727,11 @@ class TaskDAO(BaseDAO):
 
         view_name = get_view_name(sis_term_id, week, "rad")
         assignments_view_name = get_view_name(sis_term_id,
-                                            week,
-                                            "assignments")
+                                              week,
+                                              "assignments")
         participations_view_name = get_view_name(sis_term_id,
-                                                week,
-                                                "participations")
+                                                 week,
+                                                 "participations")
 
         cursor = connection.cursor()
 

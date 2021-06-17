@@ -38,7 +38,6 @@ class TermManager(models.Manager):
             sws_term = get_current_term()
         return self.get_or_create_from_sws_term(sws_term)
 
-
     def get_or_create_from_sws_term(self, sws_term):
         """
         Creates and/or queries for Term for sws_term object. If Term for

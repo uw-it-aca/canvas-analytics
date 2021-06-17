@@ -222,5 +222,5 @@ class CreateDBViewCommand(BaseCommand):
         term, _ = Term.objects.get_or_create_term_from_sis_term_id(
             sis_term_id=sis_term_id)
         week, _ = Week.objects.get_or_create_week(sis_term_id=sis_term_id,
-                                                    week_num=week_num)
+                                                  week_num=week_num)
         self.create(term.sis_term_id, week.week)

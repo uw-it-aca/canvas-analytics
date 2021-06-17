@@ -31,6 +31,7 @@ def datestring_to_datetime(date_str):
     else:
         raise ValueError(f"Got {date_str} expected str.")
 
+
 def get_relative_week(relative_date, cmp_dt=None):
     """
     Returns week number relative to supplied relative_date. If cmp_dt is

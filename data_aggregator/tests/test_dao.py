@@ -3,9 +3,9 @@ import unittest
 import pandas as pd
 import numpy as np
 from django.test import TestCase
-from data_aggregator.dao import AnalyticTypes, CanvasDAO, LoadRadDAO, BaseDAO
+from data_aggregator.dao import AnalyticTypes, CanvasDAO, LoadRadDAO, \
+    BaseDAO, TaskDAO
 from mock import patch, MagicMock
-from data_aggregator.dao import TaskDAO
 
 
 class TestBaseDAO(TestCase):
@@ -247,6 +247,47 @@ class TestCanvasDAO(TestCase):
         self.assertEqual(
             mock_reports_inst.delete_report.called,
             True)
+
+
+class TestTaskDAO(TestCase):
+
+    def get_test_task_dao(self):
+        td = TaskDAO()
+        return td
+
+    def test_create_or_update_courses(self):
+        td = self.get_test_task_dao()
+        mock_course_provisioning_file = \
+            os.path.join(
+                os.path.dirname(__file__),
+                'test_data/course_provisioning_report.csv')
+        mock_course_data = \
+            open(mock_course_provisioning_file).read().split("\n")
+        self.assertEqual(len(mock_course_data), 3)
+        with patch.object(CanvasDAO,
+                          'download_course_provisioning_report',
+                          return_value=mock_course_data):
+            self.assertEqual(
+                td.create_or_update_courses(sis_term_id="2021-spring"),
+                1
+            )
+
+    def test_create_or_update_users(self):
+        td = self.get_test_task_dao()
+        mock_user_provisioning_file = \
+            os.path.join(
+                os.path.dirname(__file__),
+                'test_data/user_provisioning_report.csv')
+        mock_user_data = \
+            open(mock_user_provisioning_file).read().split("\n")
+        self.assertEqual(len(mock_user_data), 21)
+        with patch.object(CanvasDAO,
+                          'download_user_provisioning_report',
+                          return_value=mock_user_data):
+            self.assertEqual(
+                td.create_or_update_users(sis_term_id="2021-spring"),
+                20
+            )
 
 
 class TestLoadRadDAO(TestCase):
