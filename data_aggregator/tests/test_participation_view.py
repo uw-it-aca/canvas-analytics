@@ -2,8 +2,7 @@ import unittest
 from django.test import TestCase
 from data_aggregator.utilities import get_view_name
 from data_aggregator.tests.db_utils import get_row_count
-from data_aggregator.management.commands.create_participation_db_view \
-    import create as create_participation
+from data_aggregator.dao import TaskDAO
 
 
 class TestParticipationView(TestCase):
@@ -20,11 +19,12 @@ class TestParticipationView(TestCase):
     @classmethod
     def setUpTestData(cls):
         # Set up data for the whole TestCase
+        td = TaskDAO()
         sis_term_id = "2013-spring"
         week = 1
-        create_participation(sis_term_id, week)
+        td.create_participation_db_view(sis_term_id, week)
         week = 2
-        create_participation(sis_term_id, week)
+        td.create_participation_db_view(sis_term_id, week)
         super().setUpTestData()
 
     def test_get_view_name(self):

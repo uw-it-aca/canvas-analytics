@@ -4,26 +4,60 @@ from datetime import datetime, date
 from django.db import models
 from django.utils import timezone
 from data_aggregator import utilities
-from uw_sws.term import get_current_term
+from uw_sws.term import get_current_term, get_term_by_year_and_quarter
 from uw_sws import SWS_TIMEZONE
 
 
 class TermManager(models.Manager):
-    def get_create_current_term(self, canvas_term_id, sws_term=None):
+
+    def get_or_create_term_from_sis_term_id(self, sis_term_id=None):
+        """
+        Creates and/or queries for Term matching sis_term_id. If sis_term_id
+        is not defined, creates and/or queries for Term object for current
+        sws term.
+
+        :param sis_term_id: sis term id to return Term object for
+        :type sis_term_id: str
+        """
+        if sis_term_id is None:
+            # try to lookup the current term based on the date
+            curr_date = timezone.now()
+            term = (Term.objects
+                    .filter(first_day_quarter__lte=curr_date)
+                    .filter(grade_submission_deadline__gte=curr_date)).first()
+            if term:
+                # return current term
+                return term, False
+
+        if sis_term_id:
+            # lookup sws term object for supplied sis term id
+            year, quarter = sis_term_id.split("-")
+            sws_term = get_term_by_year_and_quarter(int(year), quarter)
+        else:
+            # lookup sws term object for current term
+            sws_term = get_current_term()
+        return self.get_or_create_from_sws_term(sws_term)
+
+    def get_or_create_from_sws_term(self, sws_term):
+        """
+        Creates and/or queries for Term for sws_term object. If Term for
+        sws_term is not defined in the database, a Term object is created.
+
+        :param sws_term: sws_term object to create and or load
+        :type sws_term: uw_sws.term
+        """
 
         def sws_to_utc(dt):
             if isinstance(dt, date):
                 # convert date to datetime
                 dt = datetime.combine(dt, datetime.min.time())
-            SWS_TIMEZONE.localize(dt)
-            return dt.astimezone(timezone.utc)
+                SWS_TIMEZONE.localize(dt)
+                return dt.astimezone(timezone.utc)
 
         # get/create model for the term
-        term, created = Term.objects.get_or_create(
-            canvas_term_id=canvas_term_id)
+        term, created = \
+            Term.objects.get_or_create(sis_term_id=sws_term.canvas_sis_id())
         if created:
-            if not sws_term:
-                sws_term = get_current_term()
             # add current term info for course
             term.sis_term_id = sws_term.canvas_sis_id()
             term.year = sws_term.year
@@ -47,8 +81,8 @@ class TermManager(models.Manager):
 
 
 class Term(models.Model):
+
     objects = TermManager()
-    canvas_term_id = models.IntegerField()
     sis_term_id = models.TextField(null=True)
     year = models.IntegerField(null=True)
     quarter = models.TextField(null=True)
@@ -68,7 +102,31 @@ class Term(models.Model):
         return utilities.get_term_number(self.quarter)
 
 
+class WeekManager(models.Manager):
+
+    def get_or_create_week(self, sis_term_id=None, week_num=None):
+        """
+        Creates and/or queries for Week matching sis_term_id and week_num.
+        If sis_term_id and/or week_num is not defined, creates and/or queries
+        for Week object for current sws term and/or week_num.
+
+        :param sis_term_id: sis term id to return Term object for
+        :type sis_term_id: str
+        :param week_num: week number to return Week object for
+        :type week_num: int
+        """
+        term, _ = Term.objects.get_or_create_term_from_sis_term_id(
+                                                    sis_term_id=sis_term_id)
+        if week_num is None:
+            # use current relative week number if not defined
+            week_num = utilities.get_relative_week(term.first_day_quarter)
+        week, created = Week.objects.get_or_create(term=term, week=week_num)
+        return week, created
+
+
 class Week(models.Model):
+
+    objects = WeekManager()
     term = models.ForeignKey(Term,
                              on_delete=models.CASCADE)
     week = models.IntegerField()
@@ -78,6 +136,7 @@ class Week(models.Model):
 
 
 class Course(models.Model):
+
     canvas_course_id = models.BigIntegerField()
     sis_course_id = models.TextField(null=True)
     short_name = models.TextField(null=True)
@@ -90,6 +149,7 @@ class Course(models.Model):
 
 
 class User(models.Model):
+
     canvas_user_id = models.BigIntegerField(unique=True)
     login_id = models.TextField(null=True)
     sis_user_id = models.TextField(null=True)
@@ -124,7 +184,8 @@ class JobManager(models.Manager):
                     .filter(message='')  # not failed
                     .filter(target_date_end__gte=timezone.now())
                     .filter(target_date_start__lte=timezone.now()))
-            logging.warning(f"Reclaiming {jobs.count()} jobs.")
+            if jobs.count() > 0:
+                logging.warning(f"Reclaiming {jobs.count()} jobs.")
 
         if batchsize is not None:
             jobs = jobs[:batchsize]
@@ -135,15 +196,23 @@ class JobManager(models.Manager):
         return jobs
 
 
+class AnalyticTypes():
+
+    assignment = "assignment"
+    participation = "participation"
+
+
 class JobType(models.Model):
+
     JOB_CHOICES = (
-        ('assignment', 'AssignmentJob'),
-        ('participation', 'ParticipationJob'),
+        (AnalyticTypes.assignment, 'AssignmentJob'),
+        (AnalyticTypes.participation, 'ParticipationJob'),
     )
     type = models.CharField(max_length=64, choices=JOB_CHOICES)
 
 
 class JobStatusTypes():
+
     pending = "pending"
     claimed = "claimed"
     running = "running"
@@ -159,6 +228,7 @@ class JobStatusTypes():
 
 
 class Job(models.Model):
+
     objects = JobManager()
     type = models.ForeignKey(JobType,
                              on_delete=models.CASCADE)
@@ -174,12 +244,14 @@ class Job(models.Model):
     @property
     def status(self):
         # The order of these checks matters. We always want to display
-        # completed and failed jobs, while pending, claimed, and running
+        # completed, failed, aand running jobs, while pending and claimed
         # jobs may expire.
         if (self.pid and self.start and self.end and not self.message):
             return JobStatusTypes.completed
         elif (self.message):
             return JobStatusTypes.failed
+        elif (self.pid and self.start and not self.end and not self.message):
+            return JobStatusTypes.running
         elif self.target_date_end < timezone.now():
             return JobStatusTypes.expired
         elif (not self.pid and not self.start and not self.end and
@@ -188,8 +260,6 @@ class Job(models.Model):
         elif (self.pid and not self.start and not self.end and
                 not self.message):
             return JobStatusTypes.claimed
-        elif (self.pid and self.start and not self.end and not self.message):
-            return JobStatusTypes.running
 
     def claim_job(self, *args, **kwargs):
         self.pid = os.getpid()
@@ -219,6 +289,7 @@ class Job(models.Model):
 
 
 class Assignment(models.Model):
+
     course = models.ForeignKey(Course,
                                on_delete=models.CASCADE)
     job = models.ForeignKey(Job,
@@ -255,6 +326,7 @@ class Assignment(models.Model):
 
 
 class Participation(models.Model):
+
     course = models.ForeignKey(Course,
                                on_delete=models.CASCADE)
     job = models.ForeignKey(Job,
@@ -278,3 +350,32 @@ class Participation(models.Model):
             models.UniqueConstraint(fields=['user', 'course', 'week'],
                                     name='unique_participation')
         ]
+
+
+class RadDbView(models.Model):
+
+    class Meta:
+        abstract = True
+
+    @classmethod
+    def setDb_table(Class, tableName):
+        class Meta:
+            managed = False
+            db_table = tableName
+
+        attrs = {
+            '__module__': Class.__module__,
+            'Meta': Meta
+        }
+        return type(tableName, (Class,), attrs)
+
+    canvas_user_id = models.BigIntegerField(unique=True, primary_key=True)
+    full_name = models.TextField(null=True)
+    term = models.TextField(null=True)
+    week = models.IntegerField()
+    assignment_score = \
+        models.DecimalField(null=True, max_digits=13, decimal_places=3)
+    participation_score = \
+        models.DecimalField(null=True, max_digits=13, decimal_places=3)
+    grade = \
+        models.DecimalField(null=True, max_digits=13, decimal_places=3)

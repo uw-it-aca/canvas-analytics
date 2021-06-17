@@ -387,17 +387,17 @@ export default {
       if (fieldKey == "selected")
         return "25px";
       else if(fieldKey == "job_type")
-        return "125%";
+        return "15%";
       else if(fieldKey == "context")
-        return "150%";
+        return "25%";
       else if(fieldKey == "status")
-        return "150%";
+        return "15%";
       else if (fieldKey == "start")
-        return "150%";
+        return "15%";
       else if (fieldKey == "end")
-        return "150%";
+        return "15%";
       else
-        return "100%";
+        return "15%";
     },
     _setLocalPendingStatus: function(job) {
       job.pid = "";
