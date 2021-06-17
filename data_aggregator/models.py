@@ -250,6 +250,8 @@ class Job(models.Model):
             return JobStatusTypes.completed
         elif (self.message):
             return JobStatusTypes.failed
+        elif (self.pid and self.start and not self.end and not self.message):
+            return JobStatusTypes.running
         elif self.target_date_end < timezone.now():
             return JobStatusTypes.expired
         elif (not self.pid and not self.start and not self.end and
@@ -258,8 +260,6 @@ class Job(models.Model):
         elif (self.pid and not self.start and not self.end and
                 not self.message):
             return JobStatusTypes.claimed
-        elif (self.pid and self.start and not self.end and not self.message):
-            return JobStatusTypes.running
 
     def claim_job(self, *args, **kwargs):
         self.pid = os.getpid()
