@@ -224,8 +224,12 @@ class CanvasDAO(BaseDAO):
         :param student_id: canvas user id to download analytic for
         :type student_id: int
         """
-        return self.analytics.get_student_assignments_for_course(
+        analytics = self.analytics.get_student_assignments_for_course(
                                             student_id, canvas_course_id)
+        for analytic in analytics:
+            analytic["canvas_user_id"] = student_id
+            analytic["canvas_course_id"] = canvas_course_id
+        return analytics
 
     @retry(DataFailureException, tries=3, delay=2, backoff=2,
            status_codes=[0, 403, 408, 500])
@@ -238,8 +242,12 @@ class CanvasDAO(BaseDAO):
         :param canvas_course_id: canvas course id to download analytics for
         :type canvas_course_id: int
         """
-        return self.analytics.get_student_summaries_by_course(
+        analytics = self.analytics.get_student_summaries_by_course(
                                 canvas_course_id, per_page=self.page_size)
+        for analytic in analytics:
+            analytic["canvas_user_id"] = analytic.pop("id")
+            analytic["canvas_course_id"] = canvas_course_id
+        return analytics
 
     def download_raw_analytics_for_course(
             self, canvas_course_id, analytic_type):
@@ -257,11 +265,8 @@ class CanvasDAO(BaseDAO):
             user_ids = self.download_user_ids_for_course(canvas_course_id)
             for user_id in user_ids:
                 try:
-                    res = self.download_assignment_analytics(
-                                                canvas_course_id, user_id)
-                    for analytic in res:
-                        analytic["canvas_user_id"] = user_id
-                        analytic["canvas_course_id"] = canvas_course_id
+                    for analytic in self.download_assignment_analytics(
+                                                    canvas_course_id, user_id):
                         yield analytic
                 except DataFailureException as e:
                     if e.status == 404:
@@ -273,10 +278,8 @@ class CanvasDAO(BaseDAO):
             # we request all student summaries for the entire course in one
             # request
             try:
-                res = self.download_participation_analytics(canvas_course_id)
-                for analytic in res:
-                    analytic["canvas_user_id"] = analytic.pop("id")
-                    analytic["canvas_course_id"] = canvas_course_id
+                for analytic in self.download_participation_analytics(
+                                                            canvas_course_id):
                     yield analytic
             except DataFailureException as e:
                 if e.status == 404:

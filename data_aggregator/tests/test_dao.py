@@ -104,6 +104,50 @@ class TestCanvasDAO(TestCase):
         # check that the mocked methods were called
         self.assertEqual(mock_course_inst.get_course.called, True)
 
+    @patch('uw_canvas.analytics.Analytics')
+    def test_download_assignment_analytics(self, MockAnalytics):
+        cd = self.get_test_canvas_dao()
+        mock_analytics_inst = MockAnalytics.return_value
+        mock_analytics_inst.get_student_assignments_for_course.return_value = \
+            [{"assignment_1": 0}, {"assignment_2": 1}, {"assignment_3": 2}]
+        cd.analytics = mock_analytics_inst
+        self.assertEqual(cd.download_assignment_analytics(98765, 12345),
+                         [{'assignment_1': 0,
+                           'canvas_course_id': 98765,
+                           'canvas_user_id': 12345},
+                          {'assignment_2': 1,
+                           'canvas_course_id': 98765,
+                           'canvas_user_id': 12345},
+                          {'assignment_3': 2,
+                           'canvas_course_id': 98765,
+                           'canvas_user_id': 12345}])
+        self.assertEqual(
+            mock_analytics_inst.get_student_assignments_for_course.called,
+            True)
+
+    @patch('uw_canvas.analytics.Analytics')
+    def test_download_participation_analytics(self, MockAnalytics):
+        cd = self.get_test_canvas_dao()
+        mock_analytics_inst = MockAnalytics.return_value
+        mock_analytics_inst.get_student_summaries_by_course.return_value = \
+            [{"participation_1": 0, "id": 12457},
+             {"participation_2": 1, "id": 43256},
+             {"participation_3": 2, "id": 66453}]
+        cd.analytics = mock_analytics_inst
+        self.assertEqual(cd.download_participation_analytics(13579),
+                         [{'participation_1': 0,
+                           'canvas_course_id': 13579,
+                           'canvas_user_id': 12457},
+                          {'participation_2': 1,
+                           'canvas_course_id': 13579,
+                           'canvas_user_id': 43256},
+                          {'participation_3': 2,
+                           'canvas_course_id': 13579,
+                           'canvas_user_id': 66453}])
+        self.assertEqual(
+            mock_analytics_inst.get_student_summaries_by_course.called,
+            True)
+
     def test_download_raw_analytics_for_course(self):
         patcher = patch('uw_canvas.analytics.Analytics')
 
