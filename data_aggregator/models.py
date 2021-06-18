@@ -163,27 +163,33 @@ class User(models.Model):
 
 class JobManager(models.Manager):
 
-    def claim_batch_of_jobs(self, jobtype, batchsize=None):
-        # check for pending jobs to claim
+    def get_active_jobs(self, jobtype):
         jobs = (self.get_queryset()
-                .select_related()
                 .filter(type__type=jobtype)
-                .filter(pid=None)
                 .filter(target_date_end__gte=timezone.now())
                 .filter(target_date_start__lte=timezone.now()))
+        return jobs
 
+    def get_pending_jobs(self, jobtype):
+        jobs = (self.get_active_jobs(jobtype)
+                .filter(pid=None))
+        return jobs
+
+    def get_pending_or_running_jobs(self, jobtype):
+        jobs = (self.get_active_jobs(jobtype)
+                .filter(end=None)  # not completed
+                .filter(message=''))  # not failed
+        return jobs
+
+    def claim_batch_of_jobs(self, jobtype, batchsize=None):
+        # check for pending jobs to claim
+        jobs = self.get_pending_jobs(jobtype)
         if jobs.count() == 0:
             # Check to see if we can instead reclaim jobs in case another
             # process crashed and left the db in a stale state. This only
             # works since there is only one daemon process per job type so
             # worker cronjobs aren't competing with each other.
-            jobs = (self.get_queryset()
-                    .select_related()
-                    .filter(type__type=jobtype)
-                    .filter(end=None)  # not completed
-                    .filter(message='')  # not failed
-                    .filter(target_date_end__gte=timezone.now())
-                    .filter(target_date_start__lte=timezone.now()))
+            jobs = self.get_pending_or_running_jobs(jobtype)
             if jobs.count() > 0:
                 logging.warning(f"Reclaiming {jobs.count()} jobs.")
 

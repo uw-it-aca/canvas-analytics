@@ -2,7 +2,9 @@ import unittest
 from django.test import TestCase
 from django.utils import timezone
 from datetime import timedelta
-from data_aggregator.models import Job, JobType
+from data_aggregator.models import Job, JobType, AnalyticTypes
+from data_aggregator.utilities import datestring_to_datetime
+from mock import MagicMock, patch
 
 
 class TestJob(TestCase):
@@ -125,6 +127,111 @@ class TestJob(TestCase):
             job.pid = None
             job.start = None
             job.start_job(save=False)
+
+
+class TestJobManager(TestCase):
+
+    fixtures = ['data_aggregator/fixtures/mock_data/da_job.json',
+                'data_aggregator/fixtures/mock_data/da_jobtype.json']
+
+    def get_mock_job_manager(self):
+        Job.objects.get_pending_jobs = \
+            MagicMock(side_effect=Job.objects.get_pending_jobs)
+        Job.objects.get_pending_or_running_jobs = \
+            MagicMock(side_effect=Job.objects.get_pending_or_running_jobs)
+        return Job.objects
+
+    def test_get_active_jobs(self):
+        with patch.object(
+                timezone, "now",
+                return_value=datestring_to_datetime("2021-04-2T12:00:00.0Z")):
+            mock_jm = self.get_mock_job_manager()
+            active_jobs = mock_jm.get_active_jobs(AnalyticTypes.assignment)
+            self.assertEqual(len(active_jobs), 2)
+            active_jobs = mock_jm.get_active_jobs(AnalyticTypes.participation)
+            self.assertEqual(len(active_jobs), 1)
+        with patch.object(
+                timezone, "now",
+                return_value=datestring_to_datetime("2021-04-1T12:00:00.0Z")):
+            active_jobs = mock_jm.get_active_jobs(AnalyticTypes.assignment)
+            self.assertEqual(len(active_jobs), 1)
+            active_jobs = mock_jm.get_active_jobs(AnalyticTypes.participation)
+            self.assertEqual(len(active_jobs), 3)
+        with patch.object(
+                timezone, "now",
+                return_value=datestring_to_datetime("2021-03-2T12:00:00.0Z")):
+            active_jobs = mock_jm.get_active_jobs(AnalyticTypes.assignment)
+            self.assertEqual(len(active_jobs), 0)
+            active_jobs = mock_jm.get_active_jobs(AnalyticTypes.participation)
+            self.assertEqual(len(active_jobs), 0)
+
+    def test_claim_batch_of_assignment_jobs(self):
+        with patch.object(
+                timezone, "now",
+                return_value=datestring_to_datetime("2021-04-2T12:00:00.0Z")):
+
+            mock_jm = self.get_mock_job_manager()
+            # assert that all assignment jobs are initially unclaimed
+            for job in mock_jm.get_active_jobs(AnalyticTypes.assignment):
+                self.assertNotEqual(job.status, "claimed")
+            # assert that participation jobs are correctly claimed
+            claimed_assignment_jobs = \
+                mock_jm.claim_batch_of_jobs(AnalyticTypes.assignment)
+            self.assertEqual(len(claimed_assignment_jobs), 2)
+            for job in claimed_assignment_jobs:
+                self.assertEqual(job.status, "claimed")
+                self.assertEqual(job.type.type, AnalyticTypes.assignment)
+            self.assertEqual(mock_jm.get_pending_jobs.called, True)
+            self.assertEqual(mock_jm.get_pending_or_running_jobs.called,
+                             False)
+
+            # assert that all assignment jobs are initially unclaimed
+            for job in mock_jm.get_active_jobs(AnalyticTypes.assignment):
+                self.assertEqual(job.status, "claimed")
+            # assert reclaiming assignmetn jobs
+            claimed_assignment_jobs = \
+                mock_jm.claim_batch_of_jobs(AnalyticTypes.assignment)
+            self.assertEqual(len(claimed_assignment_jobs), 2)
+            for job in claimed_assignment_jobs:
+                self.assertEqual(job.status, "claimed")
+                self.assertEqual(job.type.type, AnalyticTypes.assignment)
+            self.assertEqual(mock_jm.get_pending_jobs.called, True)
+            self.assertEqual(mock_jm.get_pending_or_running_jobs.called,
+                             True)
+
+    def test_claim_batch_of_participation_jobs(self):
+        with patch.object(
+                timezone, "now",
+                return_value=datestring_to_datetime("2021-04-2T12:00:00.0Z")):
+
+            mock_jm = self.get_mock_job_manager()
+            # assert that all participation jobs are initially unclaimed
+            for job in mock_jm.get_active_jobs(AnalyticTypes.participation):
+                self.assertNotEqual(job.status, "claimed")
+            # assert that participation jobs are correctly claimed
+            claimed_participation_jobs = \
+                mock_jm.claim_batch_of_jobs(AnalyticTypes.participation)
+            self.assertEqual(len(claimed_participation_jobs), 1)
+            for job in claimed_participation_jobs:
+                self.assertEqual(job.status, "claimed")
+                self.assertEqual(job.type.type, AnalyticTypes.participation)
+            self.assertEqual(mock_jm.get_pending_jobs.called, True)
+            self.assertEqual(mock_jm.get_pending_or_running_jobs.called,
+                             False)
+
+            # assert that all participation jobs are initially claimed
+            for job in mock_jm.get_active_jobs(AnalyticTypes.participation):
+                self.assertEqual(job.status, "claimed")
+            # assert reclaiming participation jobs
+            claimed_participation_jobs = \
+                mock_jm.claim_batch_of_jobs(AnalyticTypes.participation)
+            self.assertEqual(len(claimed_participation_jobs), 1)
+            for job in claimed_participation_jobs:
+                self.assertEqual(job.status, "claimed")
+                self.assertEqual(job.type.type, AnalyticTypes.participation)
+            self.assertEqual(mock_jm.get_pending_jobs.called, True)
+            self.assertEqual(mock_jm.get_pending_or_running_jobs.called,
+                             True)
 
 
 if __name__ == "__main__":
