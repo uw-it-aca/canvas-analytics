@@ -104,57 +104,17 @@ class TestCanvasDAO(TestCase):
         # check that the mocked methods were called
         self.assertEqual(mock_course_inst.get_course.called, True)
 
-    @patch('uw_canvas.analytics.Analytics')
-    def test_download_raw_analytics_for_student(self, MockAnalytics):
+    def test_download_raw_analytics_for_course(self):
+        patcher = patch('uw_canvas.analytics.Analytics')
+
+        # test assignments
         cd = self.get_test_canvas_dao()
+        cd.download_user_ids_for_course = MagicMock()
+        cd.download_user_ids_for_course.return_value = [12345]
+        MockAnalytics = patcher.start()
         mock_analytics_inst = MockAnalytics.return_value
         mock_analytics_inst.get_student_assignments_for_course.return_value = \
-            [{'assignment_1': 0,
-              'canvas_course_id': 34567,
-              'canvas_user_id': 12345},
-             {'assignment_2': 1,
-              'canvas_course_id': 34567,
-              'canvas_user_id': 12345}]
-        mock_analytics_inst = MockAnalytics.return_value
-        mock_analytics_inst.get_student_summaries_by_course.return_value = \
-            [{'participation_1': 0,
-              'canvas_course_id': 76543,
-              'canvas_user_id': 12345}]
-        cd.analytics = mock_analytics_inst
-        with self.assertRaises(ValueError):
-            cd.download_raw_analytics_for_student(00000, 00000, "foobar")
-        self.assertEqual(
-            cd.download_raw_analytics_for_student(
-                00000, 00000, AnalyticTypes.assignment),
-            [{'assignment_1': 0,
-              'canvas_course_id': 34567,
-              'canvas_user_id': 12345},
-             {'assignment_2': 1,
-              'canvas_course_id': 34567,
-              'canvas_user_id': 12345}])
-        self.assertEqual(
-            cd.download_raw_analytics_for_student(
-                00000, 00000, AnalyticTypes.participation),
-            [{'participation_1': 0,
-              'canvas_course_id': 76543,
-              'canvas_user_id': 12345}])
-
-        # check that the mocked methods were called
-        self.assertEqual(
-            mock_analytics_inst.get_student_summaries_by_course.called, True)
-
-    @patch('uw_canvas.analytics.Analytics')
-    def test_download_raw_analytics_for_course(self, MockAnalytics):
-        cd = self.get_test_canvas_dao()
-        cd.download_student_ids_for_course = MagicMock()
-        cd.download_student_ids_for_course.return_value = \
-            [12345]
-        mock_analytics_inst = MockAnalytics.return_value
-        mock_analytics_inst.get_student_assignments_for_course.return_value = \
-            [{"assignment_1": 0}, {"assignment_2": 1}]
-        mock_analytics_inst = MockAnalytics.return_value
-        mock_analytics_inst.get_student_summaries_by_course.return_value = \
-            [{"participation_1": 0}]
+            [{"assignment_1": 0}, {"assignment_2": 1}, {"assignment_3": 2}]
         cd.analytics = mock_analytics_inst
         test_result = [a for a in
                        cd.download_raw_analytics_for_course(
@@ -165,20 +125,46 @@ class TestCanvasDAO(TestCase):
                            'canvas_user_id': 12345},
                           {'assignment_2': 1,
                            'canvas_course_id': 34567,
+                           'canvas_user_id': 12345},
+                          {'assignment_3': 2,
+                           'canvas_course_id': 34567,
                            'canvas_user_id': 12345}])
+        # check that the mocked methods were called
+        self.assertEqual(
+            mock_analytics_inst.get_student_assignments_for_course.called,
+            True)
+        self.assertEqual(
+            mock_analytics_inst.get_student_summaries_by_course.called,
+            False)
+        patcher.stop()
+
+        # test participations
+        cd = self.get_test_canvas_dao()
+        MockAnalytics = patcher.start()
+        mock_analytics_inst = MockAnalytics.return_value
+        mock_analytics_inst.get_student_summaries_by_course.return_value = \
+            [{"participation_1": 0, "id": 12345},
+             {"participation_2": 1, "id": 12346},
+            ]
+        cd.analytics = mock_analytics_inst
         test_result = [a for a in
                        cd.download_raw_analytics_for_course(
                            76543, AnalyticTypes.participation)]
         self.assertEqual(test_result,
                          [{'participation_1': 0,
                            'canvas_course_id': 76543,
-                           'canvas_user_id': 12345}])
-
+                           'canvas_user_id': 12345},
+                          {'participation_2': 1,
+                           'canvas_course_id': 76543,
+                           'canvas_user_id': 12346}])
         # check that the mocked methods were called
         self.assertEqual(
-            cd.download_student_ids_for_course.called, True)
+            mock_analytics_inst.get_student_assignments_for_course.called,
+            False)
         self.assertEqual(
-            mock_analytics_inst.get_student_summaries_by_course.called, True)
+            mock_analytics_inst.get_student_summaries_by_course.called,
+            True)
+        patcher.stop()
 
     @patch('uw_canvas.reports.Reports')
     @patch('uw_canvas.terms.Terms')
