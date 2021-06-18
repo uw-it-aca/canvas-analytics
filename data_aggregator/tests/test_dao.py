@@ -144,8 +144,7 @@ class TestCanvasDAO(TestCase):
         mock_analytics_inst = MockAnalytics.return_value
         mock_analytics_inst.get_student_summaries_by_course.return_value = \
             [{"participation_1": 0, "id": 12345},
-             {"participation_2": 1, "id": 12346},
-            ]
+             {"participation_2": 1, "id": 12346}]
         cd.analytics = mock_analytics_inst
         test_result = [a for a in
                        cd.download_raw_analytics_for_course(

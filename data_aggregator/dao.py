@@ -197,7 +197,6 @@ class CanvasDAO(BaseDAO):
                     })
         return list({stu.user_id for stu in stus})
 
-
     @retry(DataFailureException, tries=3, delay=2, backoff=2,
            status_codes=[0, 403, 408, 500])
     def download_course(self, canvas_course_id):
@@ -288,7 +287,6 @@ class CanvasDAO(BaseDAO):
                     raise
         else:
             raise ValueError(f"Unknown analytic type: {analytic_type}")
-
 
     def download_course_provisioning_report(self, sis_term_id=None):
         """
@@ -578,7 +576,7 @@ class JobDAO(BaseDAO):
                                             canvas_course_id, analytic_type):
             analytics.append(analytic)
             logging.debug(f"Saved {len(analytics)} {analytic_type} "
-                            f"entries")
+                          f"entries")
         if analytics and analytic_type == AnalyticTypes.assignment:
             # save remaining assignments to db
             self.save_assignments_to_db(analytics, job)
