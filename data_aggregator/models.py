@@ -201,6 +201,16 @@ class JobManager(models.Manager):
 
         return jobs
 
+    def restart_jobs(self, job_ids, *args, **kwargs):
+        jobs = self.filter(id__in=job_ids)
+        for job in jobs:
+            job.restart_job(*args, **kwargs)
+
+    def clear_jobs(self, job_ids, *args, **kwargs):
+        jobs = self.filter(id__in=job_ids)
+        for job in jobs:
+            job.clear_job(*args, **kwargs)
+
 
 class AnalyticTypes():
 
@@ -314,6 +324,14 @@ class Job(models.Model):
         self.end = None
         self.target_date_start = Job.get_default_target_start()
         self.target_date_end = Job.get_default_target_end()
+        self.message = ""
+        if kwargs.get("save", True) is True:
+            super(Job, self).save(*args, **kwargs)
+
+    def clear_job(self, *args, **kwargs):
+        self.pid = None
+        self.start = None
+        self.end = None
         self.message = ""
         if kwargs.get("save", True) is True:
             super(Job, self).save(*args, **kwargs)

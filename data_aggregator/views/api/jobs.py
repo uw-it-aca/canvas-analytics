@@ -132,9 +132,7 @@ class JobRestartView(RESTDispatch):
     def post(self, request, *args, **kwargs):
         data = json.loads(request.body.decode('utf-8'))
         job_ids = data["job_ids"]
-        for job_id in job_ids:
-            job = Job.objects.get(id=job_id)
-            job.restart_job()
+        Job.objects.restart_jobs(job_ids)
         return self.json_response(content={"reset": True})
 
 
@@ -151,11 +149,5 @@ class JobClearView(RESTDispatch):
     def post(self, request, *args, **kwargs):
         data = json.loads(request.body.decode('utf-8'))
         job_ids = data["job_ids"]
-        for job_id in job_ids:
-            job = Job.objects.get(id=job_id)
-            job.pid = None
-            job.start = None
-            job.end = None
-            job.message = ""
-            job.save()
+        Job.objects.clear_jobs(job_ids)
         return self.json_response(content={"clear": True})
