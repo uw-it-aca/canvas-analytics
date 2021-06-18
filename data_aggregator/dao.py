@@ -136,7 +136,7 @@ class BaseDAO():
                 num_retries=self.get_gcs_num_retries(),
                 timeout=self.get_gcs_timeout())
 
-    @retry(DataFailureException, tries=5, delay=10, backoff=2,
+    @retry(DataFailureException, tries=5, delay=2, backoff=2,
            status_codes=[0, 403, 408, 500])
     def get_sws_terms(self, sis_term_id=None):
         """
@@ -169,7 +169,7 @@ class CanvasDAO(BaseDAO):
     Data Access Object for accessing canvas data
     """
 
-    def __init__(self, page_size=250):
+    def __init__(self, page_size=100):
         self.canvas = Canvas()
         self.courses = Courses()
         self.enrollments = Enrollments()
@@ -179,7 +179,7 @@ class CanvasDAO(BaseDAO):
         self.page_size = page_size
         super().__init__()
 
-    @retry(DataFailureException, tries=5, delay=10, backoff=2,
+    @retry(DataFailureException, tries=5, delay=2, backoff=2,
            status_codes=[0, 403, 408, 500])
     def download_student_ids_for_course(self, canvas_course_id):
         """
@@ -195,10 +195,9 @@ class CanvasDAO(BaseDAO):
                         "type": ['StudentEnrollment'],
                         "state": ['active', 'deleted', 'inactive']
                     })
-        res = list({stu.user_id for stu in stus})
-        return(res)
+        return list({stu.user_id for stu in stus})
 
-    @retry(DataFailureException, tries=5, delay=10, backoff=2,
+    @retry(DataFailureException, tries=3, delay=2, backoff=2,
            status_codes=[0, 403, 408, 500])
     def download_course(self, canvas_course_id):
         """
@@ -212,30 +211,43 @@ class CanvasDAO(BaseDAO):
         except Exception as e:
             logging.error(e)
 
-    @retry(DataFailureException, tries=5, delay=10, backoff=2,
+    @retry(DataFailureException, tries=3, delay=2, backoff=2,
            status_codes=[0, 403, 408, 500])
-    def download_raw_analytics_for_student(
-            self, canvas_course_id, student_id, analytic_type):
+    def download_assignment_analytics(
+            self, canvas_course_id, student_id):
         """
-        Download raw analytics for a given canvas course id and student
+        Download raw assignment analytics for a given canvas course id and
+        student
 
         :param canvas_course_id: canvas course id to download analytics for
         :type canvas_course_id: int
         :param student_id: canvas user id to download analytic for
         :type student_id: int
-        :param analytic_type: type of analytics to download
-        :type analytic_type: str (AnalyticTypes.assignment or
-            AnalyticTypes.participation)
         """
-        if analytic_type == AnalyticTypes.assignment:
-            return self.analytics.get_student_assignments_for_course(
-                student_id, canvas_course_id, per_page=self.page_size)
-        elif analytic_type == AnalyticTypes.participation:
-            return self.analytics.get_student_summaries_by_course(
-                canvas_course_id, student_id=student_id,
-                per_page=self.page_size)
-        else:
-            raise ValueError(f"Unknown analytic type: {analytic_type}")
+        analytics = self.analytics.get_student_assignments_for_course(
+                                            student_id, canvas_course_id)
+        for analytic in analytics:
+            analytic["canvas_user_id"] = student_id
+            analytic["canvas_course_id"] = canvas_course_id
+        return analytics
+
+    @retry(DataFailureException, tries=3, delay=2, backoff=2,
+           status_codes=[0, 403, 408, 500])
+    def download_participation_analytics(
+            self, canvas_course_id):
+        """
+        Download raw participation analytics for a given canvas course id and
+        student
+
+        :param canvas_course_id: canvas course id to download analytics for
+        :type canvas_course_id: int
+        """
+        analytics = self.analytics.get_student_summaries_by_course(
+                                canvas_course_id, per_page=self.page_size)
+        for analytic in analytics:
+            analytic["canvas_user_id"] = analytic.pop("id")
+            analytic["canvas_course_id"] = canvas_course_id
+        return analytics
 
     def download_raw_analytics_for_course(
             self, canvas_course_id, analytic_type):
@@ -248,21 +260,36 @@ class CanvasDAO(BaseDAO):
         :type analytic_type: str (AnalyticTypes.assignment or
             AnalyticTypes.participation)
         """
-        students_ids = self.download_student_ids_for_course(canvas_course_id)
-        for student_id in students_ids:
+        if analytic_type == AnalyticTypes.assignment:
+            # we need to request assignment analytics per student
+            user_ids = self.download_student_ids_for_course(canvas_course_id)
+            for user_id in user_ids:
+                try:
+                    for analytic in self.download_assignment_analytics(
+                                                    canvas_course_id, user_id):
+                        yield analytic
+                except DataFailureException as e:
+                    if e.status == 404:
+                        logging.warning(e)
+                        continue
+                    else:
+                        raise
+        elif analytic_type == AnalyticTypes.participation:
+            # we request all student summaries for the entire course in one
+            # request
             try:
-                res = self.download_raw_analytics_for_student(
-                    canvas_course_id, student_id, analytic_type=analytic_type)
-                for analytic in res:
-                    analytic["canvas_user_id"] = student_id
-                    analytic["canvas_course_id"] = canvas_course_id
+                for analytic in self.download_participation_analytics(
+                                                            canvas_course_id):
                     yield analytic
             except DataFailureException as e:
                 if e.status == 404:
+                    logging.warning(f"No participation analytics for course "
+                                    f"{canvas_course_id}")
                     logging.warning(e)
-                    continue
                 else:
                     raise
+        else:
+            raise ValueError(f"Unknown analytic type: {analytic_type}")
 
     def download_course_provisioning_report(self, sis_term_id=None):
         """
@@ -350,7 +377,7 @@ class JobDAO(BaseDAO):
         def save(assign_objs, canvas_course_id, create=True):
             if create:
                 if assign_objs:
-                    Assignment.objects.bulk_create(assign_objs)
+                    Assignment.objects.bulk_create(assign_objs, batch_size=100)
                     logging.debug(f"Created {len(assign_objs)} "
                                   f"assignment records for Canvas course "
                                   f"{canvas_course_id}.")
@@ -446,7 +473,7 @@ class JobDAO(BaseDAO):
 
         def save(partic_objs, canvas_course_id, create=True):
             if create:
-                Participation.objects.bulk_create(partic_objs)
+                Participation.objects.bulk_create(partic_objs, batch_size=100)
                 logging.debug(f"Created {len(partic_objs)} "
                               f"participation records for Canvas course "
                               f"{canvas_course_id}.")
@@ -538,7 +565,6 @@ class JobDAO(BaseDAO):
         sis_term_id = job.context["sis_term_id"]
         week_num = job.context["week"]
         analytic_type = job.type.type
-
         # in case gcs caching is enabled, set gcs base path env variable so
         # that cached responses are ordered by term and week
         self.set_gcs_base_path(sis_term_id, week_num)
@@ -552,16 +578,8 @@ class JobDAO(BaseDAO):
         for analytic in cd.download_raw_analytics_for_course(
                                             canvas_course_id, analytic_type):
             analytics.append(analytic)
-            if analytics and len(analytics) == cd.page_size:
-                if analytic_type == AnalyticTypes.assignment:
-                    # save assignments to db
-                    self.save_assignments_to_db(analytics, job)
-                elif analytic_type == AnalyticTypes.participation:
-                    # save participations to db
-                    self.save_participations_to_db(analytics, job)
-                logging.debug(f"Saved {len(analytics)} {analytic_type} "
-                              f"entries")
-                analytics = []
+            logging.debug(f"Saved {len(analytics)} {analytic_type} "
+                          f"entries")
         if analytics and analytic_type == AnalyticTypes.assignment:
             # save remaining assignments to db
             self.save_assignments_to_db(analytics, job)
@@ -619,7 +637,7 @@ class TaskDAO(BaseDAO):
         return course_count
 
     @transaction.atomic
-    def _create_users(self, user_dicts, batch_size=250):
+    def _create_users(self, user_dicts, batch_size=100):
         """
         Save list of new users to the database
 
@@ -706,10 +724,10 @@ class TaskDAO(BaseDAO):
                 user_count += 1
 
         users_to_create = list(create.values())
-        self._create_users(users_to_create, batch_size=cd.page_size)
+        self._create_users(users_to_create, batch_size=100)
         logging.info(f"Created {len(users_to_create)} user(s).")
         users_to_update = list(update.values())
-        self._update_users(users_to_update, batch_size=cd.page_size)
+        self._update_users(users_to_update, batch_size=100)
         logging.info(f"Updated {len(users_to_update)} user(s).")
         return user_count
 
