@@ -262,7 +262,7 @@ class CanvasDAO(BaseDAO):
         """
         if analytic_type == AnalyticTypes.assignment:
             # we need to request assignment analytics per student
-            user_ids = self.download_user_ids_for_course(canvas_course_id)
+            user_ids = self.download_student_ids_for_course(canvas_course_id)
             for user_id in user_ids:
                 try:
                     for analytic in self.download_assignment_analytics(

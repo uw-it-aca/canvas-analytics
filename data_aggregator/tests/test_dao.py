@@ -153,8 +153,8 @@ class TestCanvasDAO(TestCase):
 
         # test assignments
         cd = self.get_test_canvas_dao()
-        cd.download_user_ids_for_course = MagicMock()
-        cd.download_user_ids_for_course.return_value = [12345]
+        cd.download_student_ids_for_course = MagicMock()
+        cd.download_student_ids_for_course.return_value = [12345]
         MockAnalytics = patcher.start()
         mock_analytics_inst = MockAnalytics.return_value
         mock_analytics_inst.get_student_assignments_for_course.return_value = \
