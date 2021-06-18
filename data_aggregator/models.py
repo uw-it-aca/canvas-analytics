@@ -241,10 +241,12 @@ class Job(models.Model):
     message = models.TextField()
     created = models.DateTimeField(auto_now_add=True)
 
-    def get_default_target_start(self):
+    @staticmethod
+    def get_default_target_start():
         return timezone.now()
 
-    def get_default_target_end(self):
+    @staticmethod
+    def get_default_target_end():
         now = timezone.now()
         tomorrow = now + timedelta(days=1)
         return tomorrow
@@ -304,8 +306,8 @@ class Job(models.Model):
         self.pid = None
         self.start = None
         self.end = None
-        self.target_date_start = self.get_default_target_start()
-        self.target_date_end = self.get_default_target_end()
+        self.target_date_start = Job.get_default_target_start()
+        self.target_date_end = Job.get_default_target_end()
         self.message = ""
         if kwargs.get("save", True) is True:
             super(Job, self).save(*args, **kwargs)

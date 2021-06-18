@@ -4,7 +4,7 @@ from csv import DictReader
 from django.conf import settings
 from django.db import transaction, connection
 from data_aggregator.models import Assignment, Course, Participation, \
-    User, RadDbView, Term, Week, AnalyticTypes
+    User, RadDbView, Term, Week, AnalyticTypes, Job, JobType
 from data_aggregator.utilities import get_view_name
 from restclients_core.exceptions import DataFailureException
 from restclients_core.util.retry import retry
@@ -587,6 +587,55 @@ class JobDAO(BaseDAO):
             # save remaining participations to db
             self.save_participations_to_db(analytics, job)
 
+    def create_jobs(self, analytic_type, sis_term_id=None, week_num=None,
+                    canvas_course_id=None, sis_course_id=None,
+                    target_date_start=None, target_date_end=None):
+        job = Job()
+        job_type, _ = JobType.objects.get_or_create(type=analytic_type)
+        if sis_term_id and week_num and canvas_course_id and sis_course_id:
+            # manually supplied single job context
+            logging.debug(
+                f"Adding {analytic_type} job for course "
+                f"{canvas_course_id}")
+            job.type = job_type
+            job.target_date_start = target_date_start
+            job.target_date_end = target_date_end
+            job.context = {'canvas_course_id': canvas_course_id,
+                           'sis_course_id': sis_course_id,
+                           'sis_term_id': sis_term_id,
+                           'week': week_num}
+            job.save()
+        else:
+            # create jobs for all courses in a term
+            term, _ = Term.objects.get_or_create_term_from_sis_term_id(
+                sis_term_id=sis_term_id)
+            week, _ = Week.objects.get_or_create_week(sis_term_id=sis_term_id,
+                                                      week_num=week_num)
+            courses = Course.objects.filter(status='active').filter(term=term)
+            course_count = courses.count()
+            if course_count == 0:
+                logging.warning(
+                    f'No active courses in term {term.sis_term_id} to '
+                    f'create {analytic_type} jobs for.')
+            else:
+                jobs_count = 0
+                for course in courses:
+                    # create jobs
+                    logging.debug(
+                        f"Adding {analytic_type} jobs for course "
+                        f"{course.sis_course_id} ({course.canvas_course_id})")
+                    job = Job()
+                    job.type = job_type
+                    job.target_date_start = target_date_start
+                    job.target_date_end = target_date_end
+                    job.context = {'canvas_course_id': course.canvas_course_id,
+                                   'sis_course_id': course.sis_course_id,
+                                   'sis_term_id': term.sis_term_id,
+                                   'week': week.week}
+                    job.save()
+                    jobs_count += 1
+                logging.info(f'Created {jobs_count} {analytic_type} jobs.')
+
 
 class TaskDAO(BaseDAO):
     """
@@ -731,7 +780,7 @@ class TaskDAO(BaseDAO):
         logging.info(f"Updated {len(users_to_update)} user(s).")
         return user_count
 
-    def create_rad_db_view(self, sis_term_id, week):
+    def create_rad_db_view(self, sis_term_id, week_num):
         """
         Create rad db view for given week and sis-term-id
 
@@ -743,12 +792,17 @@ class TaskDAO(BaseDAO):
         :type week_num: int
         """
 
-        view_name = get_view_name(sis_term_id, week, "rad")
+        term, _ = Term.objects.get_or_create_term_from_sis_term_id(
+            sis_term_id=sis_term_id)
+        week, _ = Week.objects.get_or_create_week(sis_term_id=sis_term_id,
+                                                  week_num=week_num)
+
+        view_name = get_view_name(term.sis_term_id, week.week, "rad")
         assignments_view_name = get_view_name(sis_term_id,
-                                              week,
+                                              week.week,
                                               "assignments")
         participations_view_name = get_view_name(sis_term_id,
-                                                 week,
+                                                 week.week,
                                                  "participations")
 
         cursor = connection.cursor()
@@ -832,8 +886,8 @@ class TaskDAO(BaseDAO):
             SELECT DISTINCT
                 u.canvas_user_id,
                 u.full_name,
-                '{sis_term_id}' as term,
-                {week} as week,
+                '{term.sis_term_id}' as term,
+                {week.week} as week,
                 assignment_score,
                 participation_score,
                 grade
@@ -844,7 +898,7 @@ class TaskDAO(BaseDAO):
         )
         return True
 
-    def create_participation_db_view(self, sis_term_id, week):
+    def create_participation_db_view(self, sis_term_id, week_num):
         """
         Create participation db view for given week and sis-term-id
 
@@ -855,7 +909,14 @@ class TaskDAO(BaseDAO):
             the current week of term)
         :type week_num: int
         """
-        view_name = get_view_name(sis_term_id, week, "participations")
+
+        term, _ = Term.objects.get_or_create_term_from_sis_term_id(
+            sis_term_id=sis_term_id)
+        week, _ = Week.objects.get_or_create_week(sis_term_id=sis_term_id,
+                                                  week_num=week_num)
+
+        view_name = get_view_name(term.sis_term_id, week.week,
+                                  "participations")
 
         cursor = connection.cursor()
 
@@ -889,13 +950,13 @@ class TaskDAO(BaseDAO):
                 p.week_id = data_aggregator_week.id
             JOIN data_aggregator_term on
                 data_aggregator_week.term_id = data_aggregator_term.id
-            WHERE data_aggregator_week.week = {week}
-            AND data_aggregator_term.sis_term_id = '{sis_term_id}'
+            WHERE data_aggregator_week.week = {week.week}
+            AND data_aggregator_term.sis_term_id = '{term.sis_term_id}'
             '''
         )
         return True
 
-    def create_assignment_db_view(self, sis_term_id, week):
+    def create_assignment_db_view(self, sis_term_id, week_num):
         """
         Create assignment db view for given week and sis-term-id
 
@@ -906,7 +967,13 @@ class TaskDAO(BaseDAO):
             the current week of term)
         :type week_num: int
         """
-        view_name = get_view_name(sis_term_id, week, "assignments")
+
+        term, _ = Term.objects.get_or_create_term_from_sis_term_id(
+            sis_term_id=sis_term_id)
+        week, _ = Week.objects.get_or_create_week(sis_term_id=sis_term_id,
+                                                  week_num=week_num)
+
+        view_name = get_view_name(term.sis_term_id, week.week, "assignments")
 
         cursor = connection.cursor()
 
@@ -945,8 +1012,8 @@ class TaskDAO(BaseDAO):
             JOIN data_aggregator_week ON a.week_id = data_aggregator_week.id
             JOIN data_aggregator_term ON
             data_aggregator_week.term_id = data_aggregator_term.id
-            WHERE data_aggregator_week.week = {week} AND
-            data_aggregator_term.sis_term_id = '{sis_term_id}'
+            WHERE data_aggregator_week.week = {week.week} AND
+            data_aggregator_term.sis_term_id = '{term.sis_term_id}'
             '''
         )
         return True
