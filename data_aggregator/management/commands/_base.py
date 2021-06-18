@@ -4,8 +4,6 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from data_aggregator.models import Job, JobType, Course, Term, Week
 from data_aggregator.utilities import datestring_to_datetime
-from data_aggregator.utilities import get_default_target_start, \
-    get_default_target_end
 from multiprocessing.dummy import Pool as ThreadPool
 
 
@@ -139,13 +137,15 @@ class CreateJobCommand(BaseCommand):
         target_start_time = options["target_start_time"]
         target_end_time = options["target_end_time"]
 
+
+        job = Job()
         if target_start_time is None:
-            target_date_start = get_default_target_start()
+            target_date_start = job.get_default_target_start()
         else:
             target_date_start = datestring_to_datetime(target_start_time)
 
         if target_end_time is None:
-            target_date_end = get_default_target_end()
+            target_date_end = job.get_default_target_end()
         else:
             target_date_end = datestring_to_datetime(target_end_time)
 
@@ -156,7 +156,6 @@ class CreateJobCommand(BaseCommand):
             logging.debug(
                 f"Adding {analytic_type} job for course "
                 f"{canvas_course_id}")
-            job = Job()
             job.type = job_type
             job.target_date_start = target_date_start
             job.target_date_end = target_date_end

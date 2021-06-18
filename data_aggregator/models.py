@@ -1,6 +1,6 @@
 import os
 import logging
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from django.db import models
 from django.utils import timezone
 from data_aggregator import utilities
@@ -241,6 +241,14 @@ class Job(models.Model):
     message = models.TextField()
     created = models.DateTimeField(auto_now_add=True)
 
+    def get_default_target_start(self):
+        return timezone.now()
+
+    def get_default_target_end(self):
+        now = timezone.now()
+        tomorrow = now + timedelta(days=1)
+        return tomorrow
+
     @property
     def status(self):
         # The order of these checks matters. We always want to display
@@ -264,28 +272,43 @@ class Job(models.Model):
     def claim_job(self, *args, **kwargs):
         self.pid = os.getpid()
         self.start = None
-        super(Job, self).save(*args, **kwargs)
+        self.end = None
+        self.message = ''
+        if kwargs.get("save", True) == True:
+            super(Job, self).save(*args, **kwargs)
 
     def start_job(self, *args, **kwargs):
         if self.pid:
             self.start = timezone.now()
             self.end = None
             self.message = ''
-            super(Job, self).save(*args, **kwargs)
+            if kwargs.get("save", True) == True:
+                super(Job, self).save(*args, **kwargs)
         else:
-            logging.warning("Trying to start a job that was never claimed "
-                            "by a process. Unable to start a job that doesn't "
-                            "have a set pid.")
+            raise RuntimeError("Trying to start a job that was never claimed "
+                               "by a process. Unable to start a job that doesn't "
+                               "have a set pid.")
 
     def end_job(self, *args, **kwargs):
         if self.pid and self.start:
             self.end = timezone.now()
             self.message = ''
-            super(Job, self).save(*args, **kwargs)
+            if kwargs.get("save", True) == True:
+                super(Job, self).save(*args, **kwargs)
         else:
-            logging.warning("Trying to end a job that was never started "
-                            "and/or claimed. Perhaps this was a running "
-                            "job that was restarted.")
+            raise RuntimeError("Trying to end a job that was never started "
+                               "and/or claimed. Perhaps this was a running "
+                               "job that was restarted.")
+
+    def restart_job(self, *args, **kwargs):
+        self.pid = None
+        self.start = None
+        self.end = None
+        self.target_date_start = self.get_default_target_start()
+        self.target_date_end = self.get_default_target_end()
+        self.message = ""
+        if kwargs.get("save", True) == True:
+            super(Job, self).save(*args, **kwargs)
 
 
 class Assignment(models.Model):
