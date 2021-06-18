@@ -137,7 +137,6 @@ class CreateJobCommand(BaseCommand):
         target_start_time = options["target_start_time"]
         target_end_time = options["target_end_time"]
 
-
         job = Job()
         if target_start_time is None:
             target_date_start = job.get_default_target_start()

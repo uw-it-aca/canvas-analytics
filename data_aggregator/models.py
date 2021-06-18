@@ -274,7 +274,7 @@ class Job(models.Model):
         self.start = None
         self.end = None
         self.message = ''
-        if kwargs.get("save", True) == True:
+        if kwargs.get("save", True) is True:
             super(Job, self).save(*args, **kwargs)
 
     def start_job(self, *args, **kwargs):
@@ -282,18 +282,18 @@ class Job(models.Model):
             self.start = timezone.now()
             self.end = None
             self.message = ''
-            if kwargs.get("save", True) == True:
+            if kwargs.get("save", True) is True:
                 super(Job, self).save(*args, **kwargs)
         else:
             raise RuntimeError("Trying to start a job that was never claimed "
-                               "by a process. Unable to start a job that doesn't "
-                               "have a set pid.")
+                               "by a process. Unable to start a job that "
+                               "doesn't have a set pid.")
 
     def end_job(self, *args, **kwargs):
         if self.pid and self.start:
             self.end = timezone.now()
             self.message = ''
-            if kwargs.get("save", True) == True:
+            if kwargs.get("save", True) is True:
                 super(Job, self).save(*args, **kwargs)
         else:
             raise RuntimeError("Trying to end a job that was never started "
@@ -307,7 +307,7 @@ class Job(models.Model):
         self.target_date_start = self.get_default_target_start()
         self.target_date_end = self.get_default_target_end()
         self.message = ""
-        if kwargs.get("save", True) == True:
+        if kwargs.get("save", True) is True:
             super(Job, self).save(*args, **kwargs)
 
 
