@@ -6,7 +6,7 @@
           <label class="mr-2">Action</label>
           <b-form-select v-model="selectedAction" id="action-select" name="action-select">
             <b-form-select-option :value="'restart'">Restart selected</b-form-select-option>
-            <b-form-select-option :value="'clear'">Clear selected</b-form-select-option>
+            <b-form-select-option :value="'clear'">Clear status of selected</b-form-select-option>
           </b-form-select>
           <b-button @click="handleAction()" variant="primary" size="md">
             Run
