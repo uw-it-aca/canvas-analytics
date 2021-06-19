@@ -1,8 +1,6 @@
 import json
 from data_aggregator.models import Job, JobStatusTypes
 from data_aggregator.views.api import RESTDispatch
-from data_aggregator.utilities import get_default_target_start, \
-    get_default_target_end
 from django.db.models import F, Q, BooleanField, Value
 
 
@@ -132,21 +130,9 @@ class JobRestartView(RESTDispatch):
     '''
 
     def post(self, request, *args, **kwargs):
-
-        target_date_start = get_default_target_start()
-        target_date_end = get_default_target_end()
-
         data = json.loads(request.body.decode('utf-8'))
         job_ids = data["job_ids"]
-        for job_id in job_ids:
-            job = Job.objects.get(id=job_id)
-            job.pid = None
-            job.start = None
-            job.end = None
-            job.target_date_start = target_date_start
-            job.target_date_end = target_date_end
-            job.message = ""
-            job.save()
+        Job.objects.restart_jobs(job_ids)
         return self.json_response(content={"reset": True})
 
 
@@ -163,11 +149,5 @@ class JobClearView(RESTDispatch):
     def post(self, request, *args, **kwargs):
         data = json.loads(request.body.decode('utf-8'))
         job_ids = data["job_ids"]
-        for job_id in job_ids:
-            job = Job.objects.get(id=job_id)
-            job.pid = None
-            job.start = None
-            job.end = None
-            job.message = ""
-            job.save()
+        Job.objects.clear_jobs(job_ids)
         return self.json_response(content={"clear": True})

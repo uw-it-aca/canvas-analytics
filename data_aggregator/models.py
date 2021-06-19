@@ -1,6 +1,6 @@
 import os
 import logging
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from django.db import models
 from django.utils import timezone
 from data_aggregator import utilities
@@ -163,27 +163,33 @@ class User(models.Model):
 
 class JobManager(models.Manager):
 
-    def claim_batch_of_jobs(self, jobtype, batchsize=None):
-        # check for pending jobs to claim
+    def get_active_jobs(self, jobtype):
         jobs = (self.get_queryset()
-                .select_related()
                 .filter(type__type=jobtype)
-                .filter(pid=None)
                 .filter(target_date_end__gte=timezone.now())
                 .filter(target_date_start__lte=timezone.now()))
+        return jobs
 
+    def get_pending_jobs(self, jobtype):
+        jobs = (self.get_active_jobs(jobtype)
+                .filter(pid=None))
+        return jobs
+
+    def get_pending_or_running_jobs(self, jobtype):
+        jobs = (self.get_active_jobs(jobtype)
+                .filter(end=None)  # not completed
+                .filter(message=''))  # not failed
+        return jobs
+
+    def claim_batch_of_jobs(self, jobtype, batchsize=None):
+        # check for pending jobs to claim
+        jobs = self.get_pending_jobs(jobtype)
         if jobs.count() == 0:
             # Check to see if we can instead reclaim jobs in case another
             # process crashed and left the db in a stale state. This only
             # works since there is only one daemon process per job type so
             # worker cronjobs aren't competing with each other.
-            jobs = (self.get_queryset()
-                    .select_related()
-                    .filter(type__type=jobtype)
-                    .filter(end=None)  # not completed
-                    .filter(message='')  # not failed
-                    .filter(target_date_end__gte=timezone.now())
-                    .filter(target_date_start__lte=timezone.now()))
+            jobs = self.get_pending_or_running_jobs(jobtype)
             if jobs.count() > 0:
                 logging.warning(f"Reclaiming {jobs.count()} jobs.")
 
@@ -194,6 +200,16 @@ class JobManager(models.Manager):
             job.claim_job()
 
         return jobs
+
+    def restart_jobs(self, job_ids, *args, **kwargs):
+        jobs = self.filter(id__in=job_ids)
+        for job in jobs:
+            job.restart_job(*args, **kwargs)
+
+    def clear_jobs(self, job_ids, *args, **kwargs):
+        jobs = self.filter(id__in=job_ids)
+        for job in jobs:
+            job.clear_job(*args, **kwargs)
 
 
 class AnalyticTypes():
@@ -241,6 +257,16 @@ class Job(models.Model):
     message = models.TextField()
     created = models.DateTimeField(auto_now_add=True)
 
+    @staticmethod
+    def get_default_target_start():
+        return timezone.now()
+
+    @staticmethod
+    def get_default_target_end():
+        now = timezone.now()
+        tomorrow = now + timedelta(days=1)
+        return tomorrow
+
     @property
     def status(self):
         # The order of these checks matters. We always want to display
@@ -264,28 +290,51 @@ class Job(models.Model):
     def claim_job(self, *args, **kwargs):
         self.pid = os.getpid()
         self.start = None
-        super(Job, self).save(*args, **kwargs)
+        self.end = None
+        self.message = ''
+        if kwargs.get("save", True) is True:
+            super(Job, self).save(*args, **kwargs)
 
     def start_job(self, *args, **kwargs):
         if self.pid:
             self.start = timezone.now()
             self.end = None
             self.message = ''
-            super(Job, self).save(*args, **kwargs)
+            if kwargs.get("save", True) is True:
+                super(Job, self).save(*args, **kwargs)
         else:
-            logging.warning("Trying to start a job that was never claimed "
-                            "by a process. Unable to start a job that doesn't "
-                            "have a set pid.")
+            raise RuntimeError("Trying to start a job that was never claimed "
+                               "by a process. Unable to start a job that "
+                               "doesn't have a set pid.")
 
     def end_job(self, *args, **kwargs):
         if self.pid and self.start:
             self.end = timezone.now()
             self.message = ''
-            super(Job, self).save(*args, **kwargs)
+            if kwargs.get("save", True) is True:
+                super(Job, self).save(*args, **kwargs)
         else:
-            logging.warning("Trying to end a job that was never started "
-                            "and/or claimed. Perhaps this was a running "
-                            "job that was restarted.")
+            raise RuntimeError("Trying to end a job that was never started "
+                               "and/or claimed. Perhaps this was a running "
+                               "job that was restarted.")
+
+    def restart_job(self, *args, **kwargs):
+        self.pid = None
+        self.start = None
+        self.end = None
+        self.target_date_start = Job.get_default_target_start()
+        self.target_date_end = Job.get_default_target_end()
+        self.message = ""
+        if kwargs.get("save", True) is True:
+            super(Job, self).save(*args, **kwargs)
+
+    def clear_job(self, *args, **kwargs):
+        self.pid = None
+        self.start = None
+        self.end = None
+        self.message = ""
+        if kwargs.get("save", True) is True:
+            super(Job, self).save(*args, **kwargs)
 
 
 class Assignment(models.Model):

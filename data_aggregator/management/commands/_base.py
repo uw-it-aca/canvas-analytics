@@ -2,10 +2,9 @@ import logging
 import traceback
 from django.conf import settings
 from django.core.management.base import BaseCommand
-from data_aggregator.models import Job, JobType, Course, Term, Week
+from data_aggregator.models import Job
 from data_aggregator.utilities import datestring_to_datetime
-from data_aggregator.utilities import get_default_target_start, \
-    get_default_target_end
+from data_aggregator.dao import JobDAO
 from multiprocessing.dummy import Pool as ThreadPool
 
 
@@ -140,60 +139,20 @@ class CreateJobCommand(BaseCommand):
         target_end_time = options["target_end_time"]
 
         if target_start_time is None:
-            target_date_start = get_default_target_start()
+            target_date_start = Job.get_default_target_start()
         else:
             target_date_start = datestring_to_datetime(target_start_time)
 
         if target_end_time is None:
-            target_date_end = get_default_target_end()
+            target_date_end = Job.get_default_target_end()
         else:
             target_date_end = datestring_to_datetime(target_end_time)
 
-        # get job type
-        job_type, _ = JobType.objects.get_or_create(type=analytic_type)
-
-        if sis_term_id and week_num and canvas_course_id and sis_course_id:
-            logging.debug(
-                f"Adding {analytic_type} job for course "
-                f"{canvas_course_id}")
-            job = Job()
-            job.type = job_type
-            job.target_date_start = target_date_start
-            job.target_date_end = target_date_end
-            job.context = {'canvas_course_id': canvas_course_id,
-                           'sis_course_id': sis_course_id,
-                           'sis_term_id': sis_term_id,
-                           'week': week_num}
-            job.save()
-        else:
-            term, _ = Term.objects.get_or_create_term_from_sis_term_id(
-                sis_term_id=sis_term_id)
-            week, _ = Week.objects.get_or_create_week(sis_term_id=sis_term_id,
-                                                      week_num=week_num)
-            courses = Course.objects.filter(status='active').filter(term=term)
-            course_count = courses.count()
-            if course_count == 0:
-                logging.warning(
-                    f'No active courses in term {term.sis_term_id} to '
-                    f'create {analytic_type} jobs for.')
-            else:
-                jobs_count = 0
-                for course in courses:
-                    # create jobs
-                    logging.debug(
-                        f"Adding {analytic_type} jobs for course "
-                        f"{course.sis_course_id} ({course.canvas_course_id})")
-                    job = Job()
-                    job.type = job_type
-                    job.target_date_start = target_date_start
-                    job.target_date_end = target_date_end
-                    job.context = {'canvas_course_id': course.canvas_course_id,
-                                   'sis_course_id': course.sis_course_id,
-                                   'sis_term_id': term.sis_term_id,
-                                   'week': week.week}
-                    job.save()
-                    jobs_count += 1
-                logging.info(f'Created {jobs_count} {analytic_type} jobs.')
+        JobDAO().create_jobs(
+            analytic_type, sis_term_id=sis_term_id, week_num=week_num,
+            canvas_course_id=canvas_course_id, sis_course_id=sis_course_id,
+            target_date_start=target_date_start,
+            target_date_end=target_date_end)
 
 
 class CreateDBViewCommand(BaseCommand):
@@ -210,7 +169,7 @@ class CreateDBViewCommand(BaseCommand):
                             default=None,
                             required=False)
 
-    def create(self, sis_term_id, week):
+    def create(self, sis_term_id=None, week=None):
         return NotImplementedError()
 
     def handle(self, *args, **options):
@@ -219,8 +178,4 @@ class CreateDBViewCommand(BaseCommand):
         """
         sis_term_id = options["sis_term_id"]
         week_num = options["week"]
-        term, _ = Term.objects.get_or_create_term_from_sis_term_id(
-            sis_term_id=sis_term_id)
-        week, _ = Week.objects.get_or_create_week(sis_term_id=sis_term_id,
-                                                  week_num=week_num)
-        self.create(term.sis_term_id, week.week)
+        self.create(sis_term_id, week_num)

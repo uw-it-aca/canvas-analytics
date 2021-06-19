@@ -1,5 +1,5 @@
 from django.utils import timezone
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 
 
 def datestring_to_datetime(date_str):
@@ -75,16 +75,6 @@ def get_view_name(sis_term_id, week, label):
     sis_term_id = sis_term_id.replace("-", "_")
     view_name = f"{sis_term_id}_week_{week}_{label}"
     return view_name
-
-
-def get_default_target_start():
-    return timezone.now()
-
-
-def get_default_target_end():
-    now = timezone.now()
-    tomorrow = now + timedelta(days=1)
-    return tomorrow
 
 
 def chunk_list(seq, size):
