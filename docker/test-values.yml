@@ -60,19 +60,19 @@ cronjob:
       command: ["/scripts/management_command.sh"]
       args: ["create_terms"]
     - name: add-updt-courses
-      schedule: "0 7 * * *" # At 12:00am midnight PDT
+      schedule: "45 6 * * *" # At 11:45pm PDT every night
       command: ["/scripts/management_command.sh"]
       args: ["create_or_update_courses"]
     - name: add-updt-users
-      schedule: "0 7 * * *" # At 12:00am midnight PDT
+      schedule: "45 6 * * *" # At 11:45pm PDT every night
       command: ["/scripts/management_command.sh"]
       args: ["create_or_update_users"]
     - name: add-assign-jobs
-      schedule: "15 7 * * 6" # At 12:15am PDT on Saturday
+      schedule: "0 7 * * 6" # At 12:00am PDT on Saturday
       command: ["/scripts/management_command.sh"]
       args: ["create_assignment_jobs"]
     - name: add-partic-jobs
-      schedule: "15 7 * * 6" # At 12:15am PDT on Saturday
+      schedule: "0 7 * * 6" # At 12:00am PDT on Saturday
       command: ["/scripts/management_command.sh"]
       args: ["create_participation_jobs"]
     - name: add-assign-view
