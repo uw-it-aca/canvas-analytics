@@ -55,40 +55,40 @@ gcsCredentials:
 cronjob:
   enabled: true
   jobs:
+    - name: add-terms
+      schedule: "30 6 * * 6" # At 11:30pm PDT on Friday
+      command: ["/scripts/management_command.sh"]
+      args: ["create_terms"]
     - name: add-updt-courses
-      schedule: "0 8 * * *" # At 12:00am midnight PST
+      schedule: "0 7 * * *" # At 12:00am midnight PDT
       command: ["/scripts/management_command.sh"]
       args: ["create_or_update_courses"]
     - name: add-updt-users
-      schedule: "0 8 * * *" # At 12:00am midnight PST
+      schedule: "0 7 * * *" # At 12:00am midnight PDT
       command: ["/scripts/management_command.sh"]
       args: ["create_or_update_users"]
-    - name: add-terms
-      schedule: "30 7 * * 6" # At 11:30pm PST on Friday
-      command: ["/scripts/management_command.sh"]
-      args: ["create_terms"]
     - name: add-assign-jobs
-      schedule: "30 8 * * 6" # At 12:30am PST on Saturday
+      schedule: "15 7 * * 6" # At 12:15am PDT on Saturday
       command: ["/scripts/management_command.sh"]
       args: ["create_assignment_jobs"]
     - name: add-partic-jobs
-      schedule: "30 8 * * 6" # At 12:30am PST on Saturday
+      schedule: "15 7 * * 6" # At 12:15am PDT on Saturday
       command: ["/scripts/management_command.sh"]
       args: ["create_participation_jobs"]
     - name: add-assign-view
-      schedule: "0 8 * * 0" # At 12:00am PST midnight on Sunday
+      schedule: "0 19 * * 0" # At 12:00pm PDT noon on Sunday
       command: ["/scripts/management_command.sh"]
       args: ["create_assignment_db_view"]
     - name: add-partic-view
-      schedule: "0 8 * * 0" # At 12:00am PST midnight on Sunday
+      schedule: "0 19 * * 0" # At 12:00pm PDT noon on Sunday
       command: ["/scripts/management_command.sh"]
       args: ["create_participation_db_view"]
     - name: add-rad-view
-      schedule: "15 8 * * 0" # At 12:15am PST on Sunday
+      schedule: "15 19 * * 0" # At 12:15pm PDT on Sunday
       command: ["/scripts/management_command.sh"]
       args: ["create_rad_db_view"]
     - name: crt-rad-data
-      schedule: "30 8 * * 0" # At 12:30am PST on Sunday
+      schedule: "30 19 * * 0" # At 12:30pm PDT on Sunday
       command: ["/scripts/management_command.sh"]
       args: ["create_rad_data_file"]
 daemon:
