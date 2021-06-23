@@ -21,12 +21,9 @@ class TestThreadPool(TestCase):
                 continue
         return processed_values
 
-    def run_job(self, value, mp_queue=None):
+    def run_job(self, value):
         value += 1
-        if mp_queue is not None:
-            mp_queue.put_nowait(value)
-            TestThreadPool.test_queue.put_nowait(value)
-        return value
+        TestThreadPool.test_queue.put_nowait(value)
 
     def test_map(self):
         # as context manager

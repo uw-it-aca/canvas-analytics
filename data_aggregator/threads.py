@@ -1,6 +1,4 @@
-import queue
 import threading
-from multiprocessing import Queue
 
 
 class ThreadPool():
@@ -8,7 +6,6 @@ class ThreadPool():
     def __init__(self, processes=20):
         self.processes = processes
         self.threads = [Thread() for _ in range(0, processes)]
-        self.mp_queue = Queue()
 
     def get_dead_threads(self):
         dead = []
@@ -24,18 +21,14 @@ class ThreadPool():
         attempted_count = 0
         values_iter = iter(values)
         # loop until all values have been attempted to be processed and
-        # all threads is finished running
+        # all threads are finished running
         while (attempted_count < len(values) or self.is_thread_running()):
-            try:
-                self.mp_queue.get_nowait()
-            except queue.Empty:
-                pass
             for thread in self.get_dead_threads():
                 try:
                     # run thread with the next value
                     value = next(values_iter)
                     attempted_count += 1
-                    thread.run(func, value, self.mp_queue)
+                    thread.run(func, value)
                 except StopIteration:
                     break
 

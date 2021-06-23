@@ -31,7 +31,7 @@ class RunJobCommand(BaseCommand):
         '''
         raise NotImplementedError()
 
-    def run_job(self, job, mp_queue=None):
+    def run_job(self, job):
         try:
             job.start_job()
             self.work(job)
@@ -48,8 +48,6 @@ class RunJobCommand(BaseCommand):
                 job.message = msg
                 logging.error(msg)
             job.save()
-        if mp_queue is not None:
-            mp_queue.put_nowait(job)
         return job
 
     def handle(self, *args, **options):
