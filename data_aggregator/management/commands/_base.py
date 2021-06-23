@@ -5,7 +5,7 @@ from django.core.management.base import BaseCommand
 from data_aggregator.models import Job
 from data_aggregator.utilities import datestring_to_datetime
 from data_aggregator.dao import JobDAO
-from multiprocessing.dummy import Pool as ThreadPool
+from data_aggregator.threads import ThreadPool
 
 
 class RunJobCommand(BaseCommand):
@@ -31,7 +31,7 @@ class RunJobCommand(BaseCommand):
         '''
         raise NotImplementedError()
 
-    def run_job(self, job):
+    def run_job(self, job, mp_queue=None):
         try:
             job.start_job()
             self.work(job)
@@ -49,6 +49,9 @@ class RunJobCommand(BaseCommand):
             job.save()
         else:
             job.end_job()
+        if mp_queue is not None:
+            mp_queue.put_nowait(job)
+        return job
 
     def handle(self, *args, **options):
         """
