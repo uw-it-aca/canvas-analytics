@@ -26,9 +26,9 @@ class ThreadPool():
                 pass
             for thread in self.yield_dead_threads():
                 try:
-                    # run next job
-                    job = next(values_iter)
-                    thread.run(func, job, self.mp_queue)
+                    # run thread with the next value
+                    value = next(values_iter)
+                    thread.run(func, value, self.mp_queue)
                 except StopIteration:
                     break
 
