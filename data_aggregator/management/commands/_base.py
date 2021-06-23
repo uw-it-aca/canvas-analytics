@@ -5,7 +5,7 @@ from django.core.management.base import BaseCommand
 from data_aggregator.models import Job
 from data_aggregator.utilities import datestring_to_datetime
 from data_aggregator.dao import JobDAO
-from multiprocessing.dummy import Pool as ThreadPool
+from data_aggregator.threads import ThreadPool
 
 
 class RunJobCommand(BaseCommand):
@@ -35,6 +35,7 @@ class RunJobCommand(BaseCommand):
         try:
             job.start_job()
             self.work(job)
+            job.end_job()
         except Exception as err:
             # save error message if one occurs
             tb = traceback.format_exc()
@@ -47,8 +48,7 @@ class RunJobCommand(BaseCommand):
                 job.message = msg
                 logging.error(msg)
             job.save()
-        else:
-            job.end_job()
+        return job
 
     def handle(self, *args, **options):
         """
