@@ -35,6 +35,7 @@ class RunJobCommand(BaseCommand):
         try:
             job.start_job()
             self.work(job)
+            job.end_job()
         except Exception as err:
             # save error message if one occurs
             tb = traceback.format_exc()
@@ -47,8 +48,6 @@ class RunJobCommand(BaseCommand):
                 job.message = msg
                 logging.error(msg)
             job.save()
-        else:
-            job.end_job()
         if mp_queue is not None:
             mp_queue.put_nowait(job)
         return job

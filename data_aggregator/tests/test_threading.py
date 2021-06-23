@@ -2,7 +2,8 @@ import queue
 import unittest
 from django.test import TestCase
 from multiprocessing import Queue
-from data_aggregator.threads import ThreadPool
+from data_aggregator.threads import ThreadPool, Thread
+from mock import MagicMock
 
 
 class TestThreadPool(TestCase):
@@ -47,6 +48,29 @@ class TestThreadPool(TestCase):
         # assert that values were processed
         self.assertEqual([2, 3, 3, 4, 5],
                          sorted(processed_values))
+
+        # test where there are less values than the thread pool size
+        pool = ThreadPool(processes=20)
+        self.assertEqual(len(pool.threads), 20)
+        pool.map(self.run_job, [9, 4, 3, 1, 1])
+        # read all processed values
+        processed_values = self._get_processed_values(5)
+        # assert that values were processed
+        self.assertEqual([2, 2, 4, 5, 10],
+                         sorted(processed_values))
+
+        # test where job raises an uncaught exception
+        bad_job = MagicMock()
+        pool = ThreadPool(processes=2)
+        self.assertEqual(pool.processes, 2)
+        self.assertEqual(len(pool.threads), 2)
+        pool.get_dead_threads = MagicMock()
+        t1 = Thread()
+        self.assertEqual(t1.is_alive(), False)
+        t2 = Thread()
+        self.assertEqual(t2.is_alive(), False)
+        pool.get_dead_threads.return_value = [t1, t2]
+        pool.map(bad_job, [9, 4, 3, 1, 1])
 
 
 if __name__ == "__main__":

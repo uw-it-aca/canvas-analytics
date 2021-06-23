@@ -10,24 +10,31 @@ class ThreadPool():
         self.threads = [Thread() for _ in range(0, processes)]
         self.mp_queue = Queue()
 
-    def yield_dead_threads(self):
+    def get_dead_threads(self):
+        dead = []
         for thread in self.threads:
             if not thread.is_alive():
-                yield thread
+                dead.append(thread)
+        return dead
+
+    def is_thread_running(self):
+        return len(self.get_dead_threads()) < self.processes
 
     def map(self, func, values):
-        completed_count = 0
+        attempted_count = 0
         values_iter = iter(values)
-        while completed_count < len(values):
+        # loop until all values have been attempted to be processed and
+        # all threads is finished running
+        while (attempted_count < len(values) or self.is_thread_running()):
             try:
                 self.mp_queue.get_nowait()
-                completed_count += 1
             except queue.Empty:
                 pass
-            for thread in self.yield_dead_threads():
+            for thread in self.get_dead_threads():
                 try:
                     # run thread with the next value
                     value = next(values_iter)
+                    attempted_count += 1
                     thread.run(func, value, self.mp_queue)
                 except StopIteration:
                     break
