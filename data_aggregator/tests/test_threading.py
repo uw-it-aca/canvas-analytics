@@ -7,13 +7,13 @@ from data_aggregator.threads import ThreadPool
 
 class TestThreadPool(TestCase):
 
-    global_queue = Queue()
+    test_queue = Queue()
 
     def run_job(self, value, mp_queue=None):
         value += 1
         if mp_queue is not None:
             mp_queue.put_nowait(value)
-            TestThreadPool.global_queue.put_nowait(value)
+            TestThreadPool.test_queue.put_nowait(value)
         return value
 
     def get_processed_values(self):
@@ -21,7 +21,7 @@ class TestThreadPool(TestCase):
         while True:
             try:
                 processed_values.append(
-                    TestThreadPool.global_queue.get_nowait()
+                    TestThreadPool.test_queue.get_nowait()
                 )
             except queue.Empty:
                 break
