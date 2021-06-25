@@ -1276,7 +1276,8 @@ class LoadRadDAO(BaseDAO):
             ['uw_netid', 'student_no', 'student_name_lowc', 'activity',
              'assignments', 'grades', 'pred', 'adviser_name',
              'staff_id', 'sign_in', 'stem', 'incoming_freshman', 'premajor',
-             'eop_student', 'international_student', 'isso']]
+             'eop_student', 'international_student', 'isso', 'campus_code',
+             'summer']]
         return joined_canvas_df
 
     def create_rad_data_file(self, sis_term_id=None, week_num=None):
