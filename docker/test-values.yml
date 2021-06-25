@@ -139,6 +139,14 @@ externalSecrets:
         - name: credentials.json
           property: credentials.json
 
+    - name: test-analytics.apps.canvas.uw.edu-idp-aws-credentials
+      externalKey: axdd/kv/data/canvas/analytics/shared/idp-aws-credentials
+      data:
+        - name: aws-access-id
+          property: aws-access-id
+        - name: aws-access-key
+          property: aws-access-key
+
     - name: test-analytics.apps.canvas.uw.edu-canvas-secrets
       externalKey: axdd/kv/data/canvas/shared/secrets
       data:
@@ -212,3 +220,11 @@ environmentVariablesSecrets:
     name: IDP_CERT
     secretName: test-analytics.apps.canvas.uw.edu-uw-idp-cert
     secretKey: uw-idp-cert
+  awsIDPAccessId:
+    name: AWS_ACCESS_ID
+    secretName: test-analytics.apps.canvas.uw.edu-idp-aws-credentials
+    secretKey: aws-access-id
+  awsIDPAccessKey:
+    name: AWS_ACCESS_KEY
+    secretName: test-analytics.apps.canvas.uw.edu-idp-aws-credentials
+    secretKey: aws-access-key
