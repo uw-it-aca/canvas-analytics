@@ -31,6 +31,9 @@ else:
     GCS_TIMEOUT = 5  # request timeout in seconds
     GCS_NUM_RETRIES = 3  # number of request retries
 
+    AWS_ACCESS_ID = os.getenv('AWS_ACCESS_ID', '')
+    AWS_ACCESS_KEY = os.getenv('AWS_ACCESS_KEY', '')
+
 WEBPACK_LOADER = {
     'DEFAULT': {
         'BUNDLE_DIR_NAME': 'data_aggregator/bundles/',
