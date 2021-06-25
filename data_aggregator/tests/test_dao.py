@@ -462,7 +462,7 @@ class TestLoadRadDAO(TestCase):
         self.assertEqual(
             mock_student_categories_df.columns.values.tolist(),
             ["system_key", "uw_netid", "student_no", "student_name_lowc",
-             "eop_student", "incoming_freshman", "international_student",
+             "eop", "incoming_freshman", "international",
              "stem", "premajor", "isso", "campus_code", "summer",
              "canvas_user_id"])
 
@@ -507,8 +507,8 @@ class TestLoadRadDAO(TestCase):
                          ["uw_netid", "student_no", "student_name_lowc",
                           "activity", "assignments", "grades", "pred",
                           "adviser_name", "staff_id", "sign_in", "stem",
-                          "incoming_freshman", "premajor", "eop_student",
-                          "international_student", "isso", "campus_code",
+                          "incoming_freshman", "premajor", "eop",
+                          "international", "isso", "campus_code",
                           "summer"])
 
 

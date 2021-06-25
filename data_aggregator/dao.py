@@ -1105,10 +1105,6 @@ class LoadRadDAO(BaseDAO):
         content = self.download_from_gcs_bucket(url_key)
 
         sdb_df = pd.read_csv(StringIO(content))
-
-        i = list(sdb_df.columns[sdb_df.columns.str.startswith('regis_')])
-        i.extend(['yrq', 'enroll_status'])
-        sdb_df.drop(columns=i, inplace=True)
         sdb_df.drop_duplicates(inplace=True)
 
         sdb_df = sdb_df.merge(users_df, how='left', on='uw_netid')
@@ -1176,12 +1172,8 @@ class LoadRadDAO(BaseDAO):
         content = self.download_from_gcs_bucket(url_key)
         iss_df = pd.read_csv(
             StringIO(content),
-            usecols=['Student_number', 'Adviser',
-                     'Adviser_NetID'])
-        iss_df.rename(columns={'Student_number': 'student_no',
-                               'Adviser': 'adviser_name',
-                               'Adviser_NetID': 'staff_id'},
-                      inplace=True)
+            usecols=['student_no', 'adviser_name',
+                     'staff_id'])
         # strip any whitespace
         iss_df['adviser_name'] = iss_df['adviser_name'].str.strip()
         iss_df['staff_id'] = iss_df['staff_id'].str.strip()
@@ -1279,7 +1271,7 @@ class LoadRadDAO(BaseDAO):
             ['uw_netid', 'student_no', 'student_name_lowc', 'activity',
              'assignments', 'grades', 'pred', 'adviser_name',
              'staff_id', 'sign_in', 'stem', 'incoming_freshman', 'premajor',
-             'eop_student', 'international_student', 'isso', 'campus_code',
+             'eop', 'international', 'isso', 'campus_code',
              'summer']]
         return joined_canvas_df
 
