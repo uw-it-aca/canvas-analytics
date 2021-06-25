@@ -1,3 +1,6 @@
+# Copyright 2021 UW-IT, University of Washington
+# SPDX-License-Identifier: Apache-2.0
+
 """data_aggregator URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
