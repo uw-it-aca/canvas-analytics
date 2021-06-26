@@ -28,7 +28,7 @@ else:
         RAD_METADATA_BUCKET_NAME = 'canvas-analytics'
         IDP_BUCKET_NAME = 'uw-idp-data-files'
     GCS_REPLACE = False  # replace contents if already exists
-    GCS_TIMEOUT = 5  # request timeout in seconds
+    GCS_TIMEOUT = 10  # request timeout in seconds
     GCS_NUM_RETRIES = 3  # number of request retries
 
     AWS_ACCESS_ID = os.getenv('AWS_ACCESS_ID', '')
