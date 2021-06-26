@@ -113,8 +113,7 @@ class JobView(RESTDispatch):
         currPage = filters["currPage"]
         perPage = filters["perPage"]
         page_start = (currPage - 1) * perPage
-        page_end = (currPage * perPage) - 1
-
+        page_end = (currPage * perPage)
         # get current page
         job_dicts = job_dicts[page_start:page_end]
 
