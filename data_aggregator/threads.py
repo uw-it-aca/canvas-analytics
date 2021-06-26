@@ -2,13 +2,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import threading
+from django.db import connection
 
 
 class ThreadPool():
 
     def __init__(self, processes=20):
         self.processes = processes
-        self.threads = [Thread() for _ in range(0, processes)]
+        self.threads = [PersistentThread() for _ in range(0, processes)]
 
     def get_dead_threads(self):
         dead = []
@@ -42,7 +43,7 @@ class ThreadPool():
         pass
 
 
-class Thread():
+class PersistentThread():
 
     def __init__(self):
         self.thread = None
@@ -58,3 +59,10 @@ class Thread():
             return self.thread.is_alive()
         else:
             return False
+
+class JobThread(threading.Thread):
+
+    def run(self):
+        super().run()
+        # explicity close db connection to avoid idle connections
+        connection.close()
