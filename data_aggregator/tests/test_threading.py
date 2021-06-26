@@ -5,7 +5,7 @@ import queue
 import unittest
 from django.test import TestCase
 from multiprocessing import Queue
-from data_aggregator.threads import ThreadPool, Thread
+from data_aggregator.threads import ThreadPool, PersistentThread
 from mock import MagicMock
 
 
@@ -65,9 +65,9 @@ class TestThreadPool(TestCase):
         self.assertEqual(pool.processes, 2)
         self.assertEqual(len(pool.threads), 2)
         pool.get_dead_threads = MagicMock()
-        t1 = Thread()
+        t1 = PersistentThread()
         self.assertEqual(t1.is_alive(), False)
-        t2 = Thread()
+        t2 = PersistentThread()
         self.assertEqual(t2.is_alive(), False)
         pool.get_dead_threads.return_value = [t1, t2]
         pool.map(bad_job, [9, 4, 3, 1, 1])
