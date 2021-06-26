@@ -49,9 +49,9 @@ class PersistentThread():
         self.thread = None
 
     def run(self, target, *args, **kwargs):
-        self.thread = threading.Thread(target=target,
-                                       args=args,
-                                       kwargs=kwargs)
+        self.thread = JobThread(target=target,
+                                args=args,
+                                kwargs=kwargs)
         self.thread.start()
 
     def is_alive(self):
