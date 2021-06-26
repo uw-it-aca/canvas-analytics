@@ -60,6 +60,7 @@ class PersistentThread():
         else:
             return False
 
+
 class JobThread(threading.Thread):
 
     def run(self):
