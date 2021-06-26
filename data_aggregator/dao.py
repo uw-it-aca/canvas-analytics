@@ -440,10 +440,12 @@ class JobDAO(BaseDAO):
                             submission.get('submitted_at')
                     assign.course = course
                     assign.save()
-            if create_count:
-                logging.info(f"Created {create_count} assignments")
-            if update_count:
-                logging.info(f"Updated {update_count} assignments")
+            logging.info(f"Created {create_count} assignments for "
+                         f"term={sis_term_id}, week={week_num}, "
+                         f"course={canvas_course_id}")
+            logging.info(f"Updated {create_count} assignments for "
+                         f"term={sis_term_id}, week={week_num}, "
+                         f"course={canvas_course_id}")
 
     def save_participations_to_db(self, participation_dicts, job):
         """
@@ -515,10 +517,12 @@ class JobDAO(BaseDAO):
                                                 .get('floating'))
                     partic.page_views = i.get('page_views')
                     partic.save()
-            if create_count:
-                logging.info(f"Created {create_count} participations")
-            if update_count:
-                logging.info(f"Updated {update_count} participations")
+            logging.info(f"Created {create_count} participations for "
+                         f"term={sis_term_id}, week={week_num}, "
+                         f"course={canvas_course_id}")
+            logging.info(f"Updated {create_count} participations for "
+                         f"term={sis_term_id}, week={week_num}, "
+                         f"course={canvas_course_id}")
 
     def run_analytics_job(self, job):
         """
