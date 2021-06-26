@@ -376,22 +376,6 @@ class JobDAO(BaseDAO):
         :param job: Job associated with the assignment analytics to save
         :type job: data_aggregator.models.Job
         """
-
-        def save(assign_objs, canvas_course_id, create=True):
-            if create:
-                if assign_objs:
-                    Assignment.objects.bulk_create(assign_objs, batch_size=100)
-                    logging.debug(f"Created {len(assign_objs)} "
-                                  f"assignment records for Canvas course "
-                                  f"{canvas_course_id}.")
-            else:
-                if assign_objs:
-                    for assign in assign_objs:
-                        assign.save()
-                    logging.debug(f"Updated {len(assign_objs)} "
-                                  f"assignment records for Canvas course "
-                                  f"{canvas_course_id}.")
-
         canvas_course_id = job.context["canvas_course_id"]
         sis_term_id = job.context["sis_term_id"]
         week_num = job.context["week"]
@@ -403,65 +387,65 @@ class JobDAO(BaseDAO):
             week = Week.objects.get(
                         term__sis_term_id=sis_term_id,
                         week=week_num)
-            assign_objs_create = []
-            assign_objs_update = []
-            for i in assignment_dicts:
-                student_id = i.get('canvas_user_id')
-                assignment_id = i.get('assignment_id')
-                try:
-                    user = User.objects.get(canvas_user_id=student_id)
-                except User.DoesNotExist:
-                    logging.warning(f"User with canvas_user_id {student_id} "
-                                    f"does not exist in Canvas Analytics DB. "
-                                    f"Skipping.")
-                    continue
-                try:
-                    assign = (Assignment.objects
-                              .get(user=user,
-                                   assignment_id=assignment_id,
-                                   week=week))
-                    logging.warning(
-                        f"Found existing assignment entry for "
-                        f"canvas_course_id: {canvas_course_id}, "
-                        f"user: {student_id}, sis-term-id: {sis_term_id}, "
-                        f"week: {week_num}")
-                    assign_objs_update.append(assign)
-                except Assignment.DoesNotExist:
-                    assign = Assignment()
-                    assign_objs_create.append(assign)
-                assign.job = job
-                assign.user = user
-                assign.assignment_id = assignment_id
-                assign.week = week
-                assign.title = i.get('title')
-                assign.unlock_at = i.get('unlock_at')
-                assign.points_possible = i.get('points_possible')
-                assign.non_digital_submission = \
-                    i.get('non_digital_submission')
-                assign.due_at = i.get('due_at')
-                assign.status = i.get('status')
-                assign.muted = i.get('muted')
-                assign.max_score = i.get('max_score')
-                assign.min_score = i.get('min_score')
-                assign.first_quartile = i.get('first_quartile')
-                assign.median = i.get('median')
-                assign.third_quartile = i.get('third_quartile')
-                assign.excused = i.get('excused')
-                submission = i.get('submission')
-                if submission:
-                    assign.score = submission.get('score')
-                    assign.posted_at = submission.get('posted_at')
-                    assign.submitted_at = \
-                        submission.get('submitted_at')
-                assign.course = course
-            if assign_objs_create:
-                # create new assignment entries
-                save(assign_objs_create, canvas_course_id, create=True)
-            if assign_objs_update:
-                # update existing assignment entries
-                save(assign_objs_update, canvas_course_id, create=False)
-        else:
-            logging.info("No assignment records to load.")
+            update_count = 0
+            create_count = 0
+            with transaction.atomic():
+                for i in assignment_dicts:
+                    student_id = i.get('canvas_user_id')
+                    assignment_id = i.get('assignment_id')
+                    try:
+                        user = User.objects.get(canvas_user_id=student_id)
+                    except User.DoesNotExist:
+                        logging.warning(
+                            f"User with canvas_user_id {student_id} does not "
+                            f"exist in Canvas Analytics DB. Skipping.")
+                        continue
+                    try:
+                        assign = (Assignment.objects
+                                  .get(user=user,
+                                       assignment_id=assignment_id,
+                                       week=week))
+                        logging.warning(
+                            f"Found existing assignment entry for "
+                            f"canvas_course_id: {canvas_course_id}, "
+                            f"user: {student_id}, sis-term-id: {sis_term_id}, "
+                            f"week: {week_num}")
+                        update_count += 1
+                    except Assignment.DoesNotExist:
+                        assign = Assignment()
+                        create_count += 1
+                    assign.job = job
+                    assign.user = user
+                    assign.assignment_id = assignment_id
+                    assign.week = week
+                    assign.title = i.get('title')
+                    assign.unlock_at = i.get('unlock_at')
+                    assign.points_possible = i.get('points_possible')
+                    assign.non_digital_submission = \
+                        i.get('non_digital_submission')
+                    assign.due_at = i.get('due_at')
+                    assign.status = i.get('status')
+                    assign.muted = i.get('muted')
+                    assign.max_score = i.get('max_score')
+                    assign.min_score = i.get('min_score')
+                    assign.first_quartile = i.get('first_quartile')
+                    assign.median = i.get('median')
+                    assign.third_quartile = i.get('third_quartile')
+                    assign.excused = i.get('excused')
+                    submission = i.get('submission')
+                    if submission:
+                        assign.score = submission.get('score')
+                        assign.posted_at = submission.get('posted_at')
+                        assign.submitted_at = \
+                            submission.get('submitted_at')
+                    assign.course = course
+                    assign.save()
+            logging.info(f"Created {create_count} assignments for "
+                         f"term={sis_term_id}, week={week_num}, "
+                         f"course={canvas_course_id}")
+            logging.info(f"Updated {create_count} assignments for "
+                         f"term={sis_term_id}, week={week_num}, "
+                         f"course={canvas_course_id}")
 
     def save_participations_to_db(self, participation_dicts, job):
         """
@@ -473,20 +457,6 @@ class JobDAO(BaseDAO):
         :param job: Job associated with the participation analytics to save
         :type job: data_aggregator.models.Job
         """
-
-        def save(partic_objs, canvas_course_id, create=True):
-            if create:
-                Participation.objects.bulk_create(partic_objs, batch_size=100)
-                logging.debug(f"Created {len(partic_objs)} "
-                              f"participation records for Canvas course "
-                              f"{canvas_course_id}.")
-            else:
-                for partic in partic_objs:
-                    partic.save()
-                logging.debug(f"Updated {len(partic_objs)} "
-                              f"participation records for Canvas course "
-                              f"{canvas_course_id}.")
-
         canvas_course_id = job.context["canvas_course_id"]
         sis_term_id = job.context["sis_term_id"]
         week_num = job.context["week"]
@@ -498,60 +468,61 @@ class JobDAO(BaseDAO):
             week = Week.objects.get(
                         term__sis_term_id=sis_term_id,
                         week=week_num)
-            partic_objs_create = []
-            partic_objs_update = []
-            for i in participation_dicts:
-                student_id = i.get('canvas_user_id')
-                try:
-                    user = User.objects.get(canvas_user_id=student_id)
-                except User.DoesNotExist:
-                    logging.warning(f"User with canvas_user_id {student_id} "
-                                    f"does not exist in Canvas Analytics DB. "
-                                    f"Skipping.")
-                    continue
-                try:
-                    partic = (Participation.objects.get(user=user,
-                                                        week=week,
-                                                        course=course))
-                    logging.warning(
-                        f"Found existing participation entry for "
-                        f"canvas_course_id: {canvas_course_id}, "
-                        f"user: {student_id}, sis-term-id: {sis_term_id}, "
-                        f"week: {week_num}")
-                    partic_objs_update.append(partic)
-                except Participation.DoesNotExist:
-                    partic = Participation()
-                    partic_objs_create.append(partic)
-                partic.job = job
-                partic.user = user
-                partic.week = week
-                partic.course = course
-                partic.page_views = i.get('page_views')
-                partic.page_views_level = \
-                    i.get('page_views_level')
-                partic.participations = i.get('participations')
-                partic.participations_level = \
-                    i.get('participations_level')
-                if i.get('tardiness_breakdown'):
-                    partic.time_tardy = (i.get('tardiness_breakdown')
-                                         .get('total'))
-                    partic.time_on_time = (i.get('tardiness_breakdown')
-                                           .get('on_time'))
-                    partic.time_late = (i.get('tardiness_breakdown')
-                                        .get('late'))
-                    partic.time_missing = (i.get('tardiness_breakdown')
-                                           .get('missing'))
-                    partic.time_floating = (i.get('tardiness_breakdown')
-                                            .get('floating'))
-                partic.page_views = i.get('page_views')
-            if partic_objs_create:
-                # create new participation entries
-                save(partic_objs_create, canvas_course_id, create=True)
-            if partic_objs_update:
-                # update existing participation entries
-                save(partic_objs_update, canvas_course_id, create=False)
-            else:
-                logging.info("No participation records to load.")
+            update_count = 0
+            create_count = 0
+
+            with transaction.atomic():
+                for i in participation_dicts:
+                    student_id = i.get('canvas_user_id')
+                    try:
+                        user = User.objects.get(canvas_user_id=student_id)
+                    except User.DoesNotExist:
+                        logging.warning(
+                            f"User with canvas_user_id {student_id} does not "
+                            f"exist in Canvas Analytics DB. Skipping.")
+                        continue
+                    try:
+                        partic = (Participation.objects.get(user=user,
+                                                            week=week,
+                                                            course=course))
+                        logging.warning(
+                            f"Found existing participation entry for "
+                            f"canvas_course_id: {canvas_course_id}, "
+                            f"user: {student_id}, sis-term-id: {sis_term_id}, "
+                            f"week: {week_num}")
+                        update_count += 1
+                    except Participation.DoesNotExist:
+                        partic = Participation()
+                        create_count += 1
+                    partic.job = job
+                    partic.user = user
+                    partic.week = week
+                    partic.course = course
+                    partic.page_views = i.get('page_views')
+                    partic.page_views_level = \
+                        i.get('page_views_level')
+                    partic.participations = i.get('participations')
+                    partic.participations_level = \
+                        i.get('participations_level')
+                    if i.get('tardiness_breakdown'):
+                        partic.time_tardy = (i.get('tardiness_breakdown')
+                                             .get('total'))
+                        partic.time_on_time = (i.get('tardiness_breakdown')
+                                               .get('on_time'))
+                        partic.time_late = (i.get('tardiness_breakdown')
+                                            .get('late'))
+                        partic.time_missing = (i.get('tardiness_breakdown')
+                                               .get('missing'))
+                        partic.time_floating = (i.get('tardiness_breakdown')
+                                                .get('floating'))
+                    partic.page_views = i.get('page_views')
+                    partic.save()
+            logging.info(f"Created {create_count} participations for "
+                         f"term={sis_term_id}, week={week_num}, "
+                         f"course={canvas_course_id}")
+            logging.info(f"Updated {create_count} participations for "
+                         f"term={sis_term_id}, week={week_num}, "
+                         f"course={canvas_course_id}")
 
     def run_analytics_job(self, job):
         """
@@ -622,21 +593,24 @@ class JobDAO(BaseDAO):
                     f'create {analytic_type} jobs for.')
             else:
                 jobs_count = 0
-                for course in courses:
-                    # create jobs
-                    logging.debug(
-                        f"Adding {analytic_type} jobs for course "
-                        f"{course.sis_course_id} ({course.canvas_course_id})")
-                    job = Job()
-                    job.type = job_type
-                    job.target_date_start = target_date_start
-                    job.target_date_end = target_date_end
-                    job.context = {'canvas_course_id': course.canvas_course_id,
-                                   'sis_course_id': course.sis_course_id,
-                                   'sis_term_id': term.sis_term_id,
-                                   'week': week.week}
-                    job.save()
-                    jobs_count += 1
+                with transaction.atomic():
+                    for course in courses:
+                        # create jobs
+                        logging.debug(
+                            f"Adding {analytic_type} jobs for course "
+                            f"{course.sis_course_id} "
+                            f"({course.canvas_course_id})")
+                        job = Job()
+                        job.type = job_type
+                        job.target_date_start = target_date_start
+                        job.target_date_end = target_date_end
+                        job.context = \
+                            {'canvas_course_id': course.canvas_course_id,
+                             'sis_course_id': course.sis_course_id,
+                             'sis_term_id': term.sis_term_id,
+                             'week': week.week}
+                        job.save()
+                        jobs_count += 1
                 logging.info(f'Created {jobs_count} {analytic_type} jobs.')
 
 
@@ -661,63 +635,39 @@ class TaskDAO(BaseDAO):
         sis_data = \
             cd.download_course_provisioning_report(sis_term_id=sis_term_id)
 
+        update_count = 0
+        create_count = 0
         course_count = 0
-        for row in DictReader(sis_data):
-            if not len(row):
-                continue
-            created_by_sis = row['created_by_sis']
-            if created_by_sis:
-                canvas_course_id = row['canvas_course_id']
-                # create / update course
-                course, created_course = Course.objects.get_or_create(
-                    canvas_course_id=canvas_course_id,
-                    term=term)
-                if created_course:
-                    logging.info(f"Created course - {canvas_course_id}")
-                else:
-                    logging.info(f"Updated course - {canvas_course_id}")
-                # we always update the course regardless if it is new or not
-                course.sis_course_id = row['course_id']
-                course.short_name = row['short_name']
-                course.long_name = row['long_name']
-                course.canvas_account_id = row['canvas_account_id']
-                course.sis_account_id = row['account_id']
-                course.status = row['status']
-                course.save()
-                course_count += 1
-        logging.info(f'Created and/or updated {course_count} courses.')
+
+        with transaction.atomic():
+            for row in DictReader(sis_data):
+                if not len(row):
+                    continue
+                created_by_sis = row['created_by_sis']
+                if created_by_sis:
+                    canvas_course_id = row['canvas_course_id']
+                    try:
+                        course = Course.objects.filter(
+                                        canvas_course_id=canvas_course_id,
+                                        term=term).get()
+                        create_count += 1
+                    except Course.DoesNotExist:
+                        course = Course()
+                        update_count += 1
+                    # we always update the course data
+                    course.canvas_course_id = canvas_course_id
+                    course.term = term
+                    course.sis_course_id = row['course_id']
+                    course.short_name = row['short_name']
+                    course.long_name = row['long_name']
+                    course.canvas_account_id = row['canvas_account_id']
+                    course.sis_account_id = row['account_id']
+                    course.status = row['status']
+                    course.save()
+                    course_count += 1
+        logging.info(f'Created {create_count} courses.')
+        logging.info(f'Updated {create_count} courses.')
         return course_count
-
-    @transaction.atomic
-    def _create_users(self, user_dicts, batch_size=100):
-        """
-        Save list of new users to the database
-
-        :param user_dicts: list of users to save
-        :type user_dicts: list
-        :param batch_size: number of users to save at one time. (default=250)
-        :type batch_size: int
-        """
-        if user_dicts:
-            User.objects.bulk_create(user_dicts, batch_size=batch_size)
-
-    @transaction.atomic
-    def _update_users(self, user_dicts, batch_size=250):
-        """
-        Update list of users in the database
-
-        :param user_dicts: list of users to save
-        :type user_dicts: list
-        :param batch_size: number of users to save at one time. (default=250)
-        :type batch_size: int
-        """
-        if user_dicts:
-            User.objects.bulk_update(
-                user_dicts,
-                ["login_id", "sis_user_id", "first_name",
-                 "last_name", "full_name", "sortable_name",
-                 "email", "status"],
-                batch_size=batch_size)
 
     def create_or_update_users(self, sis_term_id=None):
         """
@@ -736,51 +686,42 @@ class TaskDAO(BaseDAO):
                      f"containing {len(sis_data)} rows.")
 
         pws = PWS()
-        existing_users = {}
-        update = {}
-        create = {}
+        update_count = 0
+        create_count = 0
         user_count = 0
-        for user in User.objects.all():
-            existing_users[int(user.canvas_user_id)] = user
-        for row in DictReader(sis_data):
-            if not len(row):
-                continue
-            created_by_sis = row['created_by_sis']
-            status = row['status']
-            sis_user_id = row['user_id']
-            if created_by_sis == "true" and status == "active" and \
-                    pws.valid_uwregid(sis_user_id):
-                # we need to cast the canvas_user_id from the file to an int
-                # so that the dictionary lookup works
-                canvas_user_id = int(row['canvas_user_id'])
-                user = existing_users.get(canvas_user_id)
-                if user:
-                    new_user = False
-                else:
-                    user = User()
+
+        with transaction.atomic():
+            for row in DictReader(sis_data):
+                if not len(row):
+                    continue
+                created_by_sis = row['created_by_sis']
+                status = row['status']
+                sis_user_id = row['user_id']
+                if created_by_sis == "true" and status == "active" and \
+                        pws.valid_uwregid(sis_user_id):
+
+                    canvas_user_id = int(row['canvas_user_id'])
+                    try:
+                        user = User.objects.filter(
+                                        canvas_user_id=canvas_user_id).get()
+                        create_count += 1
+                    except User.DoesNotExist:
+                        user = User()
+                        update_count += 1
+
                     user.canvas_user_id = canvas_user_id
-                    new_user = True
-
-                user.sis_user_id = sis_user_id
-                user.login_id = row['login_id']
-                user.first_name = row['first_name']
-                user.last_name = row['last_name']
-                user.full_name = row['full_name']
-                user.sortable_name = row['sortable_name']
-                user.email = row['email']
-                user.status = status
-                if new_user:
-                    create[user.canvas_user_id] = user
-                else:
-                    update[user.canvas_user_id] = user
-                user_count += 1
-
-        users_to_create = list(create.values())
-        self._create_users(users_to_create, batch_size=100)
-        logging.info(f"Created {len(users_to_create)} user(s).")
-        users_to_update = list(update.values())
-        self._update_users(users_to_update, batch_size=100)
-        logging.info(f"Updated {len(users_to_update)} user(s).")
+                    user.sis_user_id = sis_user_id
+                    user.login_id = row['login_id']
+                    user.first_name = row['first_name']
+                    user.last_name = row['last_name']
+                    user.full_name = row['full_name']
+                    user.sortable_name = row['sortable_name']
+                    user.email = row['email']
+                    user.status = status
+                    user.save()
+                    user_count += 1
+        logging.info(f"Created {create_count} user(s).")
+        logging.info(f"Updated {update_count} user(s).")
         return user_count
 
     def create_rad_db_view(self, sis_term_id, week_num):
