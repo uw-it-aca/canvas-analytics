@@ -5,9 +5,47 @@ import datetime
 import unittest
 from django.test import TestCase
 from data_aggregator import utilities
+from django.utils import timezone
+from pytz import timezone as tz
 
 
 class TestUtilities(TestCase):
+
+    def test_get_relative_week(self):
+        tz_name = "US/Pacific"
+        first_day_quarter = datetime.date(2021, 6, 20)
+        curr_date = timezone.make_aware(
+            datetime.datetime(2021, 6, 20, 0, 0, 0),
+            timezone=tz(tz_name))
+        week = utilities.get_relative_week(
+                            first_day_quarter,
+                            cmp_dt=curr_date,
+                            tz_name=tz_name)
+        self.assertEqual(week, 0)
+        curr_date = timezone.make_aware(
+            datetime.datetime(2021, 6, 26, 0, 0, 0),
+            timezone=tz(tz_name))
+        week = utilities.get_relative_week(
+                            first_day_quarter,
+                            cmp_dt=curr_date,
+                            tz_name=tz_name)
+        self.assertEqual(week, 0)
+        curr_date = timezone.make_aware(
+            datetime.datetime(2021, 6, 27, 0, 0, 0),
+            timezone=tz(tz_name))
+        week = utilities.get_relative_week(
+                            first_day_quarter,
+                            cmp_dt=curr_date,
+                            tz_name=tz_name)
+        self.assertEqual(week, 1)
+        curr_date = timezone.make_aware(
+            datetime.datetime(2021, 7, 4, 0, 0, 0),
+            timezone=tz(tz_name))
+        week = utilities.get_relative_week(
+                            first_day_quarter,
+                            cmp_dt=curr_date,
+                            tz_name=tz_name)
+        self.assertEqual(week, 2)
 
     def test_datestring_to_datetime(self):
         """

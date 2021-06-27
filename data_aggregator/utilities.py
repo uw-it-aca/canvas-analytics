@@ -51,8 +51,6 @@ def get_relative_week(relative_date, cmp_dt=None, tz_name="UTC"):
             datetime.combine(relative_date, datetime.min.time()),
             timezone=tz(tz_name))
     days = (cmp_dt - relative_date).days
-    if days >= 0:
-        return (days // 7) + 1
     return (days // 7)
 
 
