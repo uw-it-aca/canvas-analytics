@@ -742,10 +742,10 @@ class TaskDAO(BaseDAO):
                                                   week_num=week_num)
 
         view_name = get_view_name(term.sis_term_id, week.week, "rad")
-        assignments_view_name = get_view_name(sis_term_id,
+        assignments_view_name = get_view_name(term.sis_term_id,
                                               week.week,
                                               "assignments")
-        participations_view_name = get_view_name(sis_term_id,
+        participations_view_name = get_view_name(term.sis_term_id,
                                                  week.week,
                                                  "participations")
 
@@ -869,7 +869,7 @@ class TaskDAO(BaseDAO):
             create_action = f'CREATE VIEW "{view_name}"'
             cursor.execute(f'DROP VIEW IF EXISTS "{view_name}"')
         else:
-            create_action = f'CREATE MATERIALIZED VIEW "{view_name}"'
+            create_action = f'CREATE OR REPLACE VIEW "{view_name}"'
 
         cursor.execute(
             f'''
@@ -926,7 +926,7 @@ class TaskDAO(BaseDAO):
             create_action = f'CREATE VIEW "{view_name}"'
             cursor.execute(f'DROP VIEW IF EXISTS "{view_name}"')
         else:
-            create_action = f'CREATE MATERIALIZED VIEW "{view_name}"'
+            create_action = f'CREATE OR REPLACE VIEW "{view_name}"'
 
         cursor.execute(
             f'''
