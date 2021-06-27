@@ -122,7 +122,8 @@ class WeekManager(models.Manager):
                                                     sis_term_id=sis_term_id)
         if week_num is None:
             # use current relative week number if not defined
-            week_num = utilities.get_relative_week(term.first_day_quarter)
+            week_num = utilities.get_relative_week(term.first_day_quarter,
+                                                   tz_name="US/Pacific")
         week, created = Week.objects.get_or_create(term=term, week=week_num)
         return week, created
 

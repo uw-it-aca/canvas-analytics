@@ -3,9 +3,10 @@
 
 from django.utils import timezone
 from datetime import date, datetime
+from pytz import timezone as tz
 
 
-def datestring_to_datetime(date_str):
+def datestring_to_datetime(date_str, tz_name="UTC"):
     """
     Converts an iso8601 date string to a datetime.datetime object
     :param: date_str
@@ -19,7 +20,7 @@ def datestring_to_datetime(date_str):
         for fmt in fmts:
             try:
                 dt = timezone.make_aware(
-                    datetime.strptime(date_str, fmt), timezone=timezone.utc)
+                    datetime.strptime(date_str, fmt), timezone=tz(tz_name))
                 if dt.year < 1900:
                     err_msg = (f"Date {date_str} is out of range. "
                                f"Year must be year >= 1900.")
@@ -35,7 +36,7 @@ def datestring_to_datetime(date_str):
         raise ValueError(f"Got {date_str} expected str.")
 
 
-def get_relative_week(relative_date, cmp_dt=None):
+def get_relative_week(relative_date, cmp_dt=None, tz_name="UTC"):
     """
     Returns week number relative to supplied relative_date. If cmp_dt is
     supplied, then returns number of weeks between supplied relative_date and
@@ -43,11 +44,12 @@ def get_relative_week(relative_date, cmp_dt=None):
     supplied relative_date and the current utc date.
     """
     if cmp_dt is None:
-        cmp_dt = timezone.now()
+        cmp_dt = timezone.make_aware(datetime.now(),
+                                     timezone=tz(tz_name))
     if isinstance(relative_date, date):
         relative_date = timezone.make_aware(
             datetime.combine(relative_date, datetime.min.time()),
-            timezone=timezone.utc)
+            timezone=tz(tz_name))
     days = (cmp_dt - relative_date).days
     if days >= 0:
         return (days // 7) + 1
