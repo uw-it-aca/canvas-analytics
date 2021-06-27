@@ -742,10 +742,10 @@ class TaskDAO(BaseDAO):
                                                   week_num=week_num)
 
         view_name = get_view_name(term.sis_term_id, week.week, "rad")
-        assignments_view_name = get_view_name(sis_term_id,
+        assignments_view_name = get_view_name(term.sis_term_id,
                                               week.week,
                                               "assignments")
-        participations_view_name = get_view_name(sis_term_id,
+        participations_view_name = get_view_name(term.sis_term_id,
                                                  week.week,
                                                  "participations")
 
