@@ -869,7 +869,7 @@ class TaskDAO(BaseDAO):
             create_action = f'CREATE VIEW "{view_name}"'
             cursor.execute(f'DROP VIEW IF EXISTS "{view_name}"')
         else:
-            create_action = f'CREATE MATERIALIZED VIEW "{view_name}"'
+            create_action = f'CREATE OR REPLACE VIEW "{view_name}"'
 
         cursor.execute(
             f'''
@@ -926,7 +926,7 @@ class TaskDAO(BaseDAO):
             create_action = f'CREATE VIEW "{view_name}"'
             cursor.execute(f'DROP VIEW IF EXISTS "{view_name}"')
         else:
-            create_action = f'CREATE MATERIALIZED VIEW "{view_name}"'
+            create_action = f'CREATE OR REPLACE VIEW "{view_name}"'
 
         cursor.execute(
             f'''
