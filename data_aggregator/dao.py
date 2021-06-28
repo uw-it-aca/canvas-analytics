@@ -552,8 +552,7 @@ class JobDAO(BaseDAO):
         for analytic in cd.download_raw_analytics_for_course(
                                             canvas_course_id, analytic_type):
             analytics.append(analytic)
-            logging.debug(f"Saved {len(analytics)} {analytic_type} "
-                          f"entries")
+
         if analytics and analytic_type == AnalyticTypes.assignment:
             # save remaining assignments to db
             self.save_assignments_to_db(analytics, job)
@@ -772,16 +771,22 @@ class TaskDAO(BaseDAO):
                         p1.user_id,
                         p1.course_id,
                         p1.week_id,
+                        CASE
+                        WHEN (p1.participations IS NULL OR raw_ap_bounds.min_raw_participation_score IS NULL OR raw_ap_bounds.max_raw_participation_score IS NULL) THEN NULL 
+                        ELSE 
                             coalesce(
                                 cast((p1.participations - min_raw_participation_score) as decimal) /
                                 NULLIF( cast((max_raw_participation_score - min_raw_participation_score) as decimal) / 10, 0),
                             0) - 5
-                        AS normalized_participation_score,
+                        END AS normalized_participation_score,
+                        CASE
+                        WHEN (p1.time_on_time IS NULL OR p1.time_late IS NULL OR raw_ap_bounds.min_raw_assignment_score IS NULL OR raw_ap_bounds.max_raw_assignment_score IS NULL) THEN NULL 
+                        ELSE
                             coalesce(
                                 cast(((2 * p1.time_on_time + p1.time_late) - min_raw_assignment_score) as decimal) /
                                 NULLIF( cast((max_raw_assignment_score - min_raw_assignment_score) as decimal) / 10, 0)
                                     , 0) - 5
-                        AS normalized_assignment_score
+                        END AS normalized_assignment_score
                     FROM "{participations_view_name}" p1
                     JOIN (
                         SELECT
@@ -815,6 +820,7 @@ class TaskDAO(BaseDAO):
                 SELECT
                     a2.user_id,
                     CASE
+                    WHEN (a2.score IS NULL OR a2.max_score IS NULL OR a2.min_score IS NULL) THEN NULL
                     WHEN (COALESCE(a2.max_score, 0) - COALESCE(a2.min_score, 0)) = 0 THEN 0
                     WHEN a2.score  IS NULL THEN -5
                     ELSE ((10 * (COALESCE(a2.score, 0) - COALESCE(a2.min_score, 0))) /
