@@ -143,10 +143,10 @@ externalSecrets:
     - name: analytics.apps.canvas.uw.edu-idp-aws-credentials
       externalKey: axdd/kv/data/canvas/analytics/shared/idp-aws-credentials
       data:
-        - name: aws-access-id
-          property: aws-access-id
-        - name: aws-access-key
-          property: aws-access-key
+        - name: aws_access_id
+          property: aws_access_id
+        - name: aws_access_key
+          property: aws_access_key
 
     - name: analytics.apps.canvas.uw.edu-canvas-secrets
       externalKey: axdd/kv/data/canvas/shared/secrets
@@ -224,8 +224,8 @@ environmentVariablesSecrets:
   awsIDPAccessId:
     name: AWS_ACCESS_ID
     secretName: analytics.apps.canvas.uw.edu-idp-aws-credentials
-    secretKey: aws-access-id
+    secretKey: aws_access_id
   awsIDPAccessKey:
     name: AWS_ACCESS_KEY
     secretName: analytics.apps.canvas.uw.edu-idp-aws-credentials
-    secretKey: aws-access-key
+    secretKey: aws_access_key
