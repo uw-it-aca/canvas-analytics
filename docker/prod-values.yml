@@ -96,6 +96,10 @@ cronjob:
       schedule: "30 6 * * 0" # At 11:30pm PDT on Saturday
       command: ["/scripts/management_command.sh"]
       args: ["create_rad_data_file"]
+    - name: subacct-activity
+      schedule: "0 10 * * 0" # At 2:00am PST on Sunday
+      command: ["/scripts/management_command.sh"]
+      args: ["build_subaccount_activity_report"]
 certs:
   mounted: true
   certPath: /certs/apps.canvas.uw.edu-uwca.cert
@@ -139,10 +143,10 @@ externalSecrets:
     - name: analytics.apps.canvas.uw.edu-idp-aws-credentials
       externalKey: axdd/kv/data/canvas/analytics/shared/idp-aws-credentials
       data:
-        - name: aws_access_id
-          property: aws_access_id
-        - name: aws_access_key
-          property: aws_access_key
+        - name: aws-access-id
+          property: aws-access-id
+        - name: aws-access-key
+          property: aws-access-key
 
     - name: analytics.apps.canvas.uw.edu-canvas-secrets
       externalKey: axdd/kv/data/canvas/shared/secrets
@@ -220,8 +224,8 @@ environmentVariablesSecrets:
   awsIDPAccessId:
     name: AWS_ACCESS_ID
     secretName: analytics.apps.canvas.uw.edu-idp-aws-credentials
-    secretKey: aws_access_id
+    secretKey: aws-access-id
   awsIDPAccessKey:
     name: AWS_ACCESS_KEY
     secretName: analytics.apps.canvas.uw.edu-idp-aws-credentials
-    secretKey: aws_access_key
+    secretKey: aws-access-key
