@@ -813,25 +813,42 @@ class TaskDAO(BaseDAO):
                     norm_ap.user_id
             ),
             avg_norm_gr AS (
-                SELECT DISTINCT
-                    a1.user_id,
-                    AVG(normalized_score) AS grade
-                FROM (
+	            WITH
+                user_percentages as (
+                    SELECT
+                        a1.course_id,
+                        a1.user_id,
+                        SUM(COALESCE(a1.score, 0)) / NULLIF(SUM(COALESCE(a1.points_possible, 0)), 0) as user_course_percentage
+                    FROM "{assignments_view_name}" a1
+                    WHERE a1.status = 'on_time' OR a1.status = 'late' OR a1.status = 'missing'
+                    GROUP BY a1.course_id, a1.user_id 
+                ),
+                course_percentages as (
+                    SELECT
+                        a1.course_id,
+                        MIN(user_course_percentage) as min_user_course_percentage,
+                        MAX(user_course_percentage) as max_user_course_percentage
+                    FROM "{assignments_view_name}" a1 JOIN user_percentages on a1.user_id = user_percentages.user_id
+                    GROUP BY a1.course_id
+                ),
+                norm_user_course_percentages as (
+                    SELECT
+                        cp.course_id,
+                        up.user_id,
+                        CASE
+                        WHEN (up.user_course_percentage IS NULL OR cp.min_user_course_percentage IS NULL OR cp.max_user_course_percentage IS NULL) THEN NULL
+                        WHEN (COALESCE(cp.max_user_course_percentage, 0) - COALESCE(cp.min_user_course_percentage, 0)) = 0 THEN 0
+                        ELSE ((10 * (COALESCE(up.user_course_percentage, 0) - COALESCE(cp.min_user_course_percentage, 0))) /
+                                (COALESCE(cp.max_user_course_percentage, 0) - COALESCE(cp.min_user_course_percentage, 0))) - 5
+                        END AS normalized_user_course_percentage
+                    FROM user_percentages up join course_percentages cp on up.course_id = cp.course_id
+                    GROUP BY cp.course_id, up.user_id, normalized_user_course_percentage
+                )
                 SELECT
-                    a2.user_id,
-                    CASE
-                    WHEN (a2.score IS NULL OR a2.max_score IS NULL OR a2.min_score IS NULL) THEN NULL
-                    WHEN (COALESCE(a2.max_score, 0) - COALESCE(a2.min_score, 0)) = 0 THEN 0
-                    WHEN a2.score  IS NULL THEN -5
-                    ELSE ((10 * (COALESCE(a2.score, 0) - COALESCE(a2.min_score, 0))) /
-                            (COALESCE(a2.max_score, 0) - COALESCE(a2.min_score, 0))) - 5
-                    END AS normalized_score
-                FROM "{assignments_view_name}" a2
-                WHERE a2.status = 'on_time' OR a2.status = 'late' OR a2.status = 'missing'
-                GROUP BY a2.user_id, normalized_score 
-                ) a1
-                GROUP BY
-                    a1.user_id
+                    nucp.user_id,
+                    AVG(nucp.normalized_user_course_percentage) as grade
+                FROM norm_user_course_percentages nucp
+                GROUP BY nucp.user_id
             )
             SELECT DISTINCT
                 u.canvas_user_id,
