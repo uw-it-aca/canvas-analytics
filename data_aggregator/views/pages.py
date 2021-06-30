@@ -21,8 +21,8 @@ class PageView(TemplateView):
         return context
 
 
-class HomeView(PageView):
-    template_name = "home.html"
+class AdminView(PageView):
+    template_name = "admin.html"
 
     def get_context_data(self, **kwargs):
         terms = Term.objects.values()

@@ -2,11 +2,16 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
-from django.http import HttpResponse
-from django.views import View
+from django.conf import settings
 from django.core.serializers.json import DjangoJSONEncoder
+from django.http import HttpResponse
+from django.utils.decorators import method_decorator
+from django.views import View
+from uw_saml.decorators import group_required
 
 
+@method_decorator(group_required(settings.DATA_AGGREGATOR_ACCESS_GROUP),
+                  name='dispatch')
 class RESTDispatch(View):
     @staticmethod
     def json_response(content={}, status=200):
