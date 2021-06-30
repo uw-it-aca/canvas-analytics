@@ -51,5 +51,4 @@ urlpatterns = [
     re_path(r'api/(?P<version>v[1])/term/(?P<sis_term_id>[-@:\w]+)/'
             r'participation/$',
             TermParticipationView.as_view()),
-    re_path(r'^saml/', include('uw_saml.urls')),
 ]
