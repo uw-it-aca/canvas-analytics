@@ -772,20 +772,12 @@ class TaskDAO(BaseDAO):
                         p1.course_id,
                         p1.week_id,
                         CASE
-                        WHEN (p1.participations IS NULL OR raw_ap_bounds.min_raw_participation_score IS NULL OR raw_ap_bounds.max_raw_participation_score IS NULL) THEN NULL 
-                        ELSE 
-                            coalesce(
-                                cast((p1.participations - min_raw_participation_score) as decimal) /
-                                NULLIF( cast((max_raw_participation_score - min_raw_participation_score) as decimal) / 10, 0),
-                            0) - 5
+                            WHEN (p1.participations IS NULL OR raw_ap_bounds.min_raw_participation_score IS NULL OR raw_ap_bounds.max_raw_participation_score IS NULL) THEN NULL 
+                            ELSE 5 + ((p1.participations - min_raw_participation_score) * -10) / NULLIF(max_raw_participation_score - min_raw_participation_score, 0)
                         END AS normalized_participation_score,
                         CASE
-                        WHEN (p1.time_on_time IS NULL OR p1.time_late IS NULL OR raw_ap_bounds.min_raw_assignment_score IS NULL OR raw_ap_bounds.max_raw_assignment_score IS NULL) THEN NULL 
-                        ELSE
-                            coalesce(
-                                cast(((2 * p1.time_on_time + p1.time_late) - min_raw_assignment_score) as decimal) /
-                                NULLIF( cast((max_raw_assignment_score - min_raw_assignment_score) as decimal) / 10, 0)
-                                    , 0) - 5
+                            WHEN (p1.time_on_time IS NULL OR p1.time_late IS NULL OR raw_ap_bounds.min_raw_assignment_score IS NULL OR raw_ap_bounds.max_raw_assignment_score IS NULL) THEN NULL 
+                            ELSE 5 + ((COALESCE(2 * p1.time_on_time + p1.time_late, 0) - min_raw_assignment_score) * -10) / NULLIF(max_raw_assignment_score - min_raw_assignment_score, 0)
                         END AS normalized_assignment_score
                     FROM "{participations_view_name}" p1
                     JOIN (
@@ -836,10 +828,10 @@ class TaskDAO(BaseDAO):
                         cp.course_id,
                         up.user_id,
                         CASE
-                        WHEN (up.user_course_percentage IS NULL OR cp.min_user_course_percentage IS NULL OR cp.max_user_course_percentage IS NULL) THEN NULL
-                        WHEN (COALESCE(cp.max_user_course_percentage, 0) - COALESCE(cp.min_user_course_percentage, 0)) = 0 THEN 0
-                        ELSE ((10 * (COALESCE(up.user_course_percentage, 0) - COALESCE(cp.min_user_course_percentage, 0))) /
-                                (COALESCE(cp.max_user_course_percentage, 0) - COALESCE(cp.min_user_course_percentage, 0))) - 5
+                            WHEN (up.user_course_percentage IS NULL OR cp.min_user_course_percentage IS NULL OR cp.max_user_course_percentage IS NULL) THEN NULL
+                            WHEN (COALESCE(cp.max_user_course_percentage, 0) - COALESCE(cp.min_user_course_percentage, 0)) = 0 THEN 0
+                            ELSE 5 + ((COALESCE(up.user_course_percentage, 0) - COALESCE(cp.min_user_course_percentage, 0)) * -10) /
+                                (COALESCE(cp.max_user_course_percentage, 0) - COALESCE(cp.min_user_course_percentage, 0))
                         END AS normalized_user_course_percentage
                     FROM user_percentages up join course_percentages cp on up.course_id = cp.course_id
                     GROUP BY cp.course_id, up.user_id, normalized_user_course_percentage
