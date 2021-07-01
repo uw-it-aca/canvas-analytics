@@ -30,6 +30,26 @@ const dataMixin = {
                 axiosConfig
             );
         },
+        getJobsChartData: async function(filters) {
+            if (!filters) {
+                filters = {};
+            }
+
+            const csrfToken = this.$store.state.csrfToken;
+            const axiosConfig = {
+              headers: {
+                'Content-Type': 'application/json;charset=UTF-8',
+                'Access-Control-Allow-Origin': '*',
+                'X-CSRFToken': csrfToken,
+              },
+            };
+            
+            return axios.post(
+                `api/internal/jobs-chart-data/`,
+                filters,
+                axiosConfig
+            );
+        },
         restartJobs: async function(jobs) {
             const csrfToken = this.$store.state.csrfToken;
             const axiosConfig = {
@@ -41,6 +61,21 @@ const dataMixin = {
             };
             return axios.post(
                 `api/internal/jobs/restart/`,
+                {"job_ids": jobs.map(job => job.id)},
+                axiosConfig
+            );
+        },
+        clearJobs: async function(jobs) {
+            const csrfToken = this.$store.state.csrfToken;
+            const axiosConfig = {
+            headers: {
+                'Content-Type': 'application/json;charset=UTF-8',
+                'Access-Control-Allow-Origin': '*',
+                'X-CSRFToken': csrfToken
+            }
+            };
+            return axios.post(
+                `api/internal/jobs/clear/`,
                 {"job_ids": jobs.map(job => job.id)},
                 axiosConfig
             );

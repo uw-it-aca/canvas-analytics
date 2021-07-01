@@ -1,3 +1,4 @@
+import moment from 'moment';
 import utilities from "../../js/utilities.js";
 
 const utilitiesMixin = {
@@ -11,8 +12,14 @@ const utilitiesMixin = {
                 iso_date = utilities.toIsoDateStr(date);
             }
             return iso_date;
-        }
-    },
+        },
+        execution_time: function(item) {
+            let start = moment(item.start);
+            let end = moment(item.end);
+            let duration = moment.duration(end.diff(start));
+            return utilities.formatDuration(duration);
+        },
+    }
 }
 
 export default utilitiesMixin;

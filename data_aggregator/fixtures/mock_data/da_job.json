@@ -1,0 +1,114 @@
+[
+{
+ "model": "data_aggregator.job",
+ "pk": 1,
+ "fields": {
+  "type": 1,
+  "target_date_start": "2021-04-02 00:00:00Z",
+  "target_date_end": "2021-04-02 23:59:59Z",
+  "context": {
+   "canvas_course_id": 831726,
+   "sis_course_id" : "2013-spring-PHIL-115-A",
+   "sis_term_id" : "2013-spring",
+   "week" : 1
+  },
+  "created": "2021-04-02"
+ }
+},
+{
+ "model": "data_aggregator.job",
+ "pk": 2,
+ "fields": {
+  "type": 1,
+  "target_date_start": "2021-04-02 00:00:00Z",
+  "target_date_end": "2021-04-02 23:59:59Z",
+  "context": {
+   "canvas_course_id": 812884,
+   "sis_course_id" : "2013-spring-AIS-202-A",
+   "sis_term_id" : "2013-spring",
+   "week" : 1
+  },
+  "created": "2021-04-02"
+ }
+},
+{
+ "model": "data_aggregator.job",
+ "pk": 3,
+ "fields": {
+  "type": 2,
+  "target_date_start": "2021-04-02 00:00:00Z",
+  "target_date_end": "2021-04-02 23:59:59Z",
+  "context": {
+    "canvas_course_id": 831726,
+    "sis_course_id" : "2013-spring-PHIL-115-A",
+    "sis_term_id" : "2013-spring",
+    "week" : 1
+   },
+   "created": "2021-04-02"
+  }
+},
+{
+ "model": "data_aggregator.job",
+ "pk": 4,
+ "fields": {
+  "type": 1,
+  "target_date_start": "2021-04-01 00:00:00Z",
+  "target_date_end": "2021-04-01 23:59:59Z",
+  "context": {
+    "canvas_course_id": 812978,
+    "sis_course_id" : "2013-spring-ANTH-313-A",
+    "sis_term_id" : "2013-spring",
+    "week" : 1
+  },
+  "created": "2021-04-01"
+ }
+},
+{
+ "model": "data_aggregator.job",
+ "pk": 5,
+ "fields": {
+  "type": 2,
+  "target_date_start": "2021-04-01 00:00:00Z",
+  "target_date_end": "2021-04-01 23:59:59Z",
+  "context": {
+   "canvas_course_id": 812914,
+   "sis_course_id" : "2013-spring-AMATH-403-A",
+   "sis_term_id" : "2013-spring",
+   "week" : 1
+  },
+  "created": "2021-04-01"
+ }
+},
+{
+ "model": "data_aggregator.job",
+ "pk": 6,
+ "fields": {
+  "type": 2,
+  "target_date_start": "2021-04-01 00:00:00Z",
+  "target_date_end": "2021-04-01 23:59:59Z",
+  "context": {
+   "canvas_course_id": 813016,
+   "sis_course_id" : "2013-spring-ARAB-496-A",
+   "sis_term_id" : "2013-spring",
+   "week" : 1
+  },
+  "created": "2021-04-01"
+ }
+},
+{
+ "model": "data_aggregator.job",
+ "pk": 7,
+ "fields": {
+  "type": 2,
+  "target_date_start": "2021-04-01 00:00:00Z",
+  "target_date_end": "2021-04-01 23:59:59Z",
+  "context": {
+   "canvas_course_id": 813249,
+   "sis_course_id" : "2013-spring-B BIO-350-A",
+   "sis_term_id" : "2013-spring",
+   "week" : 1
+  },
+  "created": "2021-04-01"
+ }
+}
+]

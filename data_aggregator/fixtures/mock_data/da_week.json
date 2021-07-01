@@ -1,0 +1,18 @@
+[
+{
+ "model": "data_aggregator.week",
+ "pk": 1,
+ "fields": {
+  "term": 1,
+  "week": 1
+ }
+},
+{
+ "model": "data_aggregator.week",
+ "pk": 2,
+ "fields": {
+  "term": 1,
+  "week": 2
+ }
+}
+]

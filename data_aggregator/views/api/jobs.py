@@ -1,7 +1,88 @@
+# Copyright 2021 UW-IT, University of Washington
+# SPDX-License-Identifier: Apache-2.0
+
 import json
-from data_aggregator.models import Job
+from data_aggregator.models import Job, JobStatusTypes
 from data_aggregator.views.api import RESTDispatch
 from django.db.models import F, Q, BooleanField, Value
+
+
+def get_filtered_jobs_list(filters):
+    jobs = (Job.objects
+            .annotate(
+                job_type=F('type__type'),
+                selected=Value(False, BooleanField())
+            ))
+
+    activeDateRange = filters.get('activeDateRange')
+    if activeDateRange:
+        jobs = jobs.filter(
+            target_date_start__lte=activeDateRange["endDate"]
+        ).filter(
+            target_date_end__gte=activeDateRange["startDate"]
+        ).filter(
+            Q(start__gte=activeDateRange["startDate"]) |
+            Q(start__isnull=True)
+        ).filter(
+            Q(end__lte=activeDateRange["endDate"]) |
+            Q(end__isnull=True)
+        )
+
+    if filters.get('jobType'):
+        jobs = jobs.filter(
+            type__type__in=filters["jobType"])
+
+    total_jobs = 0
+    job_dicts = []
+    for job in jobs:
+        jd = {}
+        jd["id"] = job.id
+        jd["context"] = job.context
+        jd["job_type"] = job.job_type
+        jd["pid"] = job.pid
+        jd["start"] = job.start.isoformat() if job.start else None
+        jd["end"] = job.end.isoformat() if job.end else None
+        jd["message"] = job.message
+        jd["created"] = job.created.isoformat() if job.created else None
+        jd["status"] = job.status
+        jd["selected"] = job.selected
+        if filters.get('jobStatus'):
+            if job.status in filters["jobStatus"]:
+                job_dicts.append(jd)
+                total_jobs += 1
+        else:
+            job_dicts.append(jd)
+            total_jobs += 1
+    return total_jobs, job_dicts
+
+
+class JobChartDataView(RESTDispatch):
+    '''
+    API endpoint returning a list of job status chart data
+
+    /api/internal/jobs-chart-data/
+
+    HTTP POST accepts the following dictionary paramters:
+    * filters: dictionary of request filters
+    '''
+    def post(self, request, *args, **kwargs):
+        filters = json.loads(request.body.decode('utf-8'))
+
+        _, job_dicts = get_filtered_jobs_list(filters)
+
+        jobs_by_status = {}
+        for jd in job_dicts:
+            if jd["status"] not in jobs_by_status:
+                jobs_by_status[jd["status"]] = 1
+            else:
+                jobs_by_status[jd["status"]] += 1
+
+        # make sure all possible job statuses are accounted for
+        for job_status_type in JobStatusTypes.types():
+            if job_status_type not in jobs_by_status:
+                jobs_by_status[job_status_type] = 0
+
+        return self.json_response(content=jobs_by_status)
 
 
 class JobView(RESTDispatch):
@@ -16,58 +97,8 @@ class JobView(RESTDispatch):
 
     def post(self, request, *args, **kwargs):
         filters = json.loads(request.body.decode('utf-8'))
-        jobs = (Job.objects
-                .annotate(
-                    job_type=F('type__type'),
-                    selected=Value(False, BooleanField())
-                ))
 
-        activeDateRange = filters.get('activeDateRange')
-        if activeDateRange:
-            jobs = jobs.filter(
-                target_date_start__lte=activeDateRange["endDate"]
-            )
-            jobs = jobs.filter(
-                target_date_end__gte=activeDateRange["startDate"]
-            )
-
-        jobDateRange = filters.get('jobDateRange')
-        if jobDateRange.get("startDate") and \
-                jobDateRange.get("endDate"):
-            jobs = jobs.filter(
-                Q(start__lte=jobDateRange["endDate"]) |
-                Q(start__isnull=True)
-            )
-            jobs = jobs.filter(
-                Q(end__gte=jobDateRange["startDate"]) |
-                Q(end__isnull=True)
-            )
-
-        if filters.get('jobType'):
-            jobs = jobs.filter(
-                type__type__in=filters["jobType"])
-
-        total_jobs = 0
-        job_dicts = []
-        for job in jobs:
-            jd = {}
-            jd["id"] = job.id
-            jd["context"] = job.context
-            jd["job_type"] = job.job_type
-            jd["pid"] = job.pid
-            jd["start"] = job.start.isoformat() if job.start else None
-            jd["end"] = job.end.isoformat() if job.end else None
-            jd["message"] = job.message
-            jd["created"] = job.created.isoformat() if job.created else None
-            jd["status"] = job.status
-            jd["selected"] = job.selected
-            if filters.get('jobStatus'):
-                if job.status in filters["jobStatus"]:
-                    job_dicts.append(jd)
-                    total_jobs += 1
-            else:
-                job_dicts.append(jd)
-                total_jobs += 1
+        total_jobs, job_dicts = get_filtered_jobs_list(filters)
 
         # sort in code since the django doesn't support sorting by properties
         sort_by = filters.get("sortBy")
@@ -82,8 +113,7 @@ class JobView(RESTDispatch):
         currPage = filters["currPage"]
         perPage = filters["perPage"]
         page_start = (currPage - 1) * perPage
-        page_end = (currPage * perPage) - 1
-
+        page_end = (currPage * perPage)
         # get current page
         job_dicts = job_dicts[page_start:page_end]
 
@@ -104,11 +134,22 @@ class JobRestartView(RESTDispatch):
     def post(self, request, *args, **kwargs):
         data = json.loads(request.body.decode('utf-8'))
         job_ids = data["job_ids"]
-        for job_id in job_ids:
-            job = Job.objects.get(id=job_id)
-            job.pid = None
-            job.start = None
-            job.end = None
-            job.message = ""
-            job.save()
+        Job.objects.restart_jobs(job_ids)
         return self.json_response(content={"reset": True})
+
+
+class JobClearView(RESTDispatch):
+    '''
+    API endpoint to clear a job
+
+    /api/internal/jobs/clear/
+
+    HTTP POST accepts the following dictionary paramters:
+    * job_ids: list of job ids to clear
+    '''
+
+    def post(self, request, *args, **kwargs):
+        data = json.loads(request.body.decode('utf-8'))
+        job_ids = data["job_ids"]
+        Job.objects.clear_jobs(job_ids)
+        return self.json_response(content={"clear": True})

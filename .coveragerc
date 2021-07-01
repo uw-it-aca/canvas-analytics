@@ -1,8 +1,8 @@
 [run]
-source = course_data
+source = data_aggregator
 parallel = True
 
 [paths]
 source =
-  course_data/
-  /app/course_data/
+  data_aggregator/
+  /app/data_aggregator/

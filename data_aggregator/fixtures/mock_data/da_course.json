@@ -1,0 +1,16 @@
+[
+{
+ "model": "data_aggregator.course",
+ "pk": 303,
+ "fields": {
+  "canvas_course_id": 831726,
+  "sis_course_id": "2013-spring-PHIL-115-A",
+  "short_name": "PHIL 115 A",
+  "long_name": "PHIL 115 A: Practical Reasoning",
+  "canvas_account_id": 97639,
+  "sis_account_id": "uwcourse:seattle:arts-&-sciences:phil:phil",
+  "status": "active",
+  "term": 1
+ }
+}
+]

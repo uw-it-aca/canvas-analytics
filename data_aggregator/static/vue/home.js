@@ -6,10 +6,16 @@ import axios from 'axios';
 import ActiveRangePicker from './components/home/active-range-picker.vue';
 import JobsTable from './components/home/jobs-table.vue';
 import JobsFilter from './components/home/jobs-filter.vue';
+import Chart from './components/home/chart.vue';
+import TimeDifferenceWidget from './components/home/widgets/time-difference-widget.vue';
+import TimeWidget from './components/home/widgets/time-widget.vue';
 
 Vue.component('jobs-table', JobsTable);
 Vue.component('jobs-filter', JobsFilter);
 Vue.component('active-range-picker', ActiveRangePicker);
+Vue.component('chart', Chart);
+Vue.component('time-widget', TimeWidget);
+Vue.component('time-difference-widget', TimeDifferenceWidget);
 
 // date range picker component - https://innologica.github.io/vue2-daterange-picker/
 import DateRangePicker from 'vue2-daterange-picker';
@@ -39,6 +45,8 @@ const store = new Vuex.Store({
     // data returned on each refresh
     jobs: [], // master list of jobs
     totalJobs: 0,
+    // data returned by jobs chart data endpoint
+    jobsGroupedByStatus: {},
     // data filters
     perPage: 250,
     currPage: 1,
@@ -50,10 +58,6 @@ const store = new Vuex.Store({
       startDate: null,
       endDate: null,
     },
-    jobDateRange: {
-      startDate: null,
-      endDate: null,
-    }
   },
   mutations: {
     setRefreshTime(state, value) {
@@ -73,6 +77,9 @@ const store = new Vuex.Store({
     },
     setTotalJobs(state, value) {
       state.totalJobs = value;
+    },
+    setJobsGroupedByStatus(state, value) {
+      state.jobsGroupedByStatus = value;
     },
     setJobType(state, value) {
       state.jobType = value;
@@ -101,15 +108,6 @@ const store = new Vuex.Store({
     setActiveRangeEndDate(state, value) {
       state.activeDateRange.endDate = value;
     },
-    setJobDateRange(state, value) {
-      state.jobDateRange = value;
-    },
-    setJobRangeStartDate(state, value) {
-      state.jobDateRange.startDate = value;
-    },
-    setJobRangeEndDate(state, value) {
-      state.jobDateRange.endDate = value;
-    },
     addVarToState(state, {name, value}) {
       state[name] = value;
     },
@@ -119,7 +117,7 @@ const store = new Vuex.Store({
   }
 });
 
-// initializae root component 
+// initialize root component 
 import dataMixin from './mixins/data_mixin';
 import utilitiesMixin from './mixins/utilities_mixin';
 import utilities from "../js/utilities.js";
@@ -195,12 +193,13 @@ new Vue({
     document.getElementById('vue_root').hidden = false;
     this.changeSelection() // run without delay and with loading indicators 
     this.refreshTimer = setInterval(this.refreshJobs, this.refreshTime * 1000);
+    this.refreshTimer = setInterval(this.refreshJobsGroupedByStatus,
+                                    this.refreshTime * 1000);
   },
   computed: {
     ...mapState({
       refreshTime: (state) => state.refreshTime,
       activeDateRange: (state) => state.activeDateRange,
-      jobDateRange: (state) => state.jobDateRange,
       perPage: (state) => state.perPage,
       currPage: (state) => state.currPage,
       sortBy: (state) => state.sortBy,
@@ -216,10 +215,10 @@ new Vue({
     },
     selectionChangeTriggers: function() {
       // refresh if any of these change
-      return this.activeDateRange, this.jobDateRange,
+      return this.activeDateRange,
         this.currPage, this.perPage, this.sortBy, this.sortDesc, this.jobType,
         this.jobStatus;
-    }
+    },
   },
   watch: {
     selectionChangeTriggers: function() {
@@ -237,10 +236,6 @@ new Vue({
         "activeDateRange": {
           "startDate": utilities.parseIsoDateStr(this.activeDateRange.startDate),
           "endDate": utilities.parseIsoDateStr(this.activeDateRange.endDate),
-        },
-        "jobDateRange": {
-          "startDate": utilities.parseIsoDateStr(this.jobDateRange.startDate),
-          "endDate": utilities.parseIsoDateStr(this.jobDateRange.endDate),
         },
         "perPage": this.perPage,
         "currPage": this.currPage,
@@ -273,10 +268,28 @@ new Vue({
       });
       return promise;
     },
+    refreshJobsGroupedByStatus: function() {
+      let _this = this;
+      let promise = this.getJobsChartData({
+        "activeDateRange": {
+          "startDate": utilities.parseIsoDateStr(this.activeDateRange.startDate),
+          "endDate": utilities.parseIsoDateStr(this.activeDateRange.endDate),
+        },
+        "jobType": this.jobType,
+      })
+      .then(response => {
+        if (response.data) {
+          // we need to reset all selected ids on every refresh
+          _this.$store.commit('setJobsGroupedByStatus', response.data);
+        }
+      })
+      return promise;
+    },
     changeSelection: function() {
       this.updateURL()
       this.$store.commit('setLoading', true);
       let _this = this;
+      this.refreshJobsGroupedByStatus();
       this.refreshJobs().finally(response => {
         _this.$store.commit('setLoading', false);
       })
@@ -296,12 +309,6 @@ new Vue({
         params['jobType'] = this.$store.state.jobType.join(",");
       if(this.$store.state.jobStatus.length > 0)
         params['jobStatus'] = this.$store.state.jobStatus.join(",");
-      if(this.$store.state.jobDateRange.startDate)
-        params['jobStartDate'] = utilities.toIsoDateStr(
-          this.$store.state.jobDateRange.startDate);
-      if(this.$store.state.jobDateRange.endDate)
-        params['jobEndDate'] = utilities.toIsoDateStr(
-          this.$store.state.jobDateRange.endDate)
       let queryParams = Object.keys(params).map(function(k) {
         return encodeURIComponent(k) + '=' + encodeURIComponent(params[k])
       }).join('&')

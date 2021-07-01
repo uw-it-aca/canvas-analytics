@@ -1,41 +1,91 @@
+# Copyright 2021 UW-IT, University of Washington
+# SPDX-License-Identifier: Apache-2.0
+
 import os
+import logging
+from datetime import datetime, date, timedelta
 from django.db import models
 from django.utils import timezone
 from data_aggregator import utilities
-from uw_sws.term import get_current_term
+from uw_sws.term import get_current_term, get_term_by_year_and_quarter
+from uw_sws import SWS_TIMEZONE
 
 
 class TermManager(models.Manager):
-    def get_create_current_term(self, canvas_term_id, sws_term=None):
+
+    def get_or_create_term_from_sis_term_id(self, sis_term_id=None):
+        """
+        Creates and/or queries for Term matching sis_term_id. If sis_term_id
+        is not defined, creates and/or queries for Term object for current
+        sws term.
+
+        :param sis_term_id: sis term id to return Term object for
+        :type sis_term_id: str
+        """
+        if sis_term_id is None:
+            # try to lookup the current term based on the date
+            curr_date = timezone.now()
+            term = (Term.objects
+                    .filter(first_day_quarter__lte=curr_date)
+                    .filter(grade_submission_deadline__gte=curr_date)).first()
+            if term:
+                # return current term
+                return term, False
+
+        if sis_term_id:
+            # lookup sws term object for supplied sis term id
+            year, quarter = sis_term_id.split("-")
+            sws_term = get_term_by_year_and_quarter(int(year), quarter)
+        else:
+            # lookup sws term object for current term
+            sws_term = get_current_term()
+        return self.get_or_create_from_sws_term(sws_term)
+
+    def get_or_create_from_sws_term(self, sws_term):
+        """
+        Creates and/or queries for Term for sws_term object. If Term for
+        sws_term is not defined in the database, a Term object is created.
+
+        :param sws_term: sws_term object to create and or load
+        :type sws_term: uw_sws.term
+        """
+
+        def sws_to_utc(dt):
+            if isinstance(dt, date):
+                # convert date to datetime
+                dt = datetime.combine(dt, datetime.min.time())
+                SWS_TIMEZONE.localize(dt)
+                return dt.astimezone(timezone.utc)
+
         # get/create model for the term
-        term, created = Term.objects.get_or_create(
-            canvas_term_id=canvas_term_id)
+        term, created = \
+            Term.objects.get_or_create(sis_term_id=sws_term.canvas_sis_id())
         if created:
-            if not sws_term:
-                sws_term = get_current_term()
             # add current term info for course
             term.sis_term_id = sws_term.canvas_sis_id()
             term.year = sws_term.year
             term.quarter = sws_term.quarter
             term.label = sws_term.term_label()
-            term.last_day_add = sws_term.last_day_add
-            term.last_day_drop = sws_term.last_day_drop
-            term.first_day_quarter = sws_term.first_day_quarter
-            term.census_day = sws_term.census_day
-            term.last_day_instruction = sws_term.last_day_instruction
-            term.grading_period_open = sws_term.grading_period_open
+            term.last_day_add = sws_to_utc(sws_term.last_day_add)
+            term.last_day_drop = sws_to_utc(sws_term.last_day_drop)
+            term.first_day_quarter = sws_to_utc(sws_term.first_day_quarter)
+            term.census_day = sws_to_utc(sws_term.census_day)
+            term.last_day_instruction = \
+                sws_to_utc(sws_term.last_day_instruction)
+            term.grading_period_open = sws_to_utc(sws_term.grading_period_open)
             term.aterm_grading_period_open = \
-                sws_term.aterm_grading_period_open
+                sws_to_utc(sws_term.aterm_grading_period_open)
             term.grade_submission_deadline = \
-                sws_term.grade_submission_deadline
-            term.last_final_exam_date = sws_term.last_final_exam_date
+                sws_to_utc(sws_term.grade_submission_deadline)
+            term.last_final_exam_date = \
+                sws_to_utc(sws_term.last_final_exam_date)
             term.save()
         return term, created
 
 
 class Term(models.Model):
+
     objects = TermManager()
-    canvas_term_id = models.IntegerField()
     sis_term_id = models.TextField(null=True)
     year = models.IntegerField(null=True)
     quarter = models.TextField(null=True)
@@ -55,7 +105,32 @@ class Term(models.Model):
         return utilities.get_term_number(self.quarter)
 
 
+class WeekManager(models.Manager):
+
+    def get_or_create_week(self, sis_term_id=None, week_num=None):
+        """
+        Creates and/or queries for Week matching sis_term_id and week_num.
+        If sis_term_id and/or week_num is not defined, creates and/or queries
+        for Week object for current sws term and/or week_num.
+
+        :param sis_term_id: sis term id to return Term object for
+        :type sis_term_id: str
+        :param week_num: week number to return Week object for
+        :type week_num: int
+        """
+        term, _ = Term.objects.get_or_create_term_from_sis_term_id(
+                                                    sis_term_id=sis_term_id)
+        if week_num is None:
+            # use current relative week number if not defined
+            week_num = utilities.get_relative_week(term.first_day_quarter,
+                                                   tz_name="US/Pacific")
+        week, created = Week.objects.get_or_create(term=term, week=week_num)
+        return week, created
+
+
 class Week(models.Model):
+
+    objects = WeekManager()
     term = models.ForeignKey(Term,
                              on_delete=models.CASCADE)
     week = models.IntegerField()
@@ -65,6 +140,7 @@ class Week(models.Model):
 
 
 class Course(models.Model):
+
     canvas_course_id = models.BigIntegerField()
     sis_course_id = models.TextField(null=True)
     short_name = models.TextField(null=True)
@@ -77,6 +153,7 @@ class Course(models.Model):
 
 
 class User(models.Model):
+
     canvas_user_id = models.BigIntegerField(unique=True)
     login_id = models.TextField(null=True)
     sis_user_id = models.TextField(null=True)
@@ -90,28 +167,88 @@ class User(models.Model):
 
 class JobManager(models.Manager):
 
-    def start_batch_of_jobs(self, jobtype, batchsize=10):
+    def get_active_jobs(self, jobtype):
         jobs = (self.get_queryset()
-                .select_related()
                 .filter(type__type=jobtype)
-                .filter(pid=None)
                 .filter(target_date_end__gte=timezone.now())
-                .filter(target_date_start__lte=timezone.now())
-                [:batchsize])
-        for job in jobs:
-            job.mark_start()
+                .filter(target_date_start__lte=timezone.now()))
         return jobs
+
+    def get_pending_jobs(self, jobtype):
+        jobs = (self.get_active_jobs(jobtype)
+                .filter(pid=None))
+        return jobs
+
+    def get_pending_or_running_jobs(self, jobtype):
+        jobs = (self.get_active_jobs(jobtype)
+                .filter(end=None)  # not completed
+                .filter(message=''))  # not failed
+        return jobs
+
+    def claim_batch_of_jobs(self, jobtype, batchsize=None):
+        # check for pending jobs to claim
+        jobs = self.get_pending_jobs(jobtype)
+        if jobs.count() == 0:
+            # Check to see if we can instead reclaim jobs in case another
+            # process crashed and left the db in a stale state. This only
+            # works since there is only one daemon process per job type so
+            # worker cronjobs aren't competing with each other.
+            jobs = self.get_pending_or_running_jobs(jobtype)
+            if jobs.count() > 0:
+                logging.warning(f"Reclaiming {jobs.count()} jobs.")
+
+        if batchsize is not None:
+            jobs = jobs[:batchsize]
+
+        for job in jobs:
+            job.claim_job()
+
+        return jobs
+
+    def restart_jobs(self, job_ids, *args, **kwargs):
+        jobs = self.filter(id__in=job_ids)
+        for job in jobs:
+            job.restart_job(*args, **kwargs)
+
+    def clear_jobs(self, job_ids, *args, **kwargs):
+        jobs = self.filter(id__in=job_ids)
+        for job in jobs:
+            job.clear_job(*args, **kwargs)
+
+
+class AnalyticTypes():
+
+    assignment = "assignment"
+    participation = "participation"
 
 
 class JobType(models.Model):
+
     JOB_CHOICES = (
-        ('assignment', 'AssignmentJob'),
-        ('participation', 'ParticipationJob'),
+        (AnalyticTypes.assignment, 'AssignmentJob'),
+        (AnalyticTypes.participation, 'ParticipationJob'),
     )
     type = models.CharField(max_length=64, choices=JOB_CHOICES)
 
 
+class JobStatusTypes():
+
+    pending = "pending"
+    claimed = "claimed"
+    running = "running"
+    completed = "completed"
+    failed = "failed"
+    expired = "expired"
+
+    @classmethod
+    def types(cls):
+        return [JobStatusTypes.pending, JobStatusTypes.claimed,
+                JobStatusTypes.running, JobStatusTypes.completed,
+                JobStatusTypes.failed, JobStatusTypes.expired]
+
+
 class Job(models.Model):
+
     objects = JobManager()
     type = models.ForeignKey(JobType,
                              on_delete=models.CASCADE)
@@ -122,34 +259,90 @@ class Job(models.Model):
     start = models.DateTimeField(null=True)
     end = models.DateTimeField(null=True)
     message = models.TextField()
-    created = models.DateField(auto_now_add=True)
+    created = models.DateTimeField(auto_now_add=True)
+
+    @staticmethod
+    def get_default_target_start():
+        return timezone.now()
+
+    @staticmethod
+    def get_default_target_end():
+        now = timezone.now()
+        tomorrow = now + timedelta(days=1)
+        return tomorrow
 
     @property
     def status(self):
-        if (not self.pid and not self.start and not self.end and
-                not self.message) and self.target_date_end < timezone.now():
-            return "expired"
+        # The order of these checks matters. We always want to display
+        # completed, failed, aand running jobs, while pending and claimed
+        # jobs may expire.
+        if (self.pid and self.start and self.end and not self.message):
+            return JobStatusTypes.completed
+        elif (self.message):
+            return JobStatusTypes.failed
+        elif (self.pid and self.start and not self.end and not self.message):
+            return JobStatusTypes.running
+        elif self.target_date_end < timezone.now():
+            return JobStatusTypes.expired
         elif (not self.pid and not self.start and not self.end and
                 not self.message):
-            return "pending"
-        elif (self.pid and self.start and not self.end and not self.message):
-            return "running"
-        elif (self.pid and self.start and self.end and not self.message):
-            return "completed"
-        elif (self.message):
-            return "failed"
+            return JobStatusTypes.pending
+        elif (self.pid and not self.start and not self.end and
+                not self.message):
+            return JobStatusTypes.claimed
 
-    def mark_start(self, *args, **kwargs):
+    def claim_job(self, *args, **kwargs):
         self.pid = os.getpid()
-        self.start = timezone.now()
-        super(Job, self).save(*args, **kwargs)
+        self.start = None
+        self.end = None
+        self.message = ''
+        if kwargs.get("save", True) is True:
+            super(Job, self).save(*args, **kwargs)
 
-    def mark_end(self, *args, **kwargs):
-        self.end = timezone.now()
-        super(Job, self).save(*args, **kwargs)
+    def start_job(self, *args, **kwargs):
+        if self.pid:
+            self.start = timezone.now()
+            self.end = None
+            self.message = ''
+            if kwargs.get("save", True) is True:
+                super(Job, self).save(*args, **kwargs)
+        else:
+            raise RuntimeError("Trying to start a job that was never claimed "
+                               "by a process. Unable to start a job that "
+                               "doesn't have a set pid.")
+
+    def end_job(self, *args, **kwargs):
+        if self.pid and self.start:
+            self.end = timezone.now()
+            self.message = ''
+            if kwargs.get("save", True) is True:
+                super(Job, self).save(*args, **kwargs)
+        else:
+            raise RuntimeError("Trying to end a job that was never started "
+                               "and/or claimed. Perhaps this was a running "
+                               "job that was restarted.")
+
+    def restart_job(self, *args, **kwargs):
+        self.pid = None
+        self.start = None
+        self.end = None
+        self.target_date_start = Job.get_default_target_start()
+        self.target_date_end = Job.get_default_target_end()
+        self.message = ""
+        if kwargs.get("save", True) is True:
+            super(Job, self).save(*args, **kwargs)
+
+    def clear_job(self, *args, **kwargs):
+        self.pid = None
+        self.start = None
+        self.end = None
+        self.message = ""
+        if kwargs.get("save", True) is True:
+            super(Job, self).save(*args, **kwargs)
 
 
 class Assignment(models.Model):
+
     course = models.ForeignKey(Course,
                                on_delete=models.CASCADE)
     job = models.ForeignKey(Job,
@@ -177,8 +370,16 @@ class Assignment(models.Model):
     posted_at = models.DateTimeField(null=True)
     submitted_at = models.DateTimeField(null=True)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'course', 'assignment_id',
+                                            'week'],
+                                    name='unique_assignment')
+        ]
+
 
 class Participation(models.Model):
+
     course = models.ForeignKey(Course,
                                on_delete=models.CASCADE)
     job = models.ForeignKey(Job,
@@ -196,3 +397,38 @@ class Participation(models.Model):
     time_late = models.IntegerField(null=True)
     time_missing = models.IntegerField(null=True)
     time_floating = models.IntegerField(null=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'course', 'week'],
+                                    name='unique_participation')
+        ]
+
+
+class RadDbView(models.Model):
+
+    class Meta:
+        abstract = True
+
+    @classmethod
+    def setDb_table(Class, tableName):
+        class Meta:
+            managed = False
+            db_table = tableName
+
+        attrs = {
+            '__module__': Class.__module__,
+            'Meta': Meta
+        }
+        return type(tableName, (Class,), attrs)
+
+    canvas_user_id = models.BigIntegerField(unique=True, primary_key=True)
+    full_name = models.TextField(null=True)
+    term = models.TextField(null=True)
+    week = models.IntegerField()
+    assignment_score = \
+        models.DecimalField(null=True, max_digits=13, decimal_places=3)
+    participation_score = \
+        models.DecimalField(null=True, max_digits=13, decimal_places=3)
+    grade = \
+        models.DecimalField(null=True, max_digits=13, decimal_places=3)

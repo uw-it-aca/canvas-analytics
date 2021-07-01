@@ -9,6 +9,7 @@ USER acait
 ADD --chown=acait:acait data_aggregator/VERSION /app/data_aggregator/
 ADD --chown=acait:acait setup.py /app/
 ADD --chown=acait:acait requirements.txt /app/
+RUN . /app/bin/activate && pip install --upgrade pip
 RUN . /app/bin/activate && pip install -r requirements.txt
 
 ADD --chown=acait:acait . /app/
@@ -17,7 +18,6 @@ ADD --chown=acait:acait docker/app_start.sh /scripts
 RUN chmod u+x /scripts/app_start.sh
 
 RUN . /app/bin/activate && pip install django-webpack-loader
-RUN . /app/bin/activate && python manage.py collectstatic
 
 FROM node:8.15.1-jessie AS wpack
 ADD . /app/

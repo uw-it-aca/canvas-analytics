@@ -7,18 +7,39 @@
   {{ jobtypes|json_script:'jobtypes' }}
   {{ terms|json_script:'terms' }}
   {{ job_ranges|json_script:'job_ranges' }}
-  <style>
-   body {
-     padding: 30px;
-   }
-  </style>
+
+  <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+  <meta content="utf-8" http-equiv="encoding">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 </head>
 <body>
   {% csrf_token %}
-  <div id="vue_root" hidden>
-      {% block body_content %}
-      {% endblock body_content %}
-  </div>
+
+  <b-container id="app" class="da-content-container" fluid>
+    <b-row>
+      <div role="banner" class="da-app-banner">
+        <h1 class="da-app-title">
+          Canvas Analytics
+        </h1>
+      </div>
+    </b-row>
+    <b-row role="main">
+      <div id="vue_root" hidden>
+        {% block body_content %}
+        {% endblock body_content %}
+      </div>
+    </b-row>
+    <b-row>
+      <footer class="da-footer" role="contentinfo">
+        <a href="http://www.uw.edu" class="da-footer-wordmark">University of Washington</a>
+        <div class="da-footer-links">
+          <a href="https://www.washington.edu/online/privacy/">Privacy</a> / <a href="https://www.washington.edu/online/terms/">Terms</a> / <a href="mailto:lyle3@uw.edu?subject=Support: Retention Analytics Dashboard">Support</a>
+        </div>
+        <div>© 2021 University of Washington  |  Seattle, WA</div>
+      </footer>
+    </b-row>
+  </b-container>
 
   {% block vue_script %}
   {% endblock vue_script %}

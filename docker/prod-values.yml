@@ -26,8 +26,8 @@ resources:
     cpu: 1000m
     memory: 2048Mi
   requests:
-    cpu: 50m
-    memory: 256Mi
+    cpu: 100m
+    memory: 512Mi
 lifecycle:
   enabled: true
   preStop:
@@ -54,9 +54,48 @@ image:
   tag: IMAGE_TAG
 memcached:
   enabled: false
+gcsCredentials:
+  mounted: true
+  secretName: analytics.apps.canvas.uw.edu-gcs-credentials
 cronjob:
-  enabled: false
+  enabled: true
   jobs:
+    - name: add-terms
+      schedule: "30 6 * * 6" # At 11:30pm PDT on Friday
+      command: ["/scripts/management_command.sh"]
+      args: ["create_terms"]
+    - name: add-updt-courses
+      schedule: "45 6 * * *" # At 11:45pm PDT every night
+      command: ["/scripts/management_command.sh"]
+      args: ["create_or_update_courses"]
+    - name: add-updt-users
+      schedule: "45 6 * * *" # At 11:45pm PDT every night
+      command: ["/scripts/management_command.sh"]
+      args: ["create_or_update_users"]
+    - name: add-assign-jobs
+      schedule: "0 7 * * 6" # At 12:00am PDT on Saturday
+      command: ["/scripts/management_command.sh"]
+      args: ["create_assignment_jobs"]
+    - name: add-partic-jobs
+      schedule: "0 7 * * 6" # At 12:00am PDT on Saturday
+      command: ["/scripts/management_command.sh"]
+      args: ["create_participation_jobs"]
+    - name: add-assign-view
+      schedule: "0 6 * * 0" # At 11:00pm PDT on Saturday
+      command: ["/scripts/management_command.sh"]
+      args: ["create_assignment_db_view"]
+    - name: add-partic-view
+      schedule: "0 6 * * 0" # At 11:00pm PDT on Saturday
+      command: ["/scripts/management_command.sh"]
+      args: ["create_participation_db_view"]
+    - name: add-rad-view
+      schedule: "15 6 * * 0" # At 11:15pm PDT on Saturday
+      command: ["/scripts/management_command.sh"]
+      args: ["create_rad_db_view"]
+    - name: crt-rad-data
+      schedule: "30 6 * * 0" # At 11:30pm PDT on Saturday
+      command: ["/scripts/management_command.sh"]
+      args: ["create_rad_data_file"]
     - name: subacct-activity
       schedule: "0 10 * * 0" # At 2:00am PST on Sunday
       command: ["/scripts/management_command.sh"]
@@ -80,7 +119,7 @@ environmentVariables:
   - name: CANVAS_ENV
     value: PROD
   - name: CANVAS_TIMEOUT
-    value: "90"
+    value: "10"
 
   - name: AUTH
     value: SAML
@@ -89,9 +128,26 @@ environmentVariables:
   - name: CLUSTER_CNAME
     value: analytics.apps.canvas.uw.edu
 
+  - name: GOOGLE_APPLICATION_CREDENTIALS
+    value: "/gcs/credentials.json"
+
 externalSecrets:
   enabled: true
   secrets:
+    - name: analytics.apps.canvas.uw.edu-gcs-credentials
+      externalKey: axdd/kv/data/canvas/analytics/shared/gcs-credentials
+      data:
+        - name: credentials.json
+          property: credentials.json
+
+    - name: analytics.apps.canvas.uw.edu-idp-aws-credentials
+      externalKey: axdd/kv/data/canvas/analytics/shared/idp-aws-credentials
+      data:
+        - name: aws_access_id
+          property: aws_access_id
+        - name: aws_access_key
+          property: aws_access_key
+
     - name: analytics.apps.canvas.uw.edu-canvas-secrets
       externalKey: axdd/kv/data/canvas/shared/secrets
       data:
@@ -165,3 +221,11 @@ environmentVariablesSecrets:
     name: IDP_CERT
     secretName: analytics.apps.canvas.uw.edu-uw-idp-cert
     secretKey: uw-idp-cert
+  awsIDPAccessId:
+    name: AWS_ACCESS_ID
+    secretName: analytics.apps.canvas.uw.edu-idp-aws-credentials
+    secretKey: aws_access_id
+  awsIDPAccessKey:
+    name: AWS_ACCESS_KEY
+    secretName: analytics.apps.canvas.uw.edu-idp-aws-credentials
+    secretKey: aws_access_key
