@@ -34,6 +34,7 @@ setup(
         'google-cloud-storage~=1.37',
         'google-api-core~=1.26',
         'pandas~=1.1',
+        'urllib3~=1.25',
     ],
     license='Apache License, Version 2.0',
     description='Collects data about UW Canvas usage',
