@@ -17,7 +17,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.urls import re_path, include
-from data_aggregator.views.pages import HomeView, APIDocumentationView
+from data_aggregator.views.pages import AdminView, APIDocumentationView
 from data_aggregator.views.api.jobs import JobView, JobRestartView, \
     JobChartDataView, JobClearView
 from data_aggregator.views.api.analytics import AccountAssignmentView, \
@@ -25,31 +25,30 @@ from data_aggregator.views.api.analytics import AccountAssignmentView, \
     UserView, UserAssignmentView, UserParticipationView
 
 urlpatterns = [
-    re_path(r'^$', HomeView.as_view()),
-    re_path(r'^api/internal/jobs/$', JobView.as_view()),
-    re_path(r'^api/internal/jobs-chart-data/', JobChartDataView.as_view()),
-    re_path(r'^api/internal/jobs/restart/$', JobRestartView.as_view()),
-    re_path(r'^api/internal/jobs/clear/$', JobClearView.as_view()),
-    re_path(r'^api/$', APIDocumentationView.as_view()),
-    re_path(r'^api/(?P<version>v[1])/$', APIDocumentationView.as_view()),
-    re_path(r'^api/(?P<version>v[1])/user/$', UserView.as_view()),
-    re_path(r'^api/(?P<version>v[1])/user/(?P<sis_user_id>[-@:\w]+)/'
+    re_path(r'admin/$', AdminView.as_view()),
+    re_path(r'api/internal/jobs/$', JobView.as_view()),
+    re_path(r'api/internal/jobs-chart-data/', JobChartDataView.as_view()),
+    re_path(r'api/internal/jobs/restart/$', JobRestartView.as_view()),
+    re_path(r'api/internal/jobs/clear/$', JobClearView.as_view()),
+    re_path(r'api/$', APIDocumentationView.as_view()),
+    re_path(r'api/(?P<version>v[1])/$', APIDocumentationView.as_view()),
+    re_path(r'api/(?P<version>v[1])/user/$', UserView.as_view()),
+    re_path(r'api/(?P<version>v[1])/user/(?P<sis_user_id>[-@:\w]+)/'
             r'assignment/$',
             UserAssignmentView.as_view()),
-    re_path(r'^api/(?P<version>v[1])/user/(?P<sis_user_id>[-@:\w]+)/'
+    re_path(r'api/(?P<version>v[1])/user/(?P<sis_user_id>[-@:\w]+)/'
             r'participation/$',
             UserParticipationView.as_view()),
-    re_path(r'^api/(?P<version>v[1])/account/(?P<sis_account_id>[-@:\w]+)/'
+    re_path(r'api/(?P<version>v[1])/account/(?P<sis_account_id>[-@:\w]+)/'
             r'assignment/$',
             AccountAssignmentView.as_view()),
-    re_path(r'^api/(?P<version>v[1])/account/(?P<sis_account_id>[-@:\w]+)/'
+    re_path(r'api/(?P<version>v[1])/account/(?P<sis_account_id>[-@:\w]+)/'
             r'participation/$',
             AccountParticipationView.as_view()),
-    re_path(r'^api/(?P<version>v[1])/term/(?P<sis_term_id>[-@:\w]+)/'
+    re_path(r'api/(?P<version>v[1])/term/(?P<sis_term_id>[-@:\w]+)/'
             r'assignment/$',
             TermAssignmentView.as_view()),
-    re_path(r'^api/(?P<version>v[1])/term/(?P<sis_term_id>[-@:\w]+)/'
+    re_path(r'api/(?P<version>v[1])/term/(?P<sis_term_id>[-@:\w]+)/'
             r'participation/$',
             TermParticipationView.as_view()),
-    re_path(r'^saml/', include('uw_saml.urls')),
 ]

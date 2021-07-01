@@ -1,10 +1,13 @@
 # Copyright 2021 UW-IT, University of Washington
 # SPDX-License-Identifier: Apache-2.0
 
+from django.conf import settings
 from django.db.models import F
+from django.utils.decorators import method_decorator
+from rest_framework.generics import GenericAPIView
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.renderers import JSONRenderer
-from rest_framework.generics import GenericAPIView
+from uw_saml.decorators import group_required
 from data_aggregator.models import Assignment, Participation, User
 from data_aggregator.serializers import ParticipationSerializer, \
     AssignmentSerializer, UserSerializer
@@ -20,6 +23,8 @@ class AnalyticsResultsSetPagination(PageNumberPagination):
     max_page_size = 2500
 
 
+@method_decorator(group_required(settings.DATA_AGGREGATOR_ACCESS_GROUP),
+                  name='dispatch')
 class BaseAnalyticsAPIView(GenericAPIView):
 
     renderer_classes = [JSONRenderer]
