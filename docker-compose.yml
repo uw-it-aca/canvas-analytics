@@ -13,5 +13,6 @@ services:
       target: app-container
     volumes:
       - ./data_aggregator:/app/data_aggregator
+      - ./analytics:/app/analytics
     ports:
       - "8000:8000"

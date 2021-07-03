@@ -31,8 +31,7 @@ for app_name in "${app_array[*]}"; do
     run_test "pycodestyle ${app_name}/ --exclude=migrations,static"
 done
 
-app_csv=$(IFS=, ; echo "${app_array[*]}")
-run_test "coverage run --source=${app_csv} '--omit=*/migrations/*' manage.py test"
+run_test "coverage run manage.py test"
 
 # put generated coverage result where it will get processed
 cp .coverage.* /coverage

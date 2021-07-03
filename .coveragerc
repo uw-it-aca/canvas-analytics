@@ -1,8 +1,11 @@
 [run]
-source = data_aggregator
+source = data_aggregator,analytics
 parallel = True
+omit = */migrations/*
 
 [paths]
 source =
-  data_aggregator/
+  /data_aggregator/
   /app/data_aggregator/
+  /analytics/
+  /app/analytics/
