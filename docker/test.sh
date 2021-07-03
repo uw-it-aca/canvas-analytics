@@ -10,27 +10,31 @@ pip install pycodestyle coverage
 apt-get install -y nodejs npm
 npm install -g jshint
 
+function join_by { 
+    local d=${1-} f=${2-}; if shift 2; then printf %s "$f" "${@/#/$d}"; fi;
+}
+
 function run_test {
     echo "##########################"
     echo "TEST: $1"
     eval $1
 }
 
-AppArray=("analytics"  "data_aggregator")
+app_array=("analytics"  "data_aggregator")
 
-for APP_NAME in ${AppArray[*]}; do
-    run_test "pycodestyle ${APP_NAME}/ --exclude=migrations,static"
-
-    if [ -d ${APP_NAME}/static/${APP_NAME}/js ]; then
-        run_test "jshint ${DJANGO_APP}/static/${DJANGO_APP}/js --verbose"
-    elif [ -d ${APP_NAME}/static/js ]; then
-        run_test "jshint ${APP_NAME}/static/js --verbose"
+for app_name in "${app_array[*]}"; do
+    if [[ -d ${app_name}/static/${APP_NAME}/js ]]; then
+        run_test "jshint ${app_name}/static/${app_name}/js --verbose"
+    elif [[ -d ${app_name}/static/js ]]; then
+        run_test "jshint ${app_name}/static/js --verbose"
     fi
-
-    run_test "coverage run --source=${APP_NAME} '--omit=*/migrations/*' manage.py test ${APP_NAME}"
-
-    # put generated coverage result where it will get processed
-    cp .coverage.* /coverage
+    run_test "pycodestyle ${app_name}/ --exclude=migrations,static"
 done
+
+app_csv=$(IFS=, ; echo "${app_array[*]}")
+run_test "coverage run --source=${app_csv} '--omit=*/migrations/*' manage.py test ${app_csv}"
+
+# put generated coverage result where it will get processed
+cp .coverage.* /coverage
 
 exit 0
