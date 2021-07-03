@@ -148,7 +148,7 @@ def manage(request):
         data["term_quarter"] = current_term.quarter
         data["term_start"] = current_term.start_date.strftime("%m/%d/%Y")
         data["term_end"] = current_term.end_date.strftime("%m/%d/%Y")
-    except Exception as ex:
+    except Exception:
         pass
 
     data["course_ids"] = []
