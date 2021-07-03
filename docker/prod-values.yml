@@ -100,6 +100,15 @@ cronjob:
       schedule: "0 10 * * 0" # At 2:00am PST on Sunday
       command: ["/scripts/management_command.sh"]
       args: ["build_subaccount_activity_report"]
+daemon:
+  enabled: true
+  daemons:
+    - name: run-assign-jobs
+      command: ["/scripts/management_daemon.sh"]
+      args: ['--cron', '* * * * *', 'run_assignment_jobs']
+    - name: run-partic-jobs
+      command: ["/scripts/management_daemon.sh"]
+      args: ['--cron', '* * * * *', 'run_participation_jobs']
 certs:
   mounted: true
   certPath: /certs/apps.canvas.uw.edu-uwca.cert
