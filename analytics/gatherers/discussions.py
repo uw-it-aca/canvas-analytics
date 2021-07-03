@@ -1,6 +1,5 @@
 from uw_canvas.discussions import Discussions
 from uw_canvas.users import Users
-import json
 import re
 
 
@@ -26,7 +25,7 @@ def collect_analytics_for_sis_course_id(course_id, time_period):
                 try:
                     user = Users().get_user(entry.user_id)
                     login = user.login_id
-                except Exception as ex:
+                except Exception:
                     pass
                 login_by_id[user.user_id] = login
                 counts_by_id[login] = 0

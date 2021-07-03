@@ -9,9 +9,17 @@ import sys
 
 def build_data():
     start_time = datetime.now()
-    # data_gather_modules = getattr(settings, 'ANALYTICS_DATA_GATHERING_MODULE_LIST', ['analytics.gatherers.user_page_views', 'analytics.gatherers.quiz', 'analytics.gatherers.discussions', 'analytics.gatherers.conversations', 'analytics.gatherers.logins', 'analytics.gatherers.canvas_api', 'analytics.gatherers.assignments'])
-    data_gather_modules = getattr(settings, 'ANALYTICS_DATA_GATHERING_MODULE_LIST', ['analytics.gatherers.assignments', 'analytics.gatherers.assignment_due_dates', 'analytics.gatherers.assignment_submission_counts', 'analytics.gatherers.conversations', 'analytics.gatherers.discussions', 'analytics.gatherers.logins', 'analytics.gatherers.page_edits', 'analytics.gatherers.quiz', 'analytics.gatherers.user_page_views', ])
-#    data_gather_modules = getattr(settings, 'ANALYTICS_DATA_GATHERING_MODULE_LIST', ['analytics.gatherers.assignments', ])
+    data_gather_modules = \
+        getattr(settings, 'ANALYTICS_DATA_GATHERING_MODULE_LIST',
+                ['analytics.gatherers.assignments',
+                 'analytics.gatherers.assignment_due_dates',
+                 'analytics.gatherers.assignment_submission_counts',
+                 'analytics.gatherers.conversations',
+                 'analytics.gatherers.discussions',
+                 'analytics.gatherers.logins',
+                 'analytics.gatherers.page_edits',
+                 'analytics.gatherers.quiz',
+                 'analytics.gatherers.user_page_views', ])
 
     period, term = get_time_period()
 
@@ -29,7 +37,8 @@ def build_data():
 
 
 def build_data_by_course(gatherers, start_time, time_period, term):
-    course_module = getattr(settings, 'ANALYTICS_COURSE_LIST_MODULE', 'analytics.data_source.course_list')
+    course_module = getattr(settings, 'ANALYTICS_COURSE_LIST_MODULE',
+                            'analytics.data_source.course_list')
     mod = import_module(course_module)
 
     count = 0
@@ -40,16 +49,16 @@ def build_data_by_course(gatherers, start_time, time_period, term):
         print("On course {} of {}, time: {}".format(
             count, total, (datetime.now() - start_time).__str__()))
         for gatherer in gatherers:
-            gatherer_data = []
             try:
-                data = gatherer.collect_analytics_for_sis_course_id(course_id, time_period)
+                data = \
+                    gatherer.collect_analytics_for_sis_course_id(course_id,
+                                                                 time_period)
                 for entry in data:
                     try:
                         login_name = entry["login_name"]
                         key = entry["type"]
                         value = entry["value"]
 
-                        # gatherer_data.append(WeeklyDataDataPoint(
                         WeeklyDataDataPoint.objects.create(
                             time_period=time_period,
                             course_id=course_id,
@@ -73,15 +82,16 @@ def build_data_by_course(gatherers, start_time, time_period, term):
 
 
 def build_data_by_person(gatherers, start_time, course_ids, time_period, term):
-    person_module = getattr(settings, 'ANALYTICS_PERSON_LIST_MODULE', 'analytics.data_source.person_list')
+    person_module = getattr(settings, 'ANALYTICS_PERSON_LIST_MODULE',
+                            'analytics.data_source.person_list')
     mod = import_module(person_module)
 
     all_ids = mod.get_all_person_sis_ids(course_ids)
     total = len(all_ids)
     count = 0
 
-    # Some gatherers can only get us the canvas course id - so build up a reverse
-    # loopup as needed
+    # Some gatherers can only get us the canvas course id - so build up a
+    # reverse loopup as needed
     sis_course_lookup = {}
 
     for person_id in all_ids:
@@ -90,7 +100,9 @@ def build_data_by_person(gatherers, start_time, course_ids, time_period, term):
             count, total, (datetime.now() - start_time).__str__()))
         for gatherer in gatherers:
             try:
-                data = gatherer.collect_analytics_for_sis_person_id(person_id, time_period)
+                data = \
+                    gatherer.collect_analytics_for_sis_person_id(person_id,
+                                                                 time_period)
                 for entry in data:
                     try:
                         course_id = None
@@ -98,14 +110,14 @@ def build_data_by_person(gatherers, start_time, course_ids, time_period, term):
                             canvas_id = entry["course_canvas_id"]
                             if canvas_id not in sis_course_lookup:
                                 course = Courses().get_course(canvas_id)
-                                sis_course_lookup[canvas_id] = course.sis_course_id
+                                sis_course_lookup[canvas_id] = \
+                                    course.sis_course_id
                             course_id = sis_course_lookup[canvas_id]
                         if "course_id" in entry:
                             course_id = entry["course_id"]
                         key = entry["type"]
                         value = entry["value"]
 
-                        # gatherer_data.append(WeeklyDataDataPoint(
                         WeeklyDataDataPoint.objects.create(
                             time_period=time_period,
                             course_id=course_id,
@@ -152,7 +164,8 @@ def build_data_by_person(gatherers, start_time, course_ids, time_period, term):
 
 
 def get_time_period():
-    term_module = getattr(settings, 'ANALYTICS_CURRENT_TERM_MODULE', 'analytics.data_source.managed_term')
+    term_module = getattr(settings, 'ANALYTICS_CURRENT_TERM_MODULE',
+                          'analytics.data_source.managed_term')
     mod = import_module(term_module)
 
     current_term = mod.get_term()
@@ -160,11 +173,9 @@ def get_time_period():
 
     start_date = current_term.get_start_date()
     end_date = datetime.now()
-    periods = WeeklyDataTimePeriod.objects.filter(term=current_sis_id).order_by('-end_date')
-    if periods:
-        last_period = periods[0]
-#        start_date = last_period.end_date
 
-    new_period = WeeklyDataTimePeriod.objects.create(term=current_sis_id, start_date=start_date, end_date=end_date)
+    new_period = WeeklyDataTimePeriod.objects.create(term=current_sis_id,
+                                                     start_date=start_date,
+                                                     end_date=end_date)
 
     return new_period, current_term

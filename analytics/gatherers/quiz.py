@@ -1,7 +1,5 @@
-from uw_canvas import Canvas
 from uw_canvas.users import Users
 from uw_canvas.quizzes import Quizzes
-import json
 import re
 
 
@@ -10,12 +8,6 @@ def collect_analytics_for_sis_course_id(course_id, time_period):
 
     course_id = re.sub("--$", "", course_id)
     quizzes = q.get_quizzes_by_sis_id(course_id)
-    # This doesn't cut it - dropped students, maybe?
-#    users = Users().get_users_for_sis_course_id(course_id)
-
-#    login_by_id = {}
-#    for user in users:
-#        login_by_id[user.user_id] = user.login_id
 
     login_by_id = {}
     return_values = []
@@ -30,7 +22,7 @@ def collect_analytics_for_sis_course_id(course_id, time_period):
                 try:
                     user = Users().get_user(s["user_id"])
                     login = user.login_id
-                except Exception as ex:
+                except Exception:
                     pass
                 login_by_id[s["user_id"]] = login
 
@@ -54,7 +46,7 @@ def collect_analytics_for_sis_course_id(course_id, time_period):
                     "type": "Quiz - %s - Percentage Score" % quiz.title,
                     "value": (float(score) / float(possible)) * 100.0,
                 })
-            except Exception as ex:
+            except Exception:
                 return_values.append({
                     "login_name": login_by_id[s["user_id"]],
                     "type": "Quiz - %s - Points" % quiz.title,

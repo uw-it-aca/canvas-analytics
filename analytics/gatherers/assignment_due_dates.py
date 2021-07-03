@@ -11,7 +11,6 @@ def collect_analytics_for_sis_course_id(course_id, time_period):
     return_values = []
 
     for user in users:
-        person_id = user.user_id
         for assignment in assignments:
             return_values.append({
                 "login_name": user.login_id,

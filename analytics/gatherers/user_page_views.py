@@ -1,16 +1,15 @@
 from uw_canvas.page_views import PageViews
 from uw_canvas.assignments import Assignments
-from uw_canvas.quizzes import Quizzes
 import re
-import json
 
 
 def collect_analytics_for_sis_person_id(person_id, time_period):
     return_values = []
     try:
-        data = PageViews().get_pageviews_for_sis_login_id_from_start_date(person_id, time_period.start_date.strftime("%Y-%m-%d"))
-
-        others = 0
+        data = (
+            PageViews()
+            .get_pageviews_for_sis_login_id_from_start_date(
+                person_id, time_period.start_date.strftime("%Y-%m-%d")))
 
         counts_by_page_type = {}
         user_assignment_views = {}
@@ -29,9 +28,10 @@ def collect_analytics_for_sis_person_id(person_id, time_period):
                 continue
 
             try:
-                course_id = re.match("https://canvas.uw.edu/courses/([\d]+).*", url).group(1)
+                course_id = re.match(
+                    r"https://canvas.uw.edu/courses/([\d]+).*", url).group(1)
                 _add_course_id(counts_by_page_type, course_id)
-            except Exception as ex:
+            except Exception:
                 print("Error: {}".format(url))
 
             controller = entry["controller"]
@@ -41,29 +41,43 @@ def collect_analytics_for_sis_person_id(person_id, time_period):
             elif "assignments" == controller or "submissions" == controller:
                 counts_by_page_type[course_id]["assignments"] += 1
 
-                if re.match("https://canvas.uw.edu/courses/([\d]+)/assignments/([\d]+)/submissions", url):
+                if re.match(r"https://canvas.uw.edu/courses/([\d]+)/"
+                            r"assignments/([\d]+)/submissions", url):
                     try:
-                        assignment_id = re.match("https://canvas.uw.edu/courses/([\d]+)/assignments/([\d]+)", url).group(2)
+                        assignment_id = \
+                            re.match(r"https://canvas.uw.edu/courses/([\d]+)"
+                                     r"/assignments/([\d]+)", url).group(2)
                         if course_id not in user_submitted_assignment_views:
                             user_submitted_assignment_views[course_id] = {}
-                        if assignment_id not in user_submitted_assignment_views[course_id]:
-                            user_submitted_assignment_views[course_id][assignment_id] = 0
+                        if assignment_id not in \
+                                user_submitted_assignment_views[course_id]:
+                            user_submitted_assignment_views[course_id][
+                                assignment_id] = 0
 
-                        current = user_submitted_assignment_views[course_id][assignment_id]
-                        user_submitted_assignment_views[course_id][assignment_id] = current + 1
+                        current = \
+                            user_submitted_assignment_views[course_id][
+                                assignment_id]
+                        user_submitted_assignment_views[course_id][
+                            assignment_id] = current + 1
                     except Exception as ex:
                         print("Error: {}".format(ex))
 
-                elif re.match("https://canvas.uw.edu/courses/([\d]+)/assignments/([\d]+)", url):
+                elif re.match(r"https://canvas.uw.edu/courses/([\d]+)/"
+                              r"assignments/([\d]+)", url):
                     try:
-                        assignment_id = re.match("https://canvas.uw.edu/courses/([\d]+)/assignments/([\d]+)", url).group(2)
+                        assignment_id = re.match(
+                            r"https://canvas.uw.edu/courses/([\d]+)"
+                            r"/assignments/([\d]+)", url).group(2)
                         if course_id not in user_assignment_views:
                             user_assignment_views[course_id] = {}
-                        if assignment_id not in user_assignment_views[course_id]:
+                        if assignment_id not in user_assignment_views[
+                                course_id]:
                             user_assignment_views[course_id][assignment_id] = 0
 
-                        current = user_assignment_views[course_id][assignment_id]
-                        user_assignment_views[course_id][assignment_id] = current + 1
+                        current = user_assignment_views[course_id][
+                            assignment_id]
+                        user_assignment_views[course_id][assignment_id] = \
+                            current + 1
                     except Exception as ex:
                         print("Error: {}".format(ex))
 
@@ -103,7 +117,8 @@ def collect_analytics_for_sis_person_id(person_id, time_period):
 
         for course_id in user_assignment_views:
             for assignment_id in user_assignment_views[course_id]:
-                assignment = get_assignment_by_course_id_and_assignment_id(course_id, assignment_id)
+                assignment = get_assignment_by_course_id_and_assignment_id(
+                    course_id, assignment_id)
 
                 name = assignment.name
                 return_values.append({
@@ -114,13 +129,15 @@ def collect_analytics_for_sis_person_id(person_id, time_period):
 
         for course_id in user_submitted_assignment_views:
             for assignment_id in user_submitted_assignment_views[course_id]:
-                assignment = get_assignment_by_course_id_and_assignment_id(course_id, assignment_id)
+                assignment = get_assignment_by_course_id_and_assignment_id(
+                    course_id, assignment_id)
 
                 name = assignment.name
                 return_values.append({
                     "course_canvas_id": course_id,
                     "type": "Assignment Submission Views - %s" % name,
-                    "value": user_submitted_assignment_views[course_id][assignment_id],
+                    "value": user_submitted_assignment_views[course_id][
+                        assignment_id],
                 })
 
     except Exception as ex:

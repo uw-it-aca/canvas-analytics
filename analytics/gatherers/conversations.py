@@ -1,12 +1,9 @@
-from uw_canvas import Canvas
 from uw_canvas.courses import Courses
-from uw_canvas.groups import Groups
 from uw_canvas.enrollments import Enrollments
 from uw_canvas.models import CanvasEnrollment
 from uw_canvas.conversations import Conversations
 from random import random
 import re
-import json
 
 __conversations_run_id = None
 __conversation_data = {}
@@ -14,16 +11,16 @@ __conversation_data = {}
 
 def collect_analytics_for_sis_person_id(person_id, time_period):
     return []
-    # This is tricky!  We can only reliably get message *to* a user.  If I start
-    # a conversation w/ a person, and they don't reply, that message shows up
-    # for them, but not in my own search.  I don't think there's any way to do
-    # a listing of the "Sent" view of conversations.  :(
+    # This is tricky!  We can only reliably get message *to* a user.  If I
+    # start a conversation w/ a person, and they don't reply, that message
+    # shows up for them, but not in my own search.  I don't think there's any
+    # way to do a listing of the "Sent" view of conversations.  :(
 
     # If canvas only had one-on-one conversations, that would be the end of it.
     # But - there can be group conversations, so we need to make sure to not
-    # double-count messages.  So, this will track an arbitrary __conversations_run_id, post_id,
-    # and sender_id, and we'll need to aggregate that data after all users
-    # have been processed.
+    # double-count messages.  So, this will track an arbitrary
+    # __conversations_run_id, post_id, and sender_id, and we'll need to
+    # aggregate that data after all users have been processed.
     # XXX - expand the api definition to allow for that.
 
     global __conversation_data
@@ -32,9 +29,14 @@ def collect_analytics_for_sis_person_id(person_id, time_period):
     if __conversations_run_id is None:
         __conversations_run_id = int(random() * 10000000)
 
-    conversation_ids = Conversations().get_conversation_ids_for_sis_login_id(person_id)
+    conversation_ids = (
+        Conversations()
+        .get_conversation_ids_for_sis_login_id(person_id))
     for conversation_id in conversation_ids:
-        conversation = Conversations().get_data_for_conversation_id_as_sis_login_id(conversation_id, person_id)
+        conversation = (
+            Conversations()
+            .get_data_for_conversation_id_as_sis_login_id(
+                conversation_id, person_id))
 
         participants = conversation["participants"]
         context_name = conversation["context_name"]
@@ -55,10 +57,12 @@ def collect_analytics_for_sis_person_id(person_id, time_period):
                     if author_pid not in __conversation_data[context_name]:
                         __conversation_data[context_name][author_pid] = {}
 
-                    if pid not in __conversation_data[context_name][author_pid]:
+                    if pid not in \
+                            __conversation_data[context_name][author_pid]:
                         __conversation_data[context_name][author_pid][pid] = {}
 
-                    __conversation_data[context_name][author_pid][pid][message_id] = True
+                    __conversation_data[context_name][author_pid][pid][
+                        message_id] = True
 
     return []
 
@@ -81,22 +85,19 @@ def post_process(course_ids):
             instructor_messages[cid] = {}
             peer_messages[cid] = {}
 
-            enrollments = Enrollments().get_enrollments_for_section_by_sis_id(raw_cid)
+            enrollments = \
+                Enrollments().get_enrollments_for_section_by_sis_id(raw_cid)
             for enrollment in enrollments:
                 if enrollment.login_id not in role_in_course:
                     role_in_course[enrollment.user_id] = {}
                 role_in_course[enrollment.user_id][cid] = enrollment.role
                 instructor_messages[cid][enrollment.user_id] = 0
                 peer_messages[cid][enrollment.user_id] = 0
-                login_ids_for_user_ids[enrollment.user_id] = enrollment.login_id
-
-            groups = Groups().get_groups_for_sis_course_id(cid)
-            # XXX - haven't run analytics for a course using groups yet!
-
-    except Exception as ex:
+                login_ids_for_user_ids[enrollment.user_id] = \
+                    enrollment.login_id
+    except Exception:
         pass
 
-    seen_keys = {}
     for key in __conversation_data:
         if key in cid_for_name:
             cid = cid_for_name[key]
@@ -112,13 +113,16 @@ def post_process(course_ids):
 
                     if role1 == CanvasEnrollment.STUDENT:
                         if role2 == CanvasEnrollment.STUDENT:
-                            peer_messages[cid][int_id] = peer_messages[cid][int_id] + 1
+                            peer_messages[cid][int_id] = \
+                                peer_messages[cid][int_id] + 1
                             found_match = True
                         elif role2 == CanvasEnrollment.TA:
-                            instructor_messages[cid][int_id] = instructor_messages[cid][int_id] + 1
+                            instructor_messages[cid][int_id] = \
+                                instructor_messages[cid][int_id] + 1
                             found_match = True
                         elif role2 == CanvasEnrollment.TEACHER:
-                            instructor_messages[cid][int_id] = instructor_messages[cid][int_id] + 1
+                            instructor_messages[cid][int_id] = \
+                                instructor_messages[cid][int_id] + 1
                             found_match = True
                     elif role1 == CanvasEnrollment.TA:
                         # Wrong way, whatever

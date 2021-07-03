@@ -1,6 +1,5 @@
 from uw_canvas import Canvas
 from uw_canvas.users import Users
-import json
 
 
 def collect_analytics_for_sis_course_id(course_id, timeperiod):
@@ -10,10 +9,13 @@ def collect_analytics_for_sis_course_id(course_id, timeperiod):
     edit_counts = {}
     person_map = {}
     for page in data:
-        rurl = "/api/v1/courses/sis_course_id:%s/pages/%s/revisions" % (course_id, page['url'])
+        rurl = ("/api/v1/courses/sis_course_id:%s/pages/%s/revisions" %
+                (course_id, page['url']))
         revision_data = Canvas()._get_resource(rurl)
         for revision in revision_data:
-            surl = "/api/v1/courses/sis_course_id:%s/pages/%s/revisions/%s?summary=true" % (course_id, page['url'], revision['revision_id'])
+            surl = ("/api/v1/courses/sis_course_id:%s/pages/%s/revisions/%s"
+                    "?summary=true" %
+                    (course_id, page['url'], revision['revision_id']))
             summary_data = Canvas()._get_resource(surl)
 
             if 'edited_by' in summary_data:
@@ -23,11 +25,12 @@ def collect_analytics_for_sis_course_id(course_id, timeperiod):
                     try:
                         user = Users().get_user(editor_id)
                         login = user.login_id
-                    except Exception as ex:
+                    except Exception:
                         pass
                     person_map[editor_id] = login
                     edit_counts[login] = 0
-                edit_counts[person_map[editor_id]] = edit_counts[person_map[editor_id]] + 1
+                edit_counts[person_map[editor_id]] = \
+                    edit_counts[person_map[editor_id]] + 1
 
     return_values = []
     for login in edit_counts:
