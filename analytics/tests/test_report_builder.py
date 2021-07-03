@@ -14,6 +14,8 @@ class TestBuildSubAccountActivityReport(TestCase):
         self.root_account = MagicMock()
         self.root_account.sis_account_id = "uwcourse"
         self.root_account.name = "uwcourse"
+
+        # mock subaccounts
         self.report_builder._accounts.get_account_by_sis_id = \
             MagicMock(return_value=self.root_account)
         mock_sub_account = MagicMock()
@@ -21,22 +23,37 @@ class TestBuildSubAccountActivityReport(TestCase):
         mock_sub_account.name = "subaccount1"
         self.report_builder._accounts.get_all_sub_accounts_by_sis_id = \
             MagicMock(return_value=[mock_sub_account])
+
+        # mock reports
         self.report_builder._reports = MagicMock()
+        # mock xlist provisioning report
         mock_xlist_provisioning_report = MagicMock()
         mock_xlist_provisioning_report.name = "xlist_provisioning_report"
         self.report_builder._reports.create_xlist_provisioning_report = \
             MagicMock(return_value=mock_xlist_provisioning_report)
+        # mock course provisioning report
         mock_course_provisioning_report = MagicMock()
         mock_course_provisioning_report.name = "course_provisioning_report"
         self.report_builder._reports.create_course_provisioning_report = \
             MagicMock(return_value=mock_course_provisioning_report)
+        # mock delete report
         self.report_builder._reports.delete_report = MagicMock()
         self.report_builder._reports.get_report_data = \
             MagicMock(side_effect=self.mock_get_report)
+        # mock account level stats
         self.report_builder.get_statistics_by_account = \
             MagicMock(side_effect=self.mock_get_statistics_by_account)
         self.report_builder.get_activity_by_account = \
             MagicMock(side_effect=self.mock_get_activity_by_account)
+
+        # mock terms
+        mock_term = MagicMock()
+        mock_term.term_id = "2021-summer"
+        mock_term.canvas_sis_id = MagicMock(return_value="2021-summer")
+        mock_term.get_week_of_term = MagicMock(return_value=1)
+        self.report_builder._terms = MagicMock()
+        self.report_builder._terms.get_term_by_sis_id = \
+            MagicMock(return_value=mock_term)
 
     def mock_get_statistics_by_account(self, *args):
         mock_stats_by_account_file = os.path.join(

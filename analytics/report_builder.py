@@ -24,6 +24,7 @@ class ReportBuilder():
         self._accounts = CanvasAccounts(per_page=100)
         self._analytics = CanvasAnalytics()
         self._reports = CanvasReports()
+        self._terms = CanvasTerms()
 
     @retry(DataFailureException, status_codes=RETRY_STATUS_CODES,
            tries=RETRY_MAX, delay=RETRY_DELAY, logger=logger)
@@ -78,7 +79,7 @@ class ReportBuilder():
 
     def get_xlist_courses(self, root_account, sis_term_id):
         # create xlist lookup
-        term = CanvasTerms().get_term_by_sis_id(sis_term_id)
+        term = self._terms.get_term_by_sis_id(sis_term_id)
         xlist_courses = set()
         xlist_prov_report = self._reports.create_xlist_provisioning_report(
             root_account.account_id, term.term_id,
@@ -98,7 +99,7 @@ class ReportBuilder():
 
     def get_course_data(self, root_account, sis_term_id):
         # create course totals lookup
-        term = CanvasTerms().get_term_by_sis_id(sis_term_id)
+        term = self._terms.get_term_by_sis_id(sis_term_id)
         course_prov_report = self._reports.create_course_provisioning_report(
             root_account.account_id, term.term_id,
             params={"include_deleted": True})
