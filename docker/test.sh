@@ -16,7 +16,7 @@ function run_test {
     eval $1
 }
 
-AppArray=("analytics", "data_aggregator")
+AppArray=("analytics"  "data_aggregator")
 
 for APP_NAME in ${AppArray[*]}; do
     run_test "pycodestyle ${APP_NAME}/ --exclude=migrations,static"
