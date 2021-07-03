@@ -1,9 +1,6 @@
 trap 'exit 1' ERR
 
 # travis test script for django app
-#
-# PRECONDITION: inherited env vars from application's cicd.yml MUST include:
-#      DJANGO_APP: django application directory name
 
 # start virtualenv
 source bin/activate
@@ -19,17 +16,21 @@ function run_test {
     eval $1
 }
 
-run_test "pycodestyle ${DJANGO_APP}/ --exclude=migrations,static"
+AppArray=("analytics", "data_aggregator")
 
-if [ -d ${DJANGO_APP}/static/${DJANGO_APP}/js ]; then
-    run_test "jshint ${DJANGO_APP}/static/${DJANGO_APP}/js --verbose"
-elif [ -d ${DJANGO_APP}/static/js ]; then
-    run_test "jshint ${DJANGO_APP}/static/js --verbose"
-fi
+for APP_NAME in ${AppArray[*]}; do
+    run_test "pycodestyle ${APP_NAME}/ --exclude=migrations,static"
 
-run_test "coverage run --source=${DJANGO_APP} '--omit=*/migrations/*' manage.py test ${DJANGO_APP}"
+    if [ -d ${APP_NAME}/static/${APP_NAME}/js ]; then
+        run_test "jshint ${DJANGO_APP}/static/${DJANGO_APP}/js --verbose"
+    elif [ -d ${APP_NAME}/static/js ]; then
+        run_test "jshint ${APP_NAME}/static/js --verbose"
+    fi
 
-# put generated coverage result where it will get processed
-cp .coverage.* /coverage
+    run_test "coverage run --source=${APP_NAME} '--omit=*/migrations/*' manage.py test ${APP_NAME}"
+
+    # put generated coverage result where it will get processed
+    cp .coverage.* /coverage
+done
 
 exit 0
