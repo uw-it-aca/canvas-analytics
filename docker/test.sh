@@ -23,7 +23,7 @@ function run_test {
 app_array=("analytics"  "data_aggregator")
 
 for app_name in "${app_array[*]}"; do
-    if [[ -d ${app_name}/static/${APP_NAME}/js ]]; then
+    if [[ -d ${app_name}/static/${app_name}/js ]]; then
         run_test "jshint ${app_name}/static/${app_name}/js --verbose"
     elif [[ -d ${app_name}/static/js ]]; then
         run_test "jshint ${app_name}/static/js --verbose"
@@ -32,7 +32,7 @@ for app_name in "${app_array[*]}"; do
 done
 
 app_csv=$(IFS=, ; echo "${app_array[*]}")
-run_test "coverage run --source=${app_csv} '--omit=*/migrations/*' manage.py test ${app_csv}"
+run_test "coverage run --source=${app_csv} '--omit=*/migrations/*' manage.py test"
 
 # put generated coverage result where it will get processed
 cp .coverage.* /coverage
