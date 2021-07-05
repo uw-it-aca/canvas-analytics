@@ -41,6 +41,15 @@ class TestUtilities(TestCase):
         curr_date = timezone.make_aware(
             datetime.datetime(2021, 7, 3, 0, 0, 0),
             timezone=tz(tz_name))
+        # ensure that UTC dates get converted to PDT
+        week = utilities.get_relative_week(
+                            first_day_quarter,
+                            cmp_dt=curr_date,
+                            tz_name=tz_name)
+        self.assertEqual(week, 2)
+        curr_date = timezone.make_aware(
+            datetime.datetime(2021, 7, 4, 0, 0, 0),
+            timezone=tz('UTC'))
         week = utilities.get_relative_week(
                             first_day_quarter,
                             cmp_dt=curr_date,
