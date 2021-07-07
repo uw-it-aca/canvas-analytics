@@ -20,7 +20,7 @@ function run_test {
     eval $1
 }
 
-app_array=("analytics"  "data_aggregator")
+app_array=("analytics")
 
 for app_name in "${app_array[@]}"; do
     if [[ -d ${app_name}/static/${app_name}/js ]]; then
@@ -31,10 +31,6 @@ for app_name in "${app_array[@]}"; do
     run_test "pycodestyle ${app_name}/ --exclude=migrations,static"
     run_test "coverage run -p --source=${app_name} manage.py test ${app_name}"
 done
-
-echo "Coverage files to combine:"
-echo $(ls .coverage.*)
-run_test "coverage combine"
 
 # put generated coverage result where it will get processed
 cp .coverage /coverage
