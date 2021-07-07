@@ -1,5 +1,4 @@
 [run]
-source = data_aggregator,analytics
 parallel = True
 omit =
   */migrations/*
