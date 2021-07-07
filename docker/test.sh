@@ -33,9 +33,11 @@ for app_name in "${app_array[@]}"; do
 done
 
 # put generated coverage result where it will get processed
-cp .coverage.* /coverage
+cp .coverage* /coverage
 
 # combine all coverage file
+echo "Combining the following coverage files:"
+echo $(ls /coverage)
 run_test "coverage combine /coverage"
 
 exit 0
