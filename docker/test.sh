@@ -20,7 +20,7 @@ function run_test {
     eval $1
 }
 
-app_array=("analytics")
+app_array=("analytics"  "data_aggregator")
 
 for app_name in "${app_array[@]}"; do
     if [[ -d ${app_name}/static/${app_name}/js ]]; then
