@@ -1,8 +1,7 @@
 [run]
-source = .
+source = data_aggregator,analytics
 parallel = True
 omit =
-  */site-packages/*
   */migrations/*
 
 [paths]
