@@ -32,7 +32,11 @@ for app_name in "${app_array[@]}"; do
     run_test "coverage run -p --source=${app_name} manage.py test ${app_name}"
 done
 
+echo "Coverage files to combine:"
+echo $(ls .coverage.*)
+run_test "coverage combine"
+
 # put generated coverage result where it will get processed
-cp .coverage.* /coverage
+cp .coverage /coverage
 
 exit 0
