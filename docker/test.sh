@@ -29,7 +29,7 @@ for app_name in "${app_array[@]}"; do
         run_test "jshint ${app_name}/static/js --verbose"
     fi
     run_test "pycodestyle ${app_name}/ --exclude=migrations,static"
-    run_test "coverage run -p --source=${app_name} manage.py test ${app_name}"
+    run_test "coverage run --append --source=${app_name} manage.py test ${app_name}"
 done
 
 # put generated coverage result where it will get processed
