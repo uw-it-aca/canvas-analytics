@@ -32,7 +32,9 @@ for app_name in "${app_array[@]}"; do
     run_test "coverage run --source=${app_name} manage.py test ${app_name}"
 done
 
+run_test "coverage combine"
+
 # put generated coverage result where it will get processed
-cp .coverage.* /coverage
+cp .coverage /coverage
 
 exit 0
