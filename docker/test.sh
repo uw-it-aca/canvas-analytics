@@ -33,6 +33,6 @@ for app_name in "${app_array[@]}"; do
 done
 
 # put generated coverage result where it will get processed
-cp .coverage /coverage
+cp .coverage.* /coverage
 
 exit 0
