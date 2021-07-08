@@ -75,7 +75,7 @@ export default {
          default: "any",
          type: "int"},
         {name: "sis_term_id",
-         example: "Spring-2021",
+         example: "2021-summer",
          description: "Term id in format [Year]-[Quarter]",
          default: "any",
          type: "string"}
@@ -96,7 +96,7 @@ export default {
       ],
       useranalyticsparams: [
         {name: "sis-user-id",
-         example: "4DC8FAF817814361889CB2715CD16D28",
+         example: "ABF403FC8E3541ADBACFB411F3CBA075",
          description: "Canvas sis user id",
          default: "optional",
          type: "string"},
@@ -124,4 +124,3 @@ export default {
 
 <style lang="scss" scoped>
 </style>
-
