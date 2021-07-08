@@ -436,7 +436,7 @@ class RadDbView(models.Model):
 
 class Report(models.Model):
     """
-    Represents a report.
+    Represents a report
     """
     SUBACCOUNT_ACTIVITY = "subaccount_activity"
 
