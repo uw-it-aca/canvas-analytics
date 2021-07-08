@@ -832,7 +832,7 @@ class TaskDAO(BaseDAO):
                             WHEN (COALESCE(cp.max_user_course_percentage, 0) - COALESCE(cp.min_user_course_percentage, 0)) = 0 THEN 0
                             ELSE ((COALESCE(up.user_course_percentage, 0) - COALESCE(cp.min_user_course_percentage, 0)) * 10) / (COALESCE(cp.max_user_course_percentage, 0) - COALESCE(cp.min_user_course_percentage, 0)) - 5
                         END AS normalized_user_course_percentage
-                    FROM user_percentages up join course_percentages cp on up.course_id = cp.course_id
+                    FROM user_percentages up LEFT OUTER JOIN course_percentages cp on up.course_id = cp.course_id
                     GROUP BY cp.course_id, up.user_id, normalized_user_course_percentage
                 )
                 SELECT
