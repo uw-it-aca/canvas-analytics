@@ -1,3 +1,6 @@
+# Copyright 2021 UW-IT, University of Washington
+# SPDX-License-Identifier: Apache-2.0
+
 import os
 from data_aggregator.models import Report, SubaccountActivity
 from data_aggregator.report_builder import ReportBuilder
