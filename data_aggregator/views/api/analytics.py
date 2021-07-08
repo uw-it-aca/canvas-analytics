@@ -67,7 +67,6 @@ class AccountParticipationView(BaseAnalyticsAPIView):
         week = request.GET.get("week")
         if week:
             queryset = queryset.filter(week__week=week)
-
         paginated_queryset = self.paginate_queryset(queryset)
         serializer = ParticipationSerializer(paginated_queryset, many=True)
         return self.get_paginated_response(serializer.data)
@@ -154,7 +153,7 @@ class UserView(GenericAPIView):
         if (canvas_user_id):
             queryset = queryset.filter(canvas_user_id=canvas_user_id)
         has_analytics = request.GET.get("has_analytics")
-        if (has_analytics):
+        if (has_analytics is not None):
             assign_analytic_users = Assignment.objects.values("user")
             partic_analytic_users = Participation.objects.values("user")
             if has_analytics.lower() == "true":
