@@ -438,6 +438,10 @@ class Report(models.Model):
     """
     Represents a report
     """
+
+    class Meta:
+        db_table = 'analytics_report'
+
     SUBACCOUNT_ACTIVITY = "subaccount_activity"
 
     TYPE_CHOICES = (
@@ -455,6 +459,10 @@ class SubaccountActivity(models.Model):
     """
     Represents activity by sub-account and term
     """
+
+    class Meta:
+        db_table = 'analytics_subaccountactivity'
+
     report = models.ForeignKey(Report, on_delete=models.CASCADE)
     term_id = models.CharField(max_length=20)
     subaccount_id = models.CharField(max_length=100)
