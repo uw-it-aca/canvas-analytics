@@ -1,9 +1,15 @@
 # Copyright 2021 UW-IT, University of Washington
 # SPDX-License-Identifier: Apache-2.0
 
+from django.conf import settings
 from django.utils import timezone
 from datetime import date, datetime
 from pytz import timezone as tz
+import os
+
+
+def set_gcs_base_path(sis_term_id, week_num):
+    os.environ["GCS_BASE_PATH"] = f"{sis_term_id}/{week_num}/"
 
 
 def datestring_to_datetime(date_str, tz_name="UTC"):
@@ -43,6 +49,7 @@ def get_relative_week(relative_date, cmp_dt=None, tz_name="UTC"):
     cmp_dt. If cmp_dt is not supplied, then returns number of weeks between
     supplied relative_date and the current utc date.
     """
+    week = 0
     if cmp_dt is None:
         cmp_dt = timezone.make_aware(datetime.now(),
                                      timezone=tz(tz_name))
@@ -51,9 +58,16 @@ def get_relative_week(relative_date, cmp_dt=None, tz_name="UTC"):
             datetime.combine(relative_date, datetime.min.time()),
             timezone=tz(tz_name))
     days = (cmp_dt - relative_date).days
+    week = (days // 7)
     if days >= 0:
-        return (days // 7) + 1
-    return (days // 7)
+        week += 1
+
+    if week < 0:
+        return 0
+    elif week > getattr(settings, "MAX_WEEK_OF_TERM", 12):
+        return getattr(settings, "MAX_WEEK_OF_TERM", 12)
+    else:
+        return week
 
 
 def get_term_number(quarter_name):
