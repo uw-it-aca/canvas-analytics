@@ -8,7 +8,7 @@ from django.conf import settings
 from django.db import transaction, connection
 from data_aggregator.models import Assignment, Course, Participation, \
     User, RadDbView, Term, Week, AnalyticTypes, Job, JobType
-from data_aggregator.utilities import get_view_name
+from data_aggregator.utilities import get_view_name, set_gcs_base_path
 from restclients_core.exceptions import DataFailureException
 from restclients_core.util.retry import retry
 from uw_canvas import Canvas
@@ -46,9 +46,6 @@ class BaseDAO():
         pd.options.display.max_rows = 500
         pd.options.display.precision = 3
         pd.options.display.float_format = '{:.3f}'.format
-
-    def set_gcs_base_path(self, sis_term_id, week_num):
-        os.environ["GCS_BASE_PATH"] = f"{sis_term_id}/{week_num}/"
 
     def get_gcs_client(self):
         return storage.Client()
@@ -541,7 +538,7 @@ class JobDAO(BaseDAO):
         analytic_type = job.type.type
         # in case gcs caching is enabled, set gcs base path env variable so
         # that cached responses are ordered by term and week
-        self.set_gcs_base_path(sis_term_id, week_num)
+        set_gcs_base_path(sis_term_id, week_num)
 
         # delete existing assignment data in case of a job restart
         self.delete_data_for_job(job)

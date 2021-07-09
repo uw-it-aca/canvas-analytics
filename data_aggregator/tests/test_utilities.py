@@ -15,6 +15,14 @@ class TestUtilities(TestCase):
         tz_name = "US/Pacific"
         first_day_quarter = datetime.date(2021, 6, 20)
         curr_date = timezone.make_aware(
+            datetime.datetime(2020, 6, 20, 0, 0, 0),
+            timezone=tz(tz_name))
+        week = utilities.get_relative_week(
+                            first_day_quarter,
+                            cmp_dt=curr_date,
+                            tz_name=tz_name)
+        self.assertEqual(week, 0)
+        curr_date = timezone.make_aware(
             datetime.datetime(2021, 6, 20, 0, 0, 0),
             timezone=tz(tz_name))
         week = utilities.get_relative_week(
@@ -63,6 +71,14 @@ class TestUtilities(TestCase):
                             cmp_dt=curr_date,
                             tz_name=tz_name)
         self.assertEqual(week, 3)
+        curr_date = timezone.make_aware(
+            datetime.datetime(2022, 7, 4, 0, 0, 0),
+            timezone=tz(tz_name))
+        week = utilities.get_relative_week(
+                            first_day_quarter,
+                            cmp_dt=curr_date,
+                            tz_name=tz_name)
+        self.assertEqual(week, 12)
 
     def test_datestring_to_datetime(self):
         """
