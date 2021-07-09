@@ -78,8 +78,6 @@ class ReportBuilder():
             except DataFailureException as ex:
                 if ex.status != 504:
                     raise
-            with open('activity_data', 'a') as file:
-                file.write(str(activities))
             activities.append(activity)
         return activities
 
