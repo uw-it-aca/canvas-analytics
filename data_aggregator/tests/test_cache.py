@@ -10,7 +10,7 @@ class TestDataAggregatorGCSCache(TestCase):
 
     def test_get_cache_expiration_time(self):
         cache = DataAggregatorGCSCache()
-        # valid urls
+        # valid analytics urls
         self.assertEqual(
             cache.get_cache_expiration_time(
                 "canvas",
@@ -19,8 +19,28 @@ class TestDataAggregatorGCSCache(TestCase):
         self.assertEqual(
             cache.get_cache_expiration_time(
                 "canvas",
+                "/api/v1/courses/1452786/analytics/student_summaries.json"
+                "?per_page=100"),
+            0)
+        self.assertEqual(
+            cache.get_cache_expiration_time(
+                "canvas",
                 "/api/v1/courses/1399587/analytics/users/3562797/"
                 "assignments.json"),
+            0)
+        # valid subaccount report urls
+        self.assertEqual(
+            cache.get_cache_expiration_time(
+                "canvas",
+                "/api/v1/accounts/sis_account_id:account_103831/analytics/"
+                "terms/sis_term_id:2021-spring/activity.json"),
+            0)
+        self.assertEqual(
+            cache.get_cache_expiration_time(
+                "canvas",
+                "/api/v1/accounts/sis_account_id:uwcourse:seattle:"
+                "information-school:inform:ita:future/analytics/"
+                "terms/sis_term_id:2021-spring/statistics.json"),
             0)
         # unknown service
         self.assertEqual(
@@ -33,6 +53,13 @@ class TestDataAggregatorGCSCache(TestCase):
             cache.get_cache_expiration_time(
                 "canvas",
                 "/api/v2/courses/1392640/analytics/"),
+            None)
+        # subaccount urls to ignore
+        self.assertEqual(
+            cache.get_cache_expiration_time(
+                "canvas",
+                "/api/v1/accounts/sis_account_id:uwcourse/sub_accounts"
+                "?recursive=true&page=2&per_page=100"),
             None)
 
 

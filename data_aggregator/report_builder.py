@@ -1,15 +1,22 @@
+# Copyright 2021 UW-IT, University of Washington
+# SPDX-License-Identifier: Apache-2.0
+
+import csv
+from datetime import datetime
 from django.utils.timezone import utc
+from django.test import override_settings
+from logging import getLogger
+from data_aggregator.models import Term, Week
+from data_aggregator.utilities import set_gcs_base_path
+from restclients_core.util.retry import retry
+from restclients_core.exceptions import DataFailureException
 from uw_canvas.accounts import Accounts as CanvasAccounts
 from uw_canvas.analytics import Analytics as CanvasAnalytics
 from uw_canvas.reports import Reports as CanvasReports
 from uw_canvas.terms import Terms as CanvasTerms
-from uw_sws.term import get_current_term
-from restclients_core.util.retry import retry
-from restclients_core.exceptions import DataFailureException
-from analytics.models import Report, SubaccountActivity
-from datetime import datetime
-from logging import getLogger
-import csv
+
+from data_aggregator.models import Report, SubaccountActivity
+
 
 logger = getLogger(__name__)
 
@@ -23,6 +30,7 @@ class ReportBuilder():
         self._accounts = CanvasAccounts(per_page=100)
         self._analytics = CanvasAnalytics()
         self._reports = CanvasReports()
+        self._terms = CanvasTerms()
 
     @retry(DataFailureException, status_codes=RETRY_STATUS_CODES,
            tries=RETRY_MAX, delay=RETRY_DELAY, logger=logger)
@@ -36,45 +44,21 @@ class ReportBuilder():
         return self._analytics.get_activity_by_account(
             sis_account_id, sis_term_id)
 
-    def build_subaccount_activity_report(self, root_account_id, sis_term_id):
-        report = Report(report_type=Report.SUBACCOUNT_ACTIVITY,
-                        started_date=datetime.utcnow().replace(tzinfo=utc))
+    @retry(DataFailureException, status_codes=RETRY_STATUS_CODES,
+           tries=RETRY_MAX, delay=RETRY_DELAY, logger=logger)
+    def get_account_activities_data(self, root_account, sis_term_id):
+        activities = []
         accounts = []
-        account_courses = {}
-
-        week_of_term = None
-        if not sis_term_id:
-            current_term = get_current_term()
-            sis_term_id = current_term.canvas_sis_id()
-            week_of_term = current_term.get_week_of_term()
-            if week_of_term < 1:
-                return
-
-        report.term_id = sis_term_id
-        report.term_week = week_of_term
-        report.save()
-
-        root_account = self._accounts.get_account_by_sis_id(root_account_id)
         accounts.append(root_account)
         accounts.extend(
-            self._accounts.get_all_sub_accounts_by_sis_id(root_account_id))
-
+            self._accounts.get_all_sub_accounts_by_sis_id(
+                root_account.sis_account_id))
+        activities = []
         for account in accounts:
             sis_account_id = account.sis_account_id
             if sis_account_id is None:
                 continue
-
-            account_courses[sis_account_id] = {
-                "courses": 0,
-                "active_courses": 0,
-                "ind_study_courses": 0,
-                "active_ind_study_courses": 0,
-                "xlist_courses": 0,
-                "xlist_ind_study_courses": 0,
-            }
-
-            activity = SubaccountActivity(report=report,
-                                          term_id=sis_term_id,
+            activity = SubaccountActivity(term_id=sis_term_id,
                                           subaccount_id=sis_account_id,
                                           subaccount_name=account.name)
 
@@ -83,50 +67,101 @@ class ReportBuilder():
             for key, val in data.items():
                 if key == "courses":
                     continue
-
                 setattr(activity, key, val)
-
             try:
                 data = self.get_activity_by_account(sis_account_id,
                                                     sis_term_id)
-
                 for item in data["by_category"]:
                     setattr(activity,
                             "{}_views".format(item["category"]),
                             item["views"])
-
             except DataFailureException as ex:
                 if ex.status != 504:
                     raise
+            with open('activity_data', 'a') as file:
+                file.write(str(activities))
+            activities.append(activity)
+        return activities
 
-            activity.save()
-
-        term = CanvasTerms().get_term_by_sis_id(sis_term_id)
-
-        # Create xlist lookup
+    def get_xlist_courses(self, root_account, sis_term_id):
+        # create xlist lookup
+        term = self._terms.get_term_by_sis_id(sis_term_id)
         xlist_courses = set()
         xlist_prov_report = self._reports.create_xlist_provisioning_report(
             root_account.account_id, term.term_id,
             params={"include_deleted": True})
 
-        xlist_data = self._reports.get_report_data(xlist_prov_report)
-        header = xlist_data.pop(0)
-        for row in csv.reader(xlist_data):
+        xlist_data_file = self._reports.get_report_data(xlist_prov_report)
+        reader = csv.reader(xlist_data_file)
+        next(reader, None)  # skip the headers
+        for row in reader:
             if not len(row):
                 continue
-
             sis_course_id = row[6]
             if sis_course_id:
                 xlist_courses.add(sis_course_id)
+        self._reports.delete_report(xlist_prov_report)
+        return xlist_courses
 
-        # Generate course totals
+    def get_course_data(self, root_account, sis_term_id):
+        # create course totals lookup
+        term = self._terms.get_term_by_sis_id(sis_term_id)
         course_prov_report = self._reports.create_course_provisioning_report(
             root_account.account_id, term.term_id,
             params={"include_deleted": True})
+        course_data_file = self._reports.get_report_data(course_prov_report)
+        course_data = []
+        reader = csv.reader(course_data_file)
+        next(reader, None)  # skip the headers
+        for row in reader:
+            if not len(row):
+                continue
+            course_data.append(row)
+        self._reports.delete_report(course_prov_report)
+        return course_data
 
-        course_data = self._reports.get_report_data(course_prov_report)
-        header = course_data.pop(0)
-        for row in csv.reader(course_data):
+    @override_settings(RESTCLIENTS_CANVAS_TIMEOUT=90)
+    def build_subaccount_activity_report(self, root_account_id, sis_term_id):
+        term, _ = Term.objects.get_or_create_term_from_sis_term_id(
+            sis_term_id=sis_term_id)
+        week, _ = Week.objects.get_or_create_week(
+            sis_term_id=term.sis_term_id)
+
+        if week.week < 1:
+            return
+
+        report = Report(report_type=Report.SUBACCOUNT_ACTIVITY,
+                        started_date=datetime.utcnow().replace(tzinfo=utc),
+                        term_id=term.sis_term_id,
+                        term_week=week.week)
+        report.save()
+
+        set_gcs_base_path(report.term_id, report.term_week)
+
+        root_account = self._accounts.get_account_by_sis_id(root_account_id)
+
+        account_courses = {}
+
+        # save activities and initialize course totals
+        activity_data = self.get_account_activities_data(root_account,
+                                                         sis_term_id)
+        for activity in activity_data:
+            account_courses[activity.subaccount_id] = {
+                "courses": 0,
+                "active_courses": 0,
+                "ind_study_courses": 0,
+                "active_ind_study_courses": 0,
+                "xlist_courses": 0,
+                "xlist_ind_study_courses": 0
+            }
+
+            activity.report = report
+            activity.save()
+
+        # calculate course totals
+        xlist_courses = self.get_xlist_courses(root_account, sis_term_id)
+        course_data = self.get_course_data(root_account, sis_term_id)
+        for row in course_data:
             if not len(row):
                 continue
 
@@ -140,7 +175,7 @@ class ReportBuilder():
             ind_study = (len(sis_course_id.split("-")) == 6)
             is_xlist = (sis_course_id in xlist_courses)
             is_active = (status == "active")
-            for sis_id in account_courses:
+            for sis_id in account_courses.keys():
                 if sis_account_id.find(sis_id) == 0:
                     account_courses[sis_id]["courses"] += 1
                     if is_xlist:
@@ -149,13 +184,16 @@ class ReportBuilder():
                         account_courses[sis_id]["active_courses"] += 1
 
                     if ind_study:
-                        account_courses[sis_id]["ind_study_courses"] += 1
+                        account_courses[sis_id][
+                            "ind_study_courses"] += 1
                         if is_xlist:
-                            account_courses[sis_id]["xlist_ind_study_courses"] += 1
+                            account_courses[sis_id][
+                                "xlist_ind_study_courses"] += 1
                         elif is_active:
-                            account_courses[sis_id]["active_ind_study_courses"] += 1
+                            account_courses[sis_id][
+                                "active_ind_study_courses"] += 1
 
-        # Save course totals
+        # save course totals
         for sis_account_id in account_courses:
             try:
                 totals = account_courses[sis_account_id]
@@ -165,15 +203,14 @@ class ReportBuilder():
                 activity.courses = totals["courses"]
                 activity.active_courses = totals["active_courses"]
                 activity.ind_study_courses = totals["ind_study_courses"]
-                activity.active_ind_study_courses = totals["active_ind_study_courses"]
+                activity.active_ind_study_courses = \
+                    totals["active_ind_study_courses"]
                 activity.xlist_courses = totals["xlist_courses"]
-                activity.xlist_ind_study_courses = totals["xlist_ind_study_courses"]
+                activity.xlist_ind_study_courses = \
+                    totals["xlist_ind_study_courses"]
                 activity.save()
             except SubaccountActivity.DoesNotExist:
                 continue
 
         report.finished_date = datetime.utcnow().replace(tzinfo=utc)
         report.save()
-
-        self._reports.delete_report(xlist_prov_report)
-        self._reports.delete_report(course_prov_report)
