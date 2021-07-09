@@ -6,13 +6,14 @@ from datetime import datetime
 from django.utils.timezone import utc
 from django.test import override_settings
 from logging import getLogger
+from data_aggregator.models import Term, Week
+from data_aggregator.utilities import set_gcs_base_path
 from restclients_core.util.retry import retry
 from restclients_core.exceptions import DataFailureException
 from uw_canvas.accounts import Accounts as CanvasAccounts
 from uw_canvas.analytics import Analytics as CanvasAnalytics
 from uw_canvas.reports import Reports as CanvasReports
 from uw_canvas.terms import Terms as CanvasTerms
-from uw_sws.term import get_current_term
 
 from data_aggregator.models import Report, SubaccountActivity
 
@@ -121,20 +122,21 @@ class ReportBuilder():
 
     @override_settings(RESTCLIENTS_CANVAS_TIMEOUT=90)
     def build_subaccount_activity_report(self, root_account_id, sis_term_id):
+        term, _ = Term.objects.get_or_create_term_from_sis_term_id(
+            sis_term_id=sis_term_id)
+        week, _ = Week.objects.get_or_create_week(
+            sis_term_id=term.sis_term_id)
+
+        if week.week < 1:
+            return
+
         report = Report(report_type=Report.SUBACCOUNT_ACTIVITY,
-                        started_date=datetime.utcnow().replace(tzinfo=utc))
-
-        week_of_term = None
-        if not sis_term_id:
-            current_term = get_current_term()
-            sis_term_id = current_term.canvas_sis_id()
-            week_of_term = current_term.get_week_of_term()
-            if week_of_term < 1:
-                return
-
-        report.term_id = sis_term_id
-        report.term_week = week_of_term
+                        started_date=datetime.utcnow().replace(tzinfo=utc),
+                        term_id=term.sis_term_id,
+                        term_week=week.week)
         report.save()
+
+        set_gcs_base_path(report.term_id, report.term_week)
 
         root_account = self._accounts.get_account_by_sis_id(root_account_id)
 
