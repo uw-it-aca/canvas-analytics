@@ -3,6 +3,7 @@
 
 import csv
 from datetime import datetime
+from django.db import transaction
 from django.utils.timezone import utc
 from django.test import override_settings
 from logging import getLogger
@@ -118,6 +119,7 @@ class ReportBuilder():
         self._reports.delete_report(course_prov_report)
         return course_data
 
+    @transaction.atomic
     @override_settings(RESTCLIENTS_CANVAS_TIMEOUT=90)
     def build_subaccount_activity_report(self, root_account_id, sis_term_id):
         term, _ = Term.objects.get_or_create_term_from_sis_term_id(
