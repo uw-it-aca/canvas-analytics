@@ -5,9 +5,139 @@ import unittest
 from django.test import TestCase
 from django.utils import timezone
 from datetime import timedelta
-from data_aggregator.models import Job, JobType, AnalyticTypes
+from data_aggregator.models import Job, JobType, AnalyticTypes, Term, Week
 from data_aggregator.utilities import datestring_to_datetime
 from mock import MagicMock, patch
+
+
+class TestTermManager(TestCase):
+
+    def setUp(self):
+        self.mock_get_current_term = \
+            self.create_patch('data_aggregator.models.get_current_term')
+        self.mock_get_term_by_year_and_quarter = self.create_patch(
+            'data_aggregator.models.get_term_by_year_and_quarter')
+        self.mock_get_or_create_from_sws_term = self.create_patch(
+            'data_aggregator.models.TermManager.get_or_create_from_sws_term')
+
+    def restart_all(self):
+        self.mock_get_current_term.reset_mock()
+        self.mock_get_or_create_from_sws_term.reset_mock()
+        self.mock_get_term_by_year_and_quarter.reset_mock()
+
+    def create_patch(self, name):
+        patcher = patch(name)
+        self.addCleanup(patcher.stop)
+        return patcher.start()
+
+    def test_get_or_create_term_from_sis_term_id(self):
+
+        # assert call sequence when NO sis_term_id is supplied and there is
+        # no existing term for the current date does NOT EXIST
+        Term.objects.get_term_for_date = MagicMock(return_value=None)
+        Term.objects.get_or_create_term_from_sis_term_id()
+        self.assertTrue(Term.objects.get_term_for_date.called)
+        self.assertTrue(self.mock_get_current_term.called)
+        self.assertFalse(self.mock_get_term_by_year_and_quarter.called)
+        self.assertTrue(self.mock_get_or_create_from_sws_term.called)
+
+        self.restart_all()
+
+        # assert call sequence when NO sis_term_id is supplied and
+        # an existing term for the current date EXISTS
+        mock_existing_term = MagicMock()
+        Term.objects.get_term_for_date = \
+            MagicMock(return_value=mock_existing_term)
+        term, created = Term.objects.get_or_create_term_from_sis_term_id()
+        self.assertTrue(Term.objects.get_term_for_date.called)
+        self.assertFalse(self.mock_get_current_term.called)
+        self.assertFalse(self.mock_get_term_by_year_and_quarter.called)
+        self.assertFalse(self.mock_get_or_create_from_sws_term.called)
+        self.assertEqual((term, created), (mock_existing_term, False))
+
+        self.restart_all()
+
+        # assert call sequence when sis_term_id is supplied
+        Term.objects.get_term_for_date = MagicMock(return_value=None)
+        Term.objects.get_or_create_term_from_sis_term_id(
+                                                    sis_term_id="2021-spring")
+        self.assertFalse(Term.objects.get_term_for_date.called)
+        self.assertFalse(self.mock_get_current_term.called)
+        self.assertTrue(self.mock_get_term_by_year_and_quarter.called)
+        self.assertTrue(self.mock_get_or_create_from_sws_term.called)
+
+
+class TestWeekManager(TestCase):
+
+    def setUp(self):
+        self.mock_week = MagicMock()
+        self.mock_week_get_or_create = self.create_patch(
+            'data_aggregator.models.WeekManager.get_or_create')
+        self.mock_week_get_or_create.return_value = \
+            self.mock_week, None
+        self.mock_get_relative_week = self.create_patch(
+            'data_aggregator.utilities.get_relative_week')
+        self.mock_term = MagicMock()
+        self.mock_get_or_create_term_from_sis_term_id = self.create_patch(
+            'data_aggregator.models.TermManager.'
+            'get_or_create_term_from_sis_term_id')
+        self.mock_get_or_create_term_from_sis_term_id.return_value = \
+            self.mock_term, None
+
+    def restart_all(self):
+        self.mock_week_get_or_create.reset_mock()
+        self.mock_get_relative_week.reset_mock()
+        self.mock_get_or_create_term_from_sis_term_id.reset_mock()
+
+    def create_patch(self, name):
+        patcher = patch(name)
+        self.addCleanup(patcher.stop)
+        return patcher.start()
+
+    def test_get_or_create_week(self):
+        # assert call sequence when no parameters are passed
+        Week.objects.get_or_create_week()
+        self.assertTrue(self.mock_get_or_create_term_from_sis_term_id.called)
+        self.assertTrue(self.mock_get_relative_week.called)
+        self.assertTrue(self.mock_week_get_or_create.called)
+        self.mock_week_get_or_create.assert_called_with(
+            term=self.mock_term,
+            week=self.mock_get_relative_week.return_value)
+
+        self.restart_all()
+
+        # assert call sequence when term is passed
+        Week.objects.get_or_create_week(sis_term_id="2021-summer")
+        self.assertTrue(self.mock_get_or_create_term_from_sis_term_id.called)
+        self.mock_get_or_create_term_from_sis_term_id.assert_called_with(
+            sis_term_id="2021-summer")
+        self.assertTrue(self.mock_get_relative_week.called)
+        self.assertTrue(self.mock_week_get_or_create.called)
+        self.mock_week_get_or_create.assert_called_with(
+            term=self.mock_term,
+            week=self.mock_get_relative_week.return_value)
+
+        self.restart_all()
+
+        # assert call sequence when week is passed
+        Week.objects.get_or_create_week(week_num=2)
+        self.assertTrue(self.mock_get_or_create_term_from_sis_term_id.called)
+        self.assertFalse(self.mock_get_relative_week.called)
+        self.assertTrue(self.mock_week_get_or_create.called)
+        self.mock_week_get_or_create.assert_called_with(
+            term=self.mock_term,
+            week=2)
+
+        self.restart_all()
+
+        # assert call sequence when term and week is passed
+        Week.objects.get_or_create_week(sis_term_id="2021-summer", week_num=2)
+        self.assertTrue(self.mock_get_or_create_term_from_sis_term_id.called)
+        self.assertFalse(self.mock_get_relative_week.called)
+        self.assertTrue(self.mock_week_get_or_create.called)
+        self.mock_week_get_or_create.assert_called_with(
+            term=self.mock_term,
+            week=2)
 
 
 class TestJob(TestCase):

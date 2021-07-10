@@ -13,6 +13,18 @@ from uw_sws import SWS_TIMEZONE
 
 class TermManager(models.Manager):
 
+    def get_term_for_date(self, date):
+        """
+        Return term intersecting with supplied date
+
+        :param date: date to return term for
+        :type date: datetime.datetime
+        """
+        term = (Term.objects
+                .filter(first_day_quarter__lte=date)
+                .filter(grade_submission_deadline__gte=date)).first()
+        return term
+
     def get_or_create_term_from_sis_term_id(self, sis_term_id=None):
         """
         Creates and/or queries for Term matching sis_term_id. If sis_term_id
@@ -25,9 +37,7 @@ class TermManager(models.Manager):
         if sis_term_id is None:
             # try to lookup the current term based on the date
             curr_date = timezone.now()
-            term = (Term.objects
-                    .filter(first_day_quarter__lte=curr_date)
-                    .filter(grade_submission_deadline__gte=curr_date)).first()
+            term = self.get_term_for_date(curr_date)
             if term:
                 # return current term
                 return term, False
