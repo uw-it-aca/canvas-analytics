@@ -144,7 +144,7 @@ class ReportBuilder():
 
         # save activities and initialize course totals
         activity_data = self.get_account_activities_data(root_account,
-                                                         sis_term_id)
+                                                         report.term_id)
         for activity in activity_data:
             account_courses[activity.subaccount_id] = {
                 "courses": 0,
@@ -159,8 +159,8 @@ class ReportBuilder():
             activity.save()
 
         # calculate course totals
-        xlist_courses = self.get_xlist_courses(root_account, sis_term_id)
-        course_data = self.get_course_data(root_account, sis_term_id)
+        xlist_courses = self.get_xlist_courses(root_account, report.term_id)
+        course_data = self.get_course_data(root_account, report.term_id)
         for row in course_data:
             if not len(row):
                 continue
@@ -198,7 +198,7 @@ class ReportBuilder():
             try:
                 totals = account_courses[sis_account_id]
                 activity = SubaccountActivity.objects.get(
-                    report=report, term_id=sis_term_id,
+                    report=report, term_id=report.term_id,
                     subaccount_id=sis_account_id)
                 activity.courses = totals["courses"]
                 activity.active_courses = totals["active_courses"]
