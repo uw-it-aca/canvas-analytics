@@ -484,6 +484,10 @@ class Report(models.Model):
     term_id = models.CharField(max_length=20)
     term_week = models.PositiveIntegerField(null=True)
 
+    def finished(self):
+        self.finished_date = datetime.utcnow().replace(tzinfo=timezone.utc)
+        self.save()
+
 
 class SubaccountActivity(models.Model):
     """

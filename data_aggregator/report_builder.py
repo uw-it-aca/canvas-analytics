@@ -2,12 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import csv
-from datetime import datetime
 from django.db import transaction
-from django.utils.timezone import utc
 from django.test import override_settings
 from logging import getLogger
-from data_aggregator.models import Term, Week, Report, SubaccountActivity
+from data_aggregator.models import Report, SubaccountActivity
 from data_aggregator.utilities import set_gcs_base_path
 from data_aggregator.exceptions import TermNotStarted
 from restclients_core.util.retry import retry
@@ -203,5 +201,4 @@ class ReportBuilder():
             except SubaccountActivity.DoesNotExist:
                 continue
 
-        report.finished_date = datetime.utcnow().replace(tzinfo=utc)
-        report.save()
+        report.finished()
