@@ -9,6 +9,7 @@ from django.test import override_settings
 from logging import getLogger
 from data_aggregator.models import Term, Week, Report, SubaccountActivity
 from data_aggregator.utilities import set_gcs_base_path
+from data_aggregator.exceptions import TermNotStarted
 from restclients_core.util.retry import retry
 from restclients_core.exceptions import DataFailureException
 from uw_canvas.accounts import Accounts as CanvasAccounts
@@ -119,25 +120,12 @@ class ReportBuilder():
     @transaction.atomic
     @override_settings(RESTCLIENTS_CANVAS_TIMEOUT=90)
     def build_subaccount_activity_report(self, root_account_id, sis_term_id):
-        term, _ = Term.objects.get_or_create_term_from_sis_term_id(
-            sis_term_id=sis_term_id)
-        week, _ = Week.objects.get_or_create_week(
-            sis_term_id=term.sis_term_id)
-
-        if week.week < 1:
+        try:
+            report = Report.objects.get_or_create_report(
+                Report.SUBACCOUNT_ACTIVITY, sis_term_id=sis_term_id)
+        except TermNotStarted as ex:
+            logger.info("Term {} not started".format(ex))
             return
-
-        report, report_created = Report.objects.get_or_create(
-            report_type=Report.SUBACCOUNT_ACTIVITY,
-            term_id=term.sis_term_id,
-            term_week=week.week)
-
-        if not report_created:
-            # re-running an existing report, so flush existing data
-            SubaccountActivity.objects.filter(report=report).delete()
-
-        report.started_date = datetime.utcnow().replace(tzinfo=utc)
-        report.save()
 
         set_gcs_base_path(report.term_id, report.term_week)
 
