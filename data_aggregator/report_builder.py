@@ -127,10 +127,16 @@ class ReportBuilder():
         if week.week < 1:
             return
 
-        report = Report(report_type=Report.SUBACCOUNT_ACTIVITY,
-                        started_date=datetime.utcnow().replace(tzinfo=utc),
-                        term_id=term.sis_term_id,
-                        term_week=week.week)
+        report, report_created = Report.objects.get_or_create(
+            report_type=Report.SUBACCOUNT_ACTIVITY,
+            term_id=term.sis_term_id,
+            term_week=week.week)
+
+        if not report_created:
+            # re-running an existing report, so flush existing data
+            SubaccountActivity.objects.filter(report=report).delete()
+
+        report.started_date = datetime.utcnow().replace(tzinfo=utc)
         report.save()
 
         set_gcs_base_path(report.term_id, report.term_week)
