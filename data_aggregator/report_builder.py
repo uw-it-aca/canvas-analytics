@@ -7,7 +7,7 @@ from django.db import transaction
 from django.utils.timezone import utc
 from django.test import override_settings
 from logging import getLogger
-from data_aggregator.models import Term, Week
+from data_aggregator.models import Term, Week, Report, SubaccountActivity
 from data_aggregator.utilities import set_gcs_base_path
 from restclients_core.util.retry import retry
 from restclients_core.exceptions import DataFailureException
@@ -15,9 +15,6 @@ from uw_canvas.accounts import Accounts as CanvasAccounts
 from uw_canvas.analytics import Analytics as CanvasAnalytics
 from uw_canvas.reports import Reports as CanvasReports
 from uw_canvas.terms import Terms as CanvasTerms
-
-from data_aggregator.models import Report, SubaccountActivity
-
 
 logger = getLogger(__name__)
 
