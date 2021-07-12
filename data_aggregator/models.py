@@ -6,6 +6,7 @@ import logging
 from datetime import datetime, date, timedelta
 from django.db import models
 from django.utils import timezone
+from data_aggregator.exceptions import TermNotStarted
 from data_aggregator import utilities
 from uw_sws.term import get_current_term, get_term_by_year_and_quarter
 from uw_sws import SWS_TIMEZONE
@@ -444,13 +445,42 @@ class RadDbView(models.Model):
         models.DecimalField(null=True, max_digits=13, decimal_places=3)
 
 
+class ReportManager(models.Manager):
+    def get_or_create_report(self, report_type, sis_term_id=None):
+        term, _ = Term.objects.get_or_create_term_from_sis_term_id(
+            sis_term_id=sis_term_id)
+        week, _ = Week.objects.get_or_create_week(
+            sis_term_id=term.sis_term_id)
+
+        if week.week < 1:
+            raise TermNotStarted(term.sis_term_id)
+
+        started_dt = datetime.utcnow().replace(tzinfo=timezone.utc)
+        report, report_created = Report.objects.get_or_create(
+            report_type=report_type,
+            term_id=term.sis_term_id,
+            term_week=week.week, defaults={"started_date": started_dt})
+
+        if not report_created:
+            # re-running an existing report, so flush existing data
+            SubaccountActivity.objects.filter(report=report).delete()
+
+            # reset dates
+            report.started_date = started_dt
+            report.finished_date = None
+            report.save()
+
+        return report
+
+
 class Report(models.Model):
     """
     Represents a report
     """
+    objects = ReportManager()
 
     class Meta:
-        db_table = 'analytics_report'
+        db_table = "analytics_report"
 
     SUBACCOUNT_ACTIVITY = "subaccount_activity"
 
@@ -464,6 +494,10 @@ class Report(models.Model):
     term_id = models.CharField(max_length=20)
     term_week = models.PositiveIntegerField(null=True)
 
+    def finished(self):
+        self.finished_date = datetime.utcnow().replace(tzinfo=timezone.utc)
+        self.save()
+
 
 class SubaccountActivity(models.Model):
     """
@@ -471,7 +505,7 @@ class SubaccountActivity(models.Model):
     """
 
     class Meta:
-        db_table = 'analytics_subaccountactivity'
+        db_table = "analytics_subaccountactivity"
 
     report = models.ForeignKey(Report, on_delete=models.CASCADE)
     term_id = models.CharField(max_length=20)

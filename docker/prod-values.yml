@@ -97,7 +97,7 @@ cronjob:
       command: ["/scripts/management_command.sh"]
       args: ["create_rad_data_file"]
     - name: subacct-activity
-      schedule: "0 10 * * 0" # At 2:00am PST on Sunday
+      schedule: "0 10 * * 6" # At 2:00am PDT on Saturday
       command: ["/scripts/management_command.sh"]
       args: ["build_subaccount_activity_report"]
 daemon:
