@@ -527,9 +527,6 @@ class JobDAO(BaseDAO):
         Download analytics for the given job
         and save them to the database.
 
-        :param analytic_type: type of analytics to load
-        :type analytic_type: str (AnalyticTypes.assignment or
-            AnalyticTypes.participation)
         :param job: Job associated with the analytics to save
         :type job: data_aggregator.models.Job
         """
@@ -559,6 +556,12 @@ class JobDAO(BaseDAO):
             self.save_participations_to_db(analytics, job)
 
     def run_task_job(self, job):
+        """
+        Runs a single task job.
+
+        :param job: Job associated for the task to run
+        :type job: data_aggregator.models.Job
+        """
         job_type = job.type.type
         sis_term_id = job.context.get("sis_term_id")
         week_num = job.context.get("week")
@@ -586,6 +589,12 @@ class JobDAO(BaseDAO):
             raise ValueError(f"Unknown job type {job_type}")
 
     def run_job(self, job):
+        """
+        Runs a job.
+
+        :param job: Job to run.
+        :type job: data_aggregator.models.Job
+        """
         job_type = job.type.type
         if job_type == AnalyticTypes.assignment or \
                 job_type == AnalyticTypes.participation:

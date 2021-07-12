@@ -6,8 +6,9 @@ import unittest
 import pandas as pd
 import numpy as np
 from django.test import TestCase
-from data_aggregator.dao import AnalyticTypes, CanvasDAO, LoadRadDAO, \
+from data_aggregator.dao import AnalyticTypes, CanvasDAO, JobDAO, LoadRadDAO, \
     BaseDAO, TaskDAO
+from data_aggregator.models import TaskTypes
 from mock import patch, MagicMock
 
 
@@ -279,6 +280,57 @@ class TestCanvasDAO(TestCase):
         self.assertEqual(
             mock_reports_inst.delete_report.called,
             True)
+
+
+class TestJobDAO(TestCase):
+
+    def test_run_task_job(self):
+        job = MagicMock()
+        job.type = MagicMock()
+        job.type.type = TaskTypes.create_terms
+        with patch("data_aggregator.dao.TaskDAO.create_terms") \
+                as mock_create_terms:
+            JobDAO().run_task_job(job)
+            mock_create_terms.assert_called_once()
+        job.type.type = TaskTypes.create_or_update_courses
+        with patch("data_aggregator.dao.TaskDAO.create_or_update_courses") \
+                as mock_create_or_update_courses:
+            JobDAO().run_task_job(job)
+            mock_create_or_update_courses.assert_called_once()
+        job.type.type = TaskTypes.create_or_update_users
+        with patch("data_aggregator.dao.TaskDAO.create_or_update_users") \
+                as mock_create_or_update_users:
+            JobDAO().run_task_job(job)
+            mock_create_or_update_users.assert_called_once()
+        job.type.type = TaskTypes.create_assignment_db_view
+        with patch("data_aggregator.dao.TaskDAO.create_assignment_db_view") \
+                as mock_create_assignment_db_view:
+            JobDAO().run_task_job(job)
+            mock_create_assignment_db_view.assert_called_once()
+        job.type.type = TaskTypes.create_participation_db_view
+        with patch("data_aggregator.dao.TaskDAO.create_participation_db_view") \
+                as mock_create_participation_db_view:  # noqa
+            JobDAO().run_task_job(job)
+            mock_create_participation_db_view.assert_called_once()
+        job.type.type = TaskTypes.create_rad_db_view
+        with patch("data_aggregator.dao.TaskDAO.create_rad_db_view") \
+                as mock_create_rad_db_view:
+            JobDAO().run_task_job(job)
+            mock_create_rad_db_view.assert_called_once()
+        job.type.type = TaskTypes.create_rad_data_file
+        with patch("data_aggregator.dao.LoadRadDAO.create_rad_data_file") \
+                as mock_create_rad_data_file:
+            JobDAO().run_task_job(job)
+            mock_create_rad_data_file.assert_called_once()
+        job.type.type = TaskTypes.build_subaccount_activity_report
+        with patch("data_aggregator.report_builder.ReportBuilder."
+                   "build_subaccount_activity_report") \
+                as mock_build_subaccount_activity_report:  # noqa
+            JobDAO().run_task_job(job)
+            mock_build_subaccount_activity_report.assert_called_once()
+        job.type.type = "unknown-job-type"
+        with self.assertRaises(ValueError):
+            JobDAO().run_task_job(job)
 
 
 class TestTaskDAO(TestCase):
