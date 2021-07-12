@@ -364,6 +364,163 @@ class JobDAO(BaseDAO):
                              f"{job.type.type}.")
         old_analytics.delete()
 
+    def run_analytics_job(self, job):
+        """
+        Download analytics for the given job
+        and save them to the database.
+
+        :param job: Job associated with the analytics to save
+        :type job: data_aggregator.models.Job
+        """
+        canvas_course_id = job.context["canvas_course_id"]
+        sis_term_id = job.context["sis_term_id"]
+        week_num = job.context["week"]
+        analytic_type = job.type.type
+        # in case gcs caching is enabled, set gcs base path env variable so
+        # that cached responses are ordered by term and week
+        set_gcs_base_path(sis_term_id, week_num)
+
+        # delete existing assignment data in case of a job restart
+        self.delete_data_for_job(job)
+
+        cd = CanvasDAO()
+
+        analytics = []
+        for analytic in cd.download_raw_analytics_for_course(
+                                            canvas_course_id, analytic_type):
+            analytics.append(analytic)
+
+        analytics_dao = AnalyticsDao()
+        if analytics and analytic_type == AnalyticTypes.assignment:
+            # save remaining assignments to db
+            analytics_dao.save_assignments_to_db(analytics, job)
+        elif analytics and analytic_type == AnalyticTypes.participation:
+            # save remaining participations to db
+            analytics_dao.save_participations_to_db(analytics, job)
+
+    def run_task_job(self, job):
+        """
+        Runs a single task job.
+
+        :param job: Job associated for the task to run
+        :type job: data_aggregator.models.Job
+        """
+        job_type = job.type.type
+        sis_term_id = job.context.get("sis_term_id")
+        week_num = job.context.get("week")
+        subaccount_id = job.context.get("subaccount_id")
+        if job_type == TaskTypes.create_terms:
+            TaskDAO().create_terms(sis_term_id=sis_term_id)
+        elif job_type == TaskTypes.create_or_update_courses:
+            TaskDAO().create_or_update_courses(sis_term_id=sis_term_id)
+        elif job_type == TaskTypes.create_or_update_users:
+            TaskDAO().create_or_update_users(sis_term_id=sis_term_id)
+        elif job_type == TaskTypes.create_assignment_db_view:
+            TaskDAO().create_assignment_db_view(sis_term_id, week_num)
+        elif job_type == TaskTypes.create_participation_db_view:
+            TaskDAO().create_participation_db_view(sis_term_id, week_num)
+        elif job_type == TaskTypes.create_rad_db_view:
+            TaskDAO().create_rad_db_view(sis_term_id=sis_term_id,
+                                         week_num=week_num)
+        elif job_type == TaskTypes.create_rad_data_file:
+            LoadRadDAO().create_rad_data_file(sis_term_id=sis_term_id,
+                                              week_num=week_num)
+        elif job_type == TaskTypes.build_subaccount_activity_report:
+            ReportBuilder().build_subaccount_activity_report(subaccount_id,
+                                                             sis_term_id)
+        else:
+            raise ValueError(f"Unknown job type {job_type}")
+
+    def run_job(self, job):
+        """
+        Runs a job.
+
+        :param job: Job to run.
+        :type job: data_aggregator.models.Job
+        """
+        job_type = job.type.type
+        if job_type == AnalyticTypes.assignment or \
+                job_type == AnalyticTypes.participation:
+            # download and load all assignment analytics for job
+            JobDAO().run_analytics_job(job)
+        else:
+            # run an individual task job
+            JobDAO().run_task_job(job)
+
+    def create_job(self, job_type, target_date_start, target_date_end,
+                   context=None):
+        """
+        Create a job for the given type.
+        """
+        if context is None:
+            context = {}
+        job = Job()
+        job.type = job_type
+        job.target_date_start = target_date_start
+        job.target_date_end = target_date_end
+        job.context = context
+        job.save()
+        return job
+
+    def create_analytic_jobs(self, job_type, target_date_start,
+                             target_date_end, context=None):
+        """
+        For each course create an analytics job matching the given job type.
+        If context is explicitly passed, only a single job will be created for
+        that given context.
+        """
+        jobs = []
+        if job_type.type != AnalyticTypes.assignment and \
+                job_type.type != AnalyticTypes.participation:
+            raise ValueError(f"Job type {job_type.type} is not a vaild "
+                             f"analytics type. Aborting creating analytic "
+                             f"jobs.")
+        if context and \
+                context.get('canvas_course_id') is not None and \
+                context.get('sis_course_id') is not None and \
+                context.get('sis_term_id') is not None and \
+                context.get('week_num') is not None:
+            # manually supplied single job context
+            logging.debug(
+                f"Adding {job_type.type} job for course "
+                f"{context['canvas_course_id']}")
+            job = self.create_job(job_type, target_date_start, target_date_end,
+                                  context=context)
+            jobs.append(job)
+        else:
+            # create jobs for all courses in a term
+            term, _ = Term.objects.get_or_create_term_from_sis_term_id(
+                sis_term_id=context['sis_term_id'])
+            week, _ = Week.objects.get_or_create_week(
+                                            sis_term_id=context['sis_term_id'],
+                                            week_num=context['week'])
+            courses = Course.objects.filter(status='active').filter(term=term)
+            course_count = courses.count()
+            if course_count == 0:
+                logging.warning(
+                    f'No active courses in term {term.sis_term_id} to '
+                    f'create {job_type.type} jobs for.')
+            else:
+                jobs_count = 0
+                with transaction.atomic():
+                    for course in courses:
+                        # create jobs
+                        logging.debug(
+                            f"Adding {job_type.type} jobs for course "
+                            f"{course.sis_course_id} "
+                            f"({course.canvas_course_id})")
+                        context["sis_course_id"] = course.sis_course_id
+                        context["canvas_course_id"] = course.canvas_course_id
+                        job = self.create_job(job_type, target_date_start,
+                                              target_date_end, context=context)
+                        jobs.append(job)
+                        jobs_count += 1
+                logging.info(f'Created {jobs_count} {job_type.type} jobs.')
+        return jobs
+
+
+class AnalyticsDao(BaseDAO):
+
     def save_assignments_to_db(self, assignment_dicts, job):
         """
         Save list of assignment dictionaries to the db for the given job
@@ -521,159 +678,6 @@ class JobDAO(BaseDAO):
             logging.info(f"Updated {create_count} participations for "
                          f"term={sis_term_id}, week={week_num}, "
                          f"course={canvas_course_id}")
-
-    def run_analytics_job(self, job):
-        """
-        Download analytics for the given job
-        and save them to the database.
-
-        :param job: Job associated with the analytics to save
-        :type job: data_aggregator.models.Job
-        """
-        canvas_course_id = job.context["canvas_course_id"]
-        sis_term_id = job.context["sis_term_id"]
-        week_num = job.context["week"]
-        analytic_type = job.type.type
-        # in case gcs caching is enabled, set gcs base path env variable so
-        # that cached responses are ordered by term and week
-        set_gcs_base_path(sis_term_id, week_num)
-
-        # delete existing assignment data in case of a job restart
-        self.delete_data_for_job(job)
-
-        cd = CanvasDAO()
-
-        analytics = []
-        for analytic in cd.download_raw_analytics_for_course(
-                                            canvas_course_id, analytic_type):
-            analytics.append(analytic)
-
-        if analytics and analytic_type == AnalyticTypes.assignment:
-            # save remaining assignments to db
-            self.save_assignments_to_db(analytics, job)
-        elif analytics and analytic_type == AnalyticTypes.participation:
-            # save remaining participations to db
-            self.save_participations_to_db(analytics, job)
-
-    def run_task_job(self, job):
-        """
-        Runs a single task job.
-
-        :param job: Job associated for the task to run
-        :type job: data_aggregator.models.Job
-        """
-        job_type = job.type.type
-        sis_term_id = job.context.get("sis_term_id")
-        week_num = job.context.get("week")
-        subaccount_id = job.context.get("subaccount_id")
-        if job_type == TaskTypes.create_terms:
-            TaskDAO().create_terms(sis_term_id=sis_term_id)
-        elif job_type == TaskTypes.create_or_update_courses:
-            TaskDAO().create_or_update_courses(sis_term_id=sis_term_id)
-        elif job_type == TaskTypes.create_or_update_users:
-            TaskDAO().create_or_update_users(sis_term_id=sis_term_id)
-        elif job_type == TaskTypes.create_assignment_db_view:
-            TaskDAO().create_assignment_db_view(sis_term_id, week_num)
-        elif job_type == TaskTypes.create_participation_db_view:
-            TaskDAO().create_participation_db_view(sis_term_id, week_num)
-        elif job_type == TaskTypes.create_rad_db_view:
-            TaskDAO().create_rad_db_view(sis_term_id=sis_term_id,
-                                         week_num=week_num)
-        elif job_type == TaskTypes.create_rad_data_file:
-            LoadRadDAO().create_rad_data_file(sis_term_id=sis_term_id,
-                                              week_num=week_num)
-        elif job_type == TaskTypes.build_subaccount_activity_report:
-            ReportBuilder().build_subaccount_activity_report(subaccount_id,
-                                                             sis_term_id)
-        else:
-            raise ValueError(f"Unknown job type {job_type}")
-
-    def run_job(self, job):
-        """
-        Runs a job.
-
-        :param job: Job to run.
-        :type job: data_aggregator.models.Job
-        """
-        job_type = job.type.type
-        if job_type == AnalyticTypes.assignment or \
-                job_type == AnalyticTypes.participation:
-            # download and load all assignment analytics for job
-            JobDAO().run_analytics_job(job)
-        else:
-            # run an individual task job
-            JobDAO().run_task_job(job)
-
-    def create_job(self, job_type, target_date_start, target_date_end,
-                   context=None):
-        """
-        Create a job for the given type.
-        """
-        if context is None:
-            context = {}
-        job = Job()
-        job.type = job_type
-        job.target_date_start = target_date_start
-        job.target_date_end = target_date_end
-        job.context = context
-        job.save()
-        return job
-
-    def create_analytic_jobs(self, job_type, target_date_start,
-                             target_date_end, context=None):
-        """
-        For each course create an analytics job matching the given job type.
-        If context is explicitly passed, only a single job will be created for
-        that given context.
-        """
-        jobs = []
-        if job_type.type != AnalyticTypes.assignment and \
-                job_type.type != AnalyticTypes.participation:
-            raise ValueError(f"Job type {job_type.type} is not a vaild "
-                             f"analytics type. Aborting creating analytic "
-                             f"jobs.")
-        if context and \
-                context.get('canvas_course_id') is not None and \
-                context.get('sis_course_id') is not None and \
-                context.get('sis_term_id') is not None and \
-                context.get('week_num') is not None:
-            # manually supplied single job context
-            logging.debug(
-                f"Adding {job_type.type} job for course "
-                f"{context['canvas_course_id']}")
-            job = self.create_job(job_type, target_date_start, target_date_end,
-                                  context=context)
-            jobs.append(job)
-        else:
-            # create jobs for all courses in a term
-            term, _ = Term.objects.get_or_create_term_from_sis_term_id(
-                sis_term_id=context['sis_term_id'])
-            week, _ = Week.objects.get_or_create_week(
-                                            sis_term_id=context['sis_term_id'],
-                                            week_num=context['week'])
-            courses = Course.objects.filter(status='active').filter(term=term)
-            course_count = courses.count()
-            if course_count == 0:
-                logging.warning(
-                    f'No active courses in term {term.sis_term_id} to '
-                    f'create {job_type.type} jobs for.')
-            else:
-                jobs_count = 0
-                with transaction.atomic():
-                    for course in courses:
-                        # create jobs
-                        logging.debug(
-                            f"Adding {job_type.type} jobs for course "
-                            f"{course.sis_course_id} "
-                            f"({course.canvas_course_id})")
-                        context["sis_course_id"] = course.sis_course_id
-                        context["canvas_course_id"] = course.canvas_course_id
-                        job = self.create_job(job_type, target_date_start,
-                                              target_date_end, context=context)
-                        jobs.append(job)
-                        jobs_count += 1
-                logging.info(f'Created {jobs_count} {job_type.type} jobs.')
-        return jobs
 
 
 class TaskDAO(BaseDAO):
