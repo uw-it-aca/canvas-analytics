@@ -390,7 +390,7 @@ class JobDAO(BaseDAO):
                                             canvas_course_id, analytic_type):
             analytics.append(analytic)
 
-        analytics_dao = AnalyticsDao()
+        analytics_dao = AnalyticsDAO()
         if analytics and analytic_type == AnalyticTypes.assignment:
             # save remaining assignments to db
             analytics_dao.save_assignments_to_db(analytics, job)
@@ -519,7 +519,7 @@ class JobDAO(BaseDAO):
         return jobs
 
 
-class AnalyticsDao(BaseDAO):
+class AnalyticsDAO(BaseDAO):
 
     def save_assignments_to_db(self, assignment_dicts, job):
         """

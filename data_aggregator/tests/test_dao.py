@@ -317,6 +317,60 @@ class TestJobDAO(TestCase):
             JobDAO().run_job(job)
             mock_run_task_job.assert_called_once()
 
+    @patch('data_aggregator.dao.AnalyticsDAO')
+    @patch('data_aggregator.dao.CanvasDAO')
+    @patch('data_aggregator.dao.set_gcs_base_path')
+    def test_run_analytics_job(self, mock_set_gcs_base_path, mock_canvas_dao,
+                               mock_analytics_dao):
+        job = MagicMock()
+        job.type = MagicMock()
+        job.context = {
+            "canvas_course_id": 12345,
+            "sis_term_id": "2021-summer",
+            "week": 1
+        }
+        job_dao = JobDAO()
+        job_dao.delete_data_for_job = MagicMock()
+        mock_analytics = [MagicMock(), MagicMock()]
+        mock_canvas_dao_inst = mock_canvas_dao()
+        mock_canvas_dao_inst.download_raw_analytics_for_course = MagicMock(
+            return_value=mock_analytics
+        )
+        mock_analytics_dao_inst = mock_analytics_dao()
+        mock_analytics_dao_inst.save_assignments_to_db = MagicMock()
+        mock_analytics_dao_inst.save_participations_to_db = MagicMock()
+
+        job.type.type = AnalyticTypes.assignment
+        job_dao.run_analytics_job(job)
+        job_dao.delete_data_for_job.assert_called_once()
+        mock_set_gcs_base_path.assert_called_once_with("2021-summer", 1)
+        mock_canvas_dao_inst.download_raw_analytics_for_course \
+            .assert_called_once_with(12345, AnalyticTypes.assignment)
+        mock_analytics_dao_inst.save_assignments_to_db.assert_called_once()
+        mock_analytics_dao_inst.save_assignments_to_db.assert_called_once_with(
+            mock_analytics, job
+        )
+
+        # reset mock states
+        job_dao.delete_data_for_job.reset_mock()
+        mock_set_gcs_base_path.reset_mock()
+        mock_canvas_dao_inst.reset_mock()
+        mock_canvas_dao_inst.download_raw_analytics_for_course.reset_mock()
+        mock_analytics_dao_inst.save_assignments_to_db.reset_mock()
+        mock_analytics_dao_inst.save_participations_to_db.reset_mock()
+
+        job.type.type = AnalyticTypes.participation
+        job_dao.run_analytics_job(job)
+        job_dao.delete_data_for_job.assert_called_once()
+        mock_set_gcs_base_path.assert_called_once_with("2021-summer", 1)
+        mock_canvas_dao_inst.download_raw_analytics_for_course \
+            .assert_called_once_with(12345, AnalyticTypes.participation)
+        mock_analytics_dao_inst.save_participations_to_db.assert_called_once()
+        mock_analytics_dao_inst.save_participations_to_db \
+            .assert_called_once_with(
+                mock_analytics, job
+            )
+
     def test_run_task_job(self):
         job = MagicMock()
         job.type = MagicMock()
