@@ -7,8 +7,9 @@ from csv import DictReader
 from django.conf import settings
 from django.db import transaction, connection
 from data_aggregator.models import Assignment, Course, Participation, \
-    User, RadDbView, Term, Week, AnalyticTypes, Job, JobType
+    TaskTypes, User, RadDbView, Term, Week, AnalyticTypes, Job
 from data_aggregator.utilities import get_view_name, set_gcs_base_path
+from data_aggregator.report_builder import ReportBuilder
 from restclients_core.exceptions import DataFailureException
 from restclients_core.util.retry import retry
 from uw_canvas import Canvas
@@ -557,57 +558,113 @@ class JobDAO(BaseDAO):
             # save remaining participations to db
             self.save_participations_to_db(analytics, job)
 
-    def create_jobs(self, analytic_type, sis_term_id=None, week_num=None,
-                    canvas_course_id=None, sis_course_id=None,
-                    target_date_start=None, target_date_end=None):
+    def run_task_job(self, job):
+        job_type = job.type.type
+        sis_term_id = job.context.get("sis_term_id")
+        week_num = job.context.get("week")
+        subaccount_id = job.context.get("subaccount_id")
+        if job_type == TaskTypes.create_terms:
+            TaskDAO().create_terms(sis_term_id=sis_term_id)
+        elif job_type == TaskTypes.create_or_update_courses:
+            TaskDAO().create_or_update_courses(sis_term_id=sis_term_id)
+        elif job_type == TaskTypes.create_or_update_users:
+            TaskDAO().create_or_update_users(sis_term_id=sis_term_id)
+        elif job_type == TaskTypes.create_assignment_db_view:
+            TaskDAO().create_assignment_db_view(sis_term_id, week_num)
+        elif job_type == TaskTypes.create_participation_db_view:
+            TaskDAO().create_participation_db_view(sis_term_id, week_num)
+        elif job_type == TaskTypes.create_rad_db_view:
+            TaskDAO().create_rad_db_view(sis_term_id=sis_term_id,
+                                         week_num=week_num)
+        elif job_type == TaskTypes.create_rad_data_file:
+            LoadRadDAO().create_rad_data_file(sis_term_id=sis_term_id,
+                                              week_num=week_num)
+        elif job_type == TaskTypes.build_subaccount_activity_report:
+            ReportBuilder().build_subaccount_activity_report(subaccount_id,
+                                                             sis_term_id)
+        else:
+            raise ValueError(f"Unknown job type {job_type}")
+
+    def run_job(self, job):
+        job_type = job.type.type
+        if job_type == AnalyticTypes.assignment or \
+                job_type == AnalyticTypes.participation:
+            # download and load all assignment analytics for job
+            JobDAO().run_analytics_job(job)
+        else:
+            # run an individual task job
+            JobDAO().run_task_job(job)
+
+    def create_job(self, job_type, target_date_start, target_date_end,
+                   context=None):
+        """
+        Create a job for the given type.
+        """
+        if context is None:
+            context = {}
         job = Job()
-        job_type, _ = JobType.objects.get_or_create(type=analytic_type)
-        if sis_term_id and week_num and canvas_course_id and sis_course_id:
+        job.type = job_type
+        job.target_date_start = target_date_start
+        job.target_date_end = target_date_end
+        job.context = context
+        job.save()
+        return job
+
+    def create_analytic_jobs(self, job_type, target_date_start,
+                             target_date_end, context=None):
+        """
+        For each course create an analytics job matching the given job type.
+        If context is explicitly passed, only a single job will be created for
+        that given context.
+        """
+        jobs = []
+        if job_type.type != AnalyticTypes.assignment and \
+                job_type.type != AnalyticTypes.participation:
+            raise ValueError(f"Job type {job_type.type} is not a vaild "
+                             f"analytics type. Aborting creating analytic "
+                             f"jobs.")
+        if context and \
+                context.get('canvas_course_id') is not None and \
+                context.get('sis_course_id') is not None and \
+                context.get('sis_term_id') is not None and \
+                context.get('week_num') is not None:
             # manually supplied single job context
             logging.debug(
-                f"Adding {analytic_type} job for course "
-                f"{canvas_course_id}")
-            job.type = job_type
-            job.target_date_start = target_date_start
-            job.target_date_end = target_date_end
-            job.context = {'canvas_course_id': canvas_course_id,
-                           'sis_course_id': sis_course_id,
-                           'sis_term_id': sis_term_id,
-                           'week': week_num}
-            job.save()
+                f"Adding {job_type.type} job for course "
+                f"{context['canvas_course_id']}")
+            job = self.create_job(job_type, target_date_start, target_date_end,
+                                  context=context)
+            jobs.append(job)
         else:
             # create jobs for all courses in a term
             term, _ = Term.objects.get_or_create_term_from_sis_term_id(
-                sis_term_id=sis_term_id)
-            week, _ = Week.objects.get_or_create_week(sis_term_id=sis_term_id,
-                                                      week_num=week_num)
+                sis_term_id=context['sis_term_id'])
+            week, _ = Week.objects.get_or_create_week(
+                                            sis_term_id=context['sis_term_id'],
+                                            week_num=context['week'])
             courses = Course.objects.filter(status='active').filter(term=term)
             course_count = courses.count()
             if course_count == 0:
                 logging.warning(
                     f'No active courses in term {term.sis_term_id} to '
-                    f'create {analytic_type} jobs for.')
+                    f'create {job_type.type} jobs for.')
             else:
                 jobs_count = 0
                 with transaction.atomic():
                     for course in courses:
                         # create jobs
                         logging.debug(
-                            f"Adding {analytic_type} jobs for course "
+                            f"Adding {job_type.type} jobs for course "
                             f"{course.sis_course_id} "
                             f"({course.canvas_course_id})")
-                        job = Job()
-                        job.type = job_type
-                        job.target_date_start = target_date_start
-                        job.target_date_end = target_date_end
-                        job.context = \
-                            {'canvas_course_id': course.canvas_course_id,
-                             'sis_course_id': course.sis_course_id,
-                             'sis_term_id': term.sis_term_id,
-                             'week': week.week}
-                        job.save()
+                        context["sis_course_id"] = course.sis_course_id
+                        context["canvas_course_id"] = course.canvas_course_id
+                        job = self.create_job(job_type, target_date_start,
+                                              target_date_end, context=context)
+                        jobs.append(job)
                         jobs_count += 1
-                logging.info(f'Created {jobs_count} {analytic_type} jobs.')
+                logging.info(f'Created {jobs_count} {job_type.type} jobs.')
+        return jobs
 
 
 class TaskDAO(BaseDAO):

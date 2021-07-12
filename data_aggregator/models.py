@@ -222,12 +222,31 @@ class AnalyticTypes():
     participation = "participation"
 
 
+class TaskTypes():
+
+    create_terms = "create_terms"
+    create_or_update_courses = "create_or_update_courses"
+    create_or_update_users = "create_or_update_users"
+    create_assignment_db_view = "create_assignment_db_view"
+    create_participation_db_view = "create_participation_db_view"
+    create_rad_db_view = "create_rad_db_view"
+    create_rad_data_file = "create_rad_data_file"
+    build_subaccount_activity_report = "build_subaccount_activity_report"
+
+
 class JobType(models.Model):
 
     JOB_CHOICES = (
         (AnalyticTypes.assignment, 'AssignmentJob'),
         (AnalyticTypes.participation, 'ParticipationJob'),
-    )
+        (TaskTypes.create_terms, 'CreateTermsJob'),
+        (TaskTypes.create_or_update_courses, 'CreateOrUpdateCoursesJob'),
+        (TaskTypes.create_or_update_users, 'CreateOrUpdateUsersJob'),
+        (TaskTypes.create_assignment_db_view, 'CreateAssignmentDBViewJob'),
+        (TaskTypes.create_participation_db_view,
+         'CreateParticipationDBViewJob'),
+        (TaskTypes.create_rad_db_view, 'CreateRadDBViewJob'),
+        (TaskTypes.create_rad_data_file, 'CreateRadDataFileJob'))
     type = models.CharField(max_length=64, choices=JOB_CHOICES)
 
 
