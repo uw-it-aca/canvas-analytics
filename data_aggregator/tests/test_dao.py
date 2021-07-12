@@ -284,6 +284,25 @@ class TestCanvasDAO(TestCase):
 
 class TestJobDAO(TestCase):
 
+    def test_run_job(self):
+        job = MagicMock()
+        job.type = MagicMock()
+        job.type.type = AnalyticTypes.assignment
+        with patch("data_aggregator.dao.JobDAO.run_analytics_job") \
+                as mock_run_analytics_job:
+            JobDAO().run_job(job)
+            mock_run_analytics_job.assert_called_once()
+        job.type.type = AnalyticTypes.participation
+        with patch("data_aggregator.dao.JobDAO.run_analytics_job") \
+                as mock_run_analytics_job:
+            JobDAO().run_job(job)
+            mock_run_analytics_job.assert_called_once()
+        job.type.type = TaskTypes.create_assignment_db_view
+        with patch("data_aggregator.dao.JobDAO.run_task_job") \
+                as mock_run_task_job:
+            JobDAO().run_job(job)
+            mock_run_task_job.assert_called_once()
+
     def test_run_task_job(self):
         job = MagicMock()
         job.type = MagicMock()
@@ -308,8 +327,9 @@ class TestJobDAO(TestCase):
             JobDAO().run_task_job(job)
             mock_create_assignment_db_view.assert_called_once()
         job.type.type = TaskTypes.create_participation_db_view
-        with patch("data_aggregator.dao.TaskDAO.create_participation_db_view") \
-                as mock_create_participation_db_view:  # noqa
+        with patch("data_aggregator.dao.TaskDAO."
+                   "create_participation_db_view") \
+                as mock_create_participation_db_view:
             JobDAO().run_task_job(job)
             mock_create_participation_db_view.assert_called_once()
         job.type.type = TaskTypes.create_rad_db_view
@@ -325,7 +345,7 @@ class TestJobDAO(TestCase):
         job.type.type = TaskTypes.build_subaccount_activity_report
         with patch("data_aggregator.report_builder.ReportBuilder."
                    "build_subaccount_activity_report") \
-                as mock_build_subaccount_activity_report:  # noqa
+                as mock_build_subaccount_activity_report:
             JobDAO().run_task_job(job)
             mock_build_subaccount_activity_report.assert_called_once()
         job.type.type = "unknown-job-type"
