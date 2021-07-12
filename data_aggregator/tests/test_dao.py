@@ -8,7 +8,7 @@ import numpy as np
 from django.test import TestCase
 from data_aggregator.dao import AnalyticTypes, CanvasDAO, JobDAO, LoadRadDAO, \
     BaseDAO, TaskDAO
-from data_aggregator.models import TaskTypes
+from data_aggregator.models import JobType, TaskTypes
 from mock import patch, MagicMock
 
 
@@ -283,6 +283,20 @@ class TestCanvasDAO(TestCase):
 
 
 class TestJobDAO(TestCase):
+
+    def test_create_job(self):
+        job_type = JobType()
+        target_date_start = MagicMock()
+        target_date_end = MagicMock()
+        context = MagicMock()
+        with patch("data_aggregator.models.Job.save") as mock_job_save:
+            job = JobDAO().create_job(job_type, target_date_start,
+                                      target_date_end, context=context)
+            mock_job_save.assert_called_once()
+            self.assertEqual(job.type, job_type)
+            self.assertEqual(job.target_date_start, target_date_start)
+            self.assertEqual(job.target_date_end, target_date_end)
+            self.assertEqual(job.context, context)
 
     def test_run_job(self):
         job = MagicMock()
