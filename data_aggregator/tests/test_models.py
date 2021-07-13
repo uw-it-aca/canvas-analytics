@@ -384,7 +384,7 @@ class TestAssignmentManager(TestCase):
             mock_assignment_save.assert_called_once()
 
 
-class TestParticipationManager():
+class TestParticipationManager(TestCase):
 
     @patch("data_aggregator.models.Participation.objects.get")
     @patch("data_aggregator.models.User.objects.get")
@@ -444,22 +444,18 @@ class TestParticipationManager():
         self.assertEqual(partic.participations_level,
                          raw_partic_dict["participations_level"])
         tardiness_breakdown = raw_partic_dict["tardiness_breakdown"]
-        self.assertEqual(partic.missing, tardiness_breakdown["missing"])
-        self.assertEqual(partic.late, tardiness_breakdown["late"])
-        self.assertEqual(partic.on_time, tardiness_breakdown["on_time"])
-        self.assertEqual(partic.floating, tardiness_breakdown["floating"])
-        self.assertEqual(partic.total, tardiness_breakdown["total"])
-        self.assertEqual(partic.canvas_user_id,
-                         raw_partic_dict["canvas_user_id"])
-        self.assertEqual(partic.canvas_course_id,
-                         raw_partic_dict["canvas_course_id"])
+        self.assertEqual(partic.time_missing, tardiness_breakdown["missing"])
+        self.assertEqual(partic.time_late, tardiness_breakdown["late"])
+        self.assertEqual(partic.time_on_time, tardiness_breakdown["on_time"])
+        self.assertEqual(partic.time_floating, tardiness_breakdown["floating"])
+        self.assertEqual(partic.time_total, tardiness_breakdown["total"])
 
         # check create
         mock_participation_get.reset_mock()
         mock_participation_get.side_effect = Participation.DoesNotExist
         with patch('data_aggregator.models.Participation.save') as \
                 mock_participation_save:
-            _, created = Assignment.objects.create_or_update_participation(
+            _, created = Participation.objects.create_or_update_participation(
                                             job, week, course, raw_partic_dict)
             self.assertEqual(created, True)
             mock_participation_save.assert_called_once()

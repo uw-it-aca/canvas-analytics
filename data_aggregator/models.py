@@ -487,13 +487,15 @@ class ParticipationManager(models.Manager):
         partic.week = week
         partic.course = course
         partic.page_views = raw_partic_dict.get('page_views')
+        partic.max_page_views = raw_partic_dict.get('max_page_views')
         partic.page_views_level = \
             raw_partic_dict.get('page_views_level')
         partic.participations = raw_partic_dict.get('participations')
+        partic.max_participations = raw_partic_dict.get('max_participations')
         partic.participations_level = \
             raw_partic_dict.get('participations_level')
         if raw_partic_dict.get('tardiness_breakdown'):
-            partic.time_tardy = (raw_partic_dict.get('tardiness_breakdown')
+            partic.time_total = (raw_partic_dict.get('tardiness_breakdown')
                                  .get('total'))
             partic.time_on_time = (raw_partic_dict.get('tardiness_breakdown')
                                    .get('on_time'))
@@ -503,7 +505,6 @@ class ParticipationManager(models.Manager):
                                    .get('missing'))
             partic.time_floating = (raw_partic_dict.get('tardiness_breakdown')
                                     .get('floating'))
-        partic.page_views = raw_partic_dict.get('page_views')
         partic.save()
         return partic, created
 
@@ -521,10 +522,12 @@ class Participation(models.Model):
     user = models.ForeignKey(User,
                              on_delete=models.CASCADE)
     page_views = models.IntegerField(null=True)
+    max_page_views = models.IntegerField(null=True)
     page_views_level = models.IntegerField(null=True)
     participations = models.IntegerField(null=True)
+    max_participations = models.IntegerField(null=True)
     participations_level = models.IntegerField(null=True)
-    time_tardy = models.IntegerField(null=True)
+    time_total = models.IntegerField(null=True)
     time_on_time = models.IntegerField(null=True)
     time_late = models.IntegerField(null=True)
     time_missing = models.IntegerField(null=True)
