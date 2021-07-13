@@ -284,6 +284,34 @@ class TestCanvasDAO(TestCase):
 
 class TestJobDAO(TestCase):
 
+    @patch("data_aggregator.dao.Participation")
+    @patch("data_aggregator.dao.Assignment")
+    def test_delete_data_for_job(self, mock_assignment,
+                                 mock_participation):
+
+        mock_analytics = MagicMock()
+        mock_analytics.delete = MagicMock()
+        mock_assignment.objects.filter.return_value = mock_analytics
+        mock_participation.objects.filter.return_value = mock_analytics
+
+        job = MagicMock()
+        job.type = MagicMock()
+        job_dao = JobDAO()
+
+        job.type.type = AnalyticTypes.assignment
+        job_dao.delete_data_for_job(job)
+        mock_assignment.objects.filter.assert_called_once_with(job=job)
+        mock_analytics.delete.assert_called_once()
+
+        mock_analytics.reset_mock()
+        mock_assignment.objects.filter.reset_mock()
+        mock_participation.objects.filter.reset_mock()
+
+        job.type.type = AnalyticTypes.participation
+        job_dao.delete_data_for_job(job)
+        mock_participation.objects.filter.assert_called_once_with(job=job)
+        mock_analytics.delete.assert_called_once()
+
     def test_create_job(self):
         job_type = JobType()
         target_date_start = MagicMock()
