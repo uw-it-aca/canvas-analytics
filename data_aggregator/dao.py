@@ -7,8 +7,9 @@ from csv import DictReader
 from django.conf import settings
 from django.db import transaction, connection
 from data_aggregator.models import Assignment, Course, Participation, \
-    User, RadDbView, Term, Week, AnalyticTypes, Job, JobType
+    TaskTypes, User, RadDbView, Term, Week, AnalyticTypes, Job
 from data_aggregator.utilities import get_view_name, set_gcs_base_path
+from data_aggregator.report_builder import ReportBuilder
 from restclients_core.exceptions import DataFailureException
 from restclients_core.util.retry import retry
 from uw_canvas import Canvas
@@ -363,6 +364,165 @@ class JobDAO(BaseDAO):
                              f"{job.type.type}.")
         old_analytics.delete()
 
+    def run_analytics_job(self, job):
+        """
+        Download analytics for the given job
+        and save them to the database.
+
+        :param job: Job associated with the analytics to save
+        :type job: data_aggregator.models.Job
+        """
+        canvas_course_id = job.context["canvas_course_id"]
+        sis_term_id = job.context["sis_term_id"]
+        week_num = job.context["week"]
+        analytic_type = job.type.type
+        # in case gcs caching is enabled, set gcs base path env variable so
+        # that cached responses are ordered by term and week
+        set_gcs_base_path(sis_term_id, week_num)
+
+        # delete existing assignment data in case of a job restart
+        self.delete_data_for_job(job)
+
+        cd = CanvasDAO()
+
+        analytics = []
+        for analytic in cd.download_raw_analytics_for_course(
+                                            canvas_course_id, analytic_type):
+            analytics.append(analytic)
+
+        analytics_dao = AnalyticsDAO()
+        if analytics and analytic_type == AnalyticTypes.assignment:
+            # save remaining assignments to db
+            analytics_dao.save_assignments_to_db(analytics, job)
+        elif analytics and analytic_type == AnalyticTypes.participation:
+            # save remaining participations to db
+            analytics_dao.save_participations_to_db(analytics, job)
+
+    def run_task_job(self, job):
+        """
+        Runs a single task job.
+
+        :param job: Job associated for the task to run
+        :type job: data_aggregator.models.Job
+        """
+        job_type = job.type.type
+        sis_term_id = job.context.get("sis_term_id")
+        week_num = job.context.get("week")
+        subaccount_id = job.context.get("subaccount_id")
+        if job_type == TaskTypes.create_terms:
+            TaskDAO().create_terms(sis_term_id=sis_term_id)
+        elif job_type == TaskTypes.create_or_update_courses:
+            TaskDAO().create_or_update_courses(sis_term_id=sis_term_id)
+        elif job_type == TaskTypes.create_or_update_users:
+            TaskDAO().create_or_update_users(sis_term_id=sis_term_id)
+        elif job_type == TaskTypes.create_assignment_db_view:
+            TaskDAO().create_assignment_db_view(sis_term_id, week_num)
+        elif job_type == TaskTypes.create_participation_db_view:
+            TaskDAO().create_participation_db_view(sis_term_id, week_num)
+        elif job_type == TaskTypes.create_rad_db_view:
+            TaskDAO().create_rad_db_view(sis_term_id=sis_term_id,
+                                         week_num=week_num)
+        elif job_type == TaskTypes.create_rad_data_file:
+            LoadRadDAO().create_rad_data_file(sis_term_id=sis_term_id,
+                                              week_num=week_num)
+        elif job_type == TaskTypes.build_subaccount_activity_report:
+            ReportBuilder().build_subaccount_activity_report(subaccount_id,
+                                                             sis_term_id)
+        else:
+            raise ValueError(f"Unknown job type {job_type}")
+
+    def run_job(self, job):
+        """
+        Runs a job.
+
+        :param job: Job to run.
+        :type job: data_aggregator.models.Job
+        """
+        job_type = job.type.type
+        if job_type == AnalyticTypes.assignment or \
+                job_type == AnalyticTypes.participation:
+            # download and load all assignment analytics for job
+            JobDAO().run_analytics_job(job)
+        else:
+            # run an individual task job
+            JobDAO().run_task_job(job)
+
+    def create_job(self, job_type, target_date_start, target_date_end,
+                   context=None):
+        """
+        Create a job for the given type.
+        """
+        if context is None:
+            context = {}
+        job = Job()
+        job.type = job_type
+        job.target_date_start = target_date_start
+        job.target_date_end = target_date_end
+        job.context = context
+        job.save()
+        return job
+
+    def create_analytic_jobs(self, job_type, target_date_start,
+                             target_date_end, context=None):
+        """
+        For each course create an analytics job matching the given job type.
+        If context is explicitly passed, only a single job will be created for
+        that given context.
+        """
+        jobs = []
+        if job_type.type != AnalyticTypes.assignment and \
+                job_type.type != AnalyticTypes.participation:
+            raise ValueError(f"Job type {job_type.type} is not a vaild "
+                             f"analytics type. Aborting creating analytic "
+                             f"jobs.")
+        if context and \
+                context.get('canvas_course_id') is not None and \
+                context.get('sis_course_id') is not None and \
+                context.get('sis_term_id') is not None and \
+                context.get('week_num') is not None:
+            # manually supplied single job context
+            logging.debug(
+                f"Adding {job_type.type} job for course "
+                f"{context['canvas_course_id']}")
+            job = self.create_job(job_type, target_date_start, target_date_end,
+                                  context=context)
+            jobs.append(job)
+        else:
+            # create jobs for all courses in a term
+            term, _ = Term.objects.get_or_create_term_from_sis_term_id(
+                sis_term_id=context.get('sis_term_id'))
+            week, _ = Week.objects.get_or_create_week(
+                                        sis_term_id=context.get('sis_term_id'),
+                                        week_num=context.get('week'))
+            courses = Course.objects.filter(status='active').filter(term=term)
+            course_count = courses.count()
+            if course_count == 0:
+                logging.warning(
+                    f'No active courses in term {term.sis_term_id} to '
+                    f'create {job_type.type} jobs for.')
+            else:
+                jobs_count = 0
+                with transaction.atomic():
+                    for course in courses:
+                        # create jobs
+                        logging.debug(
+                            f"Adding {job_type.type} jobs for course "
+                            f"{course.sis_course_id} "
+                            f"({course.canvas_course_id})")
+                        context["sis_term_id"] = term.sis_term_id
+                        context["week"] = week.week
+                        context["sis_course_id"] = course.sis_course_id
+                        context["canvas_course_id"] = course.canvas_course_id
+                        job = self.create_job(job_type, target_date_start,
+                                              target_date_end, context=context)
+                        jobs.append(job)
+                        jobs_count += 1
+                logging.info(f'Created {jobs_count} {job_type.type} jobs.')
+        return jobs
+
+
+class AnalyticsDAO(BaseDAO):
+
     def save_assignments_to_db(self, assignment_dicts, job):
         """
         Save list of assignment dictionaries to the db for the given job
@@ -387,60 +547,19 @@ class JobDAO(BaseDAO):
             update_count = 0
             create_count = 0
             with transaction.atomic():
-                for i in assignment_dicts:
-                    student_id = i.get('canvas_user_id')
-                    assignment_id = i.get('assignment_id')
-                    try:
-                        user = User.objects.get(canvas_user_id=student_id)
-                    except User.DoesNotExist:
-                        logging.warning(
-                            f"User with canvas_user_id {student_id} does not "
-                            f"exist in Canvas Analytics DB. Skipping.")
-                        continue
-                    try:
-                        assign = (Assignment.objects
-                                  .get(user=user,
-                                       assignment_id=assignment_id,
-                                       week=week))
-                        logging.warning(
-                            f"Found existing assignment entry for "
-                            f"canvas_course_id: {canvas_course_id}, "
-                            f"user: {student_id}, sis-term-id: {sis_term_id}, "
-                            f"week: {week_num}")
-                        update_count += 1
-                    except Assignment.DoesNotExist:
-                        assign = Assignment()
+                for raw_assign_dict in assignment_dicts:
+                    _, created = (
+                        Assignment.objects.create_or_update_assignment(
+                            job, week, course, raw_assign_dict)
+                    )
+                    if created:
                         create_count += 1
-                    assign.job = job
-                    assign.user = user
-                    assign.assignment_id = assignment_id
-                    assign.week = week
-                    assign.title = i.get('title')
-                    assign.unlock_at = i.get('unlock_at')
-                    assign.points_possible = i.get('points_possible')
-                    assign.non_digital_submission = \
-                        i.get('non_digital_submission')
-                    assign.due_at = i.get('due_at')
-                    assign.status = i.get('status')
-                    assign.muted = i.get('muted')
-                    assign.max_score = i.get('max_score')
-                    assign.min_score = i.get('min_score')
-                    assign.first_quartile = i.get('first_quartile')
-                    assign.median = i.get('median')
-                    assign.third_quartile = i.get('third_quartile')
-                    assign.excused = i.get('excused')
-                    submission = i.get('submission')
-                    if submission:
-                        assign.score = submission.get('score')
-                        assign.posted_at = submission.get('posted_at')
-                        assign.submitted_at = \
-                            submission.get('submitted_at')
-                    assign.course = course
-                    assign.save()
+                    else:
+                        update_count += 1
             logging.info(f"Created {create_count} assignments for "
                          f"term={sis_term_id}, week={week_num}, "
                          f"course={canvas_course_id}")
-            logging.info(f"Updated {create_count} assignments for "
+            logging.info(f"Updated {update_count} assignments for "
                          f"term={sis_term_id}, week={week_num}, "
                          f"course={canvas_course_id}")
 
@@ -469,145 +588,21 @@ class JobDAO(BaseDAO):
             create_count = 0
 
             with transaction.atomic():
-                for i in participation_dicts:
-                    student_id = i.get('canvas_user_id')
-                    try:
-                        user = User.objects.get(canvas_user_id=student_id)
-                    except User.DoesNotExist:
-                        logging.warning(
-                            f"User with canvas_user_id {student_id} does not "
-                            f"exist in Canvas Analytics DB. Skipping.")
-                        continue
-                    try:
-                        partic = (Participation.objects.get(user=user,
-                                                            week=week,
-                                                            course=course))
-                        logging.warning(
-                            f"Found existing participation entry for "
-                            f"canvas_course_id: {canvas_course_id}, "
-                            f"user: {student_id}, sis-term-id: {sis_term_id}, "
-                            f"week: {week_num}")
-                        update_count += 1
-                    except Participation.DoesNotExist:
-                        partic = Participation()
+                for raw_partic_dict in participation_dicts:
+                    _, created = (
+                        Participation.objects.create_or_update_participation(
+                            job, week, course, raw_partic_dict)
+                    )
+                    if created:
                         create_count += 1
-                    partic.job = job
-                    partic.user = user
-                    partic.week = week
-                    partic.course = course
-                    partic.page_views = i.get('page_views')
-                    partic.page_views_level = \
-                        i.get('page_views_level')
-                    partic.participations = i.get('participations')
-                    partic.participations_level = \
-                        i.get('participations_level')
-                    if i.get('tardiness_breakdown'):
-                        partic.time_tardy = (i.get('tardiness_breakdown')
-                                             .get('total'))
-                        partic.time_on_time = (i.get('tardiness_breakdown')
-                                               .get('on_time'))
-                        partic.time_late = (i.get('tardiness_breakdown')
-                                            .get('late'))
-                        partic.time_missing = (i.get('tardiness_breakdown')
-                                               .get('missing'))
-                        partic.time_floating = (i.get('tardiness_breakdown')
-                                                .get('floating'))
-                    partic.page_views = i.get('page_views')
-                    partic.save()
+                    else:
+                        update_count += 1
             logging.info(f"Created {create_count} participations for "
                          f"term={sis_term_id}, week={week_num}, "
                          f"course={canvas_course_id}")
-            logging.info(f"Updated {create_count} participations for "
+            logging.info(f"Updated {update_count} participations for "
                          f"term={sis_term_id}, week={week_num}, "
                          f"course={canvas_course_id}")
-
-    def run_analytics_job(self, job):
-        """
-        Download analytics for the given job
-        and save them to the database.
-
-        :param analytic_type: type of analytics to load
-        :type analytic_type: str (AnalyticTypes.assignment or
-            AnalyticTypes.participation)
-        :param job: Job associated with the analytics to save
-        :type job: data_aggregator.models.Job
-        """
-        canvas_course_id = job.context["canvas_course_id"]
-        sis_term_id = job.context["sis_term_id"]
-        week_num = job.context["week"]
-        analytic_type = job.type.type
-        # in case gcs caching is enabled, set gcs base path env variable so
-        # that cached responses are ordered by term and week
-        set_gcs_base_path(sis_term_id, week_num)
-
-        # delete existing assignment data in case of a job restart
-        self.delete_data_for_job(job)
-
-        cd = CanvasDAO()
-
-        analytics = []
-        for analytic in cd.download_raw_analytics_for_course(
-                                            canvas_course_id, analytic_type):
-            analytics.append(analytic)
-
-        if analytics and analytic_type == AnalyticTypes.assignment:
-            # save remaining assignments to db
-            self.save_assignments_to_db(analytics, job)
-        elif analytics and analytic_type == AnalyticTypes.participation:
-            # save remaining participations to db
-            self.save_participations_to_db(analytics, job)
-
-    def create_jobs(self, analytic_type, sis_term_id=None, week_num=None,
-                    canvas_course_id=None, sis_course_id=None,
-                    target_date_start=None, target_date_end=None):
-        job = Job()
-        job_type, _ = JobType.objects.get_or_create(type=analytic_type)
-        if sis_term_id and week_num and canvas_course_id and sis_course_id:
-            # manually supplied single job context
-            logging.debug(
-                f"Adding {analytic_type} job for course "
-                f"{canvas_course_id}")
-            job.type = job_type
-            job.target_date_start = target_date_start
-            job.target_date_end = target_date_end
-            job.context = {'canvas_course_id': canvas_course_id,
-                           'sis_course_id': sis_course_id,
-                           'sis_term_id': sis_term_id,
-                           'week': week_num}
-            job.save()
-        else:
-            # create jobs for all courses in a term
-            term, _ = Term.objects.get_or_create_term_from_sis_term_id(
-                sis_term_id=sis_term_id)
-            week, _ = Week.objects.get_or_create_week(sis_term_id=sis_term_id,
-                                                      week_num=week_num)
-            courses = Course.objects.filter(status='active').filter(term=term)
-            course_count = courses.count()
-            if course_count == 0:
-                logging.warning(
-                    f'No active courses in term {term.sis_term_id} to '
-                    f'create {analytic_type} jobs for.')
-            else:
-                jobs_count = 0
-                with transaction.atomic():
-                    for course in courses:
-                        # create jobs
-                        logging.debug(
-                            f"Adding {analytic_type} jobs for course "
-                            f"{course.sis_course_id} "
-                            f"({course.canvas_course_id})")
-                        job = Job()
-                        job.type = job_type
-                        job.target_date_start = target_date_start
-                        job.target_date_end = target_date_end
-                        job.context = \
-                            {'canvas_course_id': course.canvas_course_id,
-                             'sis_course_id': course.sis_course_id,
-                             'sis_term_id': term.sis_term_id,
-                             'week': week.week}
-                        job.save()
-                        jobs_count += 1
-                logging.info(f'Created {jobs_count} {analytic_type} jobs.')
 
 
 class TaskDAO(BaseDAO):
@@ -891,10 +886,12 @@ class TaskDAO(BaseDAO):
                 p.course_id,
                 p.user_id,
                 p.participations AS participations,
+                p.max_participations AS max_participations,
                 p.participations_level AS participations_level,
                 p.page_views AS page_views,
+                p.max_page_views AS max_page_views,
                 p.page_views_level AS page_views_level,
-                p.time_tardy AS time_tardy,
+                p.time_total AS time_total,
                 p.time_on_time AS time_on_time,
                 p.time_late AS time_late,
                 p.time_missing AS time_missing,

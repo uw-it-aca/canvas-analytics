@@ -11,11 +11,13 @@
   "page_views_level": 3,
   "participations": 98,
   "participations_level": 3,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 5,
   "time_late": 0,
   "time_missing": 0,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -30,11 +32,13 @@
   "page_views_level": 3,
   "participations": 174,
   "participations_level": 3,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 5,
   "time_late": 0,
   "time_missing": 0,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -49,11 +53,13 @@
   "page_views_level": 2,
   "participations": 90,
   "participations_level": 3,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 5,
   "time_late": 0,
   "time_missing": 0,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -68,11 +74,13 @@
   "page_views_level": 2,
   "participations": 46,
   "participations_level": 2,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 4,
   "time_late": 1,
   "time_missing": 0,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -87,11 +95,13 @@
   "page_views_level": 1,
   "participations": 0,
   "participations_level": 0,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 0,
   "time_late": 0,
   "time_missing": 5,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -106,11 +116,13 @@
   "page_views_level": 3,
   "participations": 112,
   "participations_level": 3,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 5,
   "time_late": 0,
   "time_missing": 0,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -125,11 +137,13 @@
   "page_views_level": 2,
   "participations": 65,
   "participations_level": 2,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 4,
   "time_late": 1,
   "time_missing": 0,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -144,11 +158,13 @@
   "page_views_level": 2,
   "participations": 48,
   "participations_level": 2,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 5,
   "time_late": 0,
   "time_missing": 0,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -163,11 +179,13 @@
   "page_views_level": 2,
   "participations": 46,
   "participations_level": 2,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 5,
   "time_late": 0,
   "time_missing": 0,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -182,11 +200,13 @@
   "page_views_level": 2,
   "participations": 67,
   "participations_level": 2,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 5,
   "time_late": 0,
   "time_missing": 0,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -201,11 +221,13 @@
   "page_views_level": 3,
   "participations": 75,
   "participations_level": 2,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 5,
   "time_late": 0,
   "time_missing": 0,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -220,11 +242,13 @@
   "page_views_level": 2,
   "participations": 85,
   "participations_level": 2,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 5,
   "time_late": 0,
   "time_missing": 0,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -239,11 +263,13 @@
   "page_views_level": 3,
   "participations": 109,
   "participations_level": 3,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 5,
   "time_late": 0,
   "time_missing": 0,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -258,11 +284,13 @@
   "page_views_level": 2,
   "participations": 37,
   "participations_level": 1,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 4,
   "time_late": 0,
   "time_missing": 1,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -277,11 +305,13 @@
   "page_views_level": 2,
   "participations": 51,
   "participations_level": 2,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 5,
   "time_late": 0,
   "time_missing": 0,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -296,11 +326,13 @@
   "page_views_level": 2,
   "participations": 84,
   "participations_level": 2,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 5,
   "time_late": 0,
   "time_missing": 0,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -315,11 +347,13 @@
   "page_views_level": 2,
   "participations": 45,
   "participations_level": 2,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 3,
   "time_late": 0,
   "time_missing": 2,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -334,11 +368,13 @@
   "page_views_level": 1,
   "participations": 43,
   "participations_level": 2,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 4,
   "time_late": 0,
   "time_missing": 1,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -353,11 +389,13 @@
   "page_views_level": 1,
   "participations": 22,
   "participations_level": 1,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 2,
   "time_late": 0,
   "time_missing": 3,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -372,11 +410,13 @@
   "page_views_level": 1,
   "participations": 24,
   "participations_level": 1,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 2,
   "time_late": 0,
   "time_missing": 3,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -391,11 +431,13 @@
   "page_views_level": 3,
   "participations": 98,
   "participations_level": 3,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 5,
   "time_late": 0,
   "time_missing": 0,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -410,11 +452,13 @@
   "page_views_level": 3,
   "participations": 174,
   "participations_level": 3,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 5,
   "time_late": 0,
   "time_missing": 0,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -429,11 +473,13 @@
   "page_views_level": 2,
   "participations": 90,
   "participations_level": 3,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 5,
   "time_late": 0,
   "time_missing": 0,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -448,11 +494,13 @@
   "page_views_level": 2,
   "participations": 46,
   "participations_level": 2,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 4,
   "time_late": 1,
   "time_missing": 0,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -467,11 +515,13 @@
   "page_views_level": 1,
   "participations": 0,
   "participations_level": 0,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 0,
   "time_late": 0,
   "time_missing": 5,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -486,11 +536,13 @@
   "page_views_level": 3,
   "participations": 112,
   "participations_level": 3,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 5,
   "time_late": 0,
   "time_missing": 0,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -505,11 +557,13 @@
   "page_views_level": 2,
   "participations": 65,
   "participations_level": 2,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 4,
   "time_late": 1,
   "time_missing": 0,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -524,11 +578,13 @@
   "page_views_level": 2,
   "participations": 48,
   "participations_level": 2,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 5,
   "time_late": 0,
   "time_missing": 0,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -543,11 +599,13 @@
   "page_views_level": 2,
   "participations": 46,
   "participations_level": 2,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 5,
   "time_late": 0,
   "time_missing": 0,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -562,11 +620,13 @@
   "page_views_level": 2,
   "participations": 67,
   "participations_level": 2,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 5,
   "time_late": 0,
   "time_missing": 0,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -581,11 +641,13 @@
   "page_views_level": 3,
   "participations": 75,
   "participations_level": 2,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 5,
   "time_late": 0,
   "time_missing": 0,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -600,11 +662,13 @@
   "page_views_level": 2,
   "participations": 85,
   "participations_level": 2,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 5,
   "time_late": 0,
   "time_missing": 0,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -619,11 +683,13 @@
   "page_views_level": 3,
   "participations": 109,
   "participations_level": 3,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 5,
   "time_late": 0,
   "time_missing": 0,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -638,11 +704,13 @@
   "page_views_level": 2,
   "participations": 37,
   "participations_level": 1,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 4,
   "time_late": 0,
   "time_missing": 1,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -657,11 +725,13 @@
   "page_views_level": 2,
   "participations": 51,
   "participations_level": 2,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 5,
   "time_late": 0,
   "time_missing": 0,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -676,11 +746,13 @@
   "page_views_level": 2,
   "participations": 84,
   "participations_level": 2,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 5,
   "time_late": 0,
   "time_missing": 0,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -695,11 +767,13 @@
   "page_views_level": 2,
   "participations": 45,
   "participations_level": 2,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 3,
   "time_late": 0,
   "time_missing": 2,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -714,11 +788,13 @@
   "page_views_level": 1,
   "participations": 43,
   "participations_level": 2,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 4,
   "time_late": 0,
   "time_missing": 1,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -733,11 +809,13 @@
   "page_views_level": 1,
   "participations": 22,
   "participations_level": 1,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 2,
   "time_late": 0,
   "time_missing": 3,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 },
 {
@@ -752,11 +830,13 @@
   "page_views_level": 1,
   "participations": 24,
   "participations_level": 1,
-  "time_tardy": 5,
+  "time_total": 5,
   "time_on_time": 2,
   "time_late": 0,
   "time_missing": 3,
-  "time_floating": 0
+  "time_floating": 0,
+  "max_page_views": 0,
+  "max_participations": 0
  }
 }
 ]

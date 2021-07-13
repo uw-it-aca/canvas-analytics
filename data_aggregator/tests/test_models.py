@@ -5,7 +5,8 @@ import unittest
 from django.test import TestCase
 from django.utils import timezone
 from datetime import timedelta
-from data_aggregator.models import Job, JobType, AnalyticTypes, Term, Week
+from data_aggregator.models import Assignment, Job, Participation, Term, \
+    Week, Course, JobType, AnalyticTypes, User
 from data_aggregator.utilities import datestring_to_datetime
 from mock import MagicMock, patch
 
@@ -421,6 +422,173 @@ class TestJobManager(TestCase):
             self.assertEqual(mock_jm.get_pending_jobs.called, True)
             self.assertEqual(mock_jm.get_pending_or_running_jobs.called,
                              True)
+
+
+class TestAssignmentManager(TestCase):
+
+    @patch("data_aggregator.models.Assignment.objects.get")
+    @patch("data_aggregator.models.User.objects.get")
+    def test_create_or_update_assignment(self, mock_user_get,
+                                         mock_assignment_get):
+        job = Job()
+        user = User()
+        term = Term()
+        week = Week()
+        week.week = 1
+        week.term = term
+
+        course = Course()
+        course.term = term
+
+        raw_assign_dict = {
+            'assignment_id': 6418106,
+            'title': 'Basic python, submission',
+            'unlock_at': None,
+            'points_possible': 2.0,
+            'non_digital_submission': False,
+            'multiple_due_dates': False,
+            'due_at': '2021-06-26T06:05:00Z',
+            'status': 'on_time',
+            'muted': False,
+            'max_score': 2.0,
+            'min_score': 0.0,
+            'first_quartile': 2.0,
+            'median': 2.0,
+            'third_quartile': 2.0,
+            'module_ids': [],
+            'excused': False,
+            'submission': {
+                'posted_at': '2021-07-01T16:27:44Z',
+                'score': 2.0,
+                'submitted_at': '2021-06-25T05:47:51Z'},
+            'canvas_user_id': 3933194,
+            'canvas_course_id': 1458152}
+
+        mock_user_get.return_value = user
+
+        # check for update
+        assign, created = Assignment.objects.create_or_update_assignment(
+                                            job, week, course, raw_assign_dict)
+
+        mock_user_get.assert_called_once()
+        mock_assignment = mock_assignment_get.return_value
+        mock_assignment.save.assert_called_once()
+
+        self.assertEqual(created, False)
+
+        self.assertEqual(assign.job, job)
+        self.assertEqual(assign.week, week)
+        self.assertEqual(assign.course, course)
+        self.assertEqual(assign.user, user)
+        self.assertEqual(assign.assignment_id,
+                         raw_assign_dict["assignment_id"])
+        self.assertEqual(assign.title, raw_assign_dict["title"])
+        self.assertEqual(assign.unlock_at, raw_assign_dict["unlock_at"])
+        self.assertEqual(assign.points_possible,
+                         raw_assign_dict["points_possible"])
+        self.assertEqual(assign.non_digital_submission,
+                         raw_assign_dict["non_digital_submission"])
+        self.assertEqual(assign.due_at, raw_assign_dict["due_at"])
+        self.assertEqual(assign.status, raw_assign_dict["status"])
+        self.assertEqual(assign.muted, raw_assign_dict["muted"])
+        self.assertEqual(assign.max_score, raw_assign_dict["max_score"])
+        self.assertEqual(assign.first_quartile,
+                         raw_assign_dict["first_quartile"])
+        self.assertEqual(assign.median, raw_assign_dict["median"])
+        self.assertEqual(assign.third_quartile,
+                         raw_assign_dict["third_quartile"])
+        self.assertEqual(assign.excused, raw_assign_dict["excused"])
+        submission = raw_assign_dict["submission"]
+        self.assertEqual(assign.score, submission["score"])
+        self.assertEqual(assign.posted_at, submission["posted_at"])
+        self.assertEqual(assign.submitted_at, submission["submitted_at"])
+
+        # check create
+        mock_assignment_get.reset_mock()
+        mock_assignment_get.side_effect = Assignment.DoesNotExist
+        with patch('data_aggregator.models.Assignment.save') as \
+                mock_assignment_save:
+            _, created = Assignment.objects.create_or_update_assignment(
+                                            job, week, course, raw_assign_dict)
+            self.assertEqual(created, True)
+            mock_assignment_save.assert_called_once()
+
+
+class TestParticipationManager(TestCase):
+
+    @patch("data_aggregator.models.Participation.objects.get")
+    @patch("data_aggregator.models.User.objects.get")
+    def test_create_or_update_participation(self, mock_user_get,
+                                            mock_participation_get):
+        job = Job()
+        user = User()
+        term = Term()
+        week = Week()
+        week.week = 1
+        week.term = term
+
+        course = Course()
+        course.term = term
+
+        raw_partic_dict = {
+            'page_views': 9,
+            'max_page_views': 9,
+            'page_views_level': 3,
+            'participations': 0,
+            'max_participations': 0,
+            'participations_level': 0,
+            'tardiness_breakdown': {
+                'missing': 0,
+                'late': 0,
+                'on_time': 0,
+                'floating': 0,
+                'total': 0},
+            'canvas_user_id': 3193994,
+            'canvas_course_id': 835454}
+
+        mock_user_get.return_value = user
+
+        # check for update
+        partic, created = Participation.objects.create_or_update_participation(
+                                            job, week, course, raw_partic_dict)
+
+        mock_user_get.assert_called_once()
+        mock_participation = mock_participation_get.return_value
+        mock_participation.save.assert_called_once()
+
+        self.assertEqual(created, False)
+
+        self.assertEqual(partic.job, job)
+        self.assertEqual(partic.week, week)
+        self.assertEqual(partic.course, course)
+        self.assertEqual(partic.user, user)
+        self.assertEqual(partic.page_views, raw_partic_dict["page_views"])
+        self.assertEqual(partic.max_page_views,
+                         raw_partic_dict["max_page_views"])
+        self.assertEqual(partic.page_views_level,
+                         raw_partic_dict["page_views_level"])
+        self.assertEqual(partic.participations,
+                         raw_partic_dict["participations"])
+        self.assertEqual(partic.max_participations,
+                         raw_partic_dict["max_participations"])
+        self.assertEqual(partic.participations_level,
+                         raw_partic_dict["participations_level"])
+        tardiness_breakdown = raw_partic_dict["tardiness_breakdown"]
+        self.assertEqual(partic.time_missing, tardiness_breakdown["missing"])
+        self.assertEqual(partic.time_late, tardiness_breakdown["late"])
+        self.assertEqual(partic.time_on_time, tardiness_breakdown["on_time"])
+        self.assertEqual(partic.time_floating, tardiness_breakdown["floating"])
+        self.assertEqual(partic.time_total, tardiness_breakdown["total"])
+
+        # check create
+        mock_participation_get.reset_mock()
+        mock_participation_get.side_effect = Participation.DoesNotExist
+        with patch('data_aggregator.models.Participation.save') as \
+                mock_participation_save:
+            _, created = Participation.objects.create_or_update_participation(
+                                            job, week, course, raw_partic_dict)
+            self.assertEqual(created, True)
+            mock_participation_save.assert_called_once()
 
 
 if __name__ == "__main__":

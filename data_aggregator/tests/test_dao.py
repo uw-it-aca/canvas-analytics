@@ -6,8 +6,9 @@ import unittest
 import pandas as pd
 import numpy as np
 from django.test import TestCase
-from data_aggregator.dao import AnalyticTypes, CanvasDAO, LoadRadDAO, \
+from data_aggregator.dao import AnalyticTypes, CanvasDAO, JobDAO, LoadRadDAO, \
     BaseDAO, TaskDAO
+from data_aggregator.models import JobType, TaskTypes
 from mock import patch, MagicMock
 
 
@@ -279,6 +280,173 @@ class TestCanvasDAO(TestCase):
         self.assertEqual(
             mock_reports_inst.delete_report.called,
             True)
+
+
+class TestJobDAO(TestCase):
+
+    @patch("data_aggregator.dao.Participation")
+    @patch("data_aggregator.dao.Assignment")
+    def test_delete_data_for_job(self, mock_assignment,
+                                 mock_participation):
+
+        mock_analytics = MagicMock()
+        mock_analytics.delete = MagicMock()
+        mock_assignment.objects.filter.return_value = mock_analytics
+        mock_participation.objects.filter.return_value = mock_analytics
+
+        job = MagicMock()
+        job.type = MagicMock()
+        job_dao = JobDAO()
+
+        job.type.type = AnalyticTypes.assignment
+        job_dao.delete_data_for_job(job)
+        mock_assignment.objects.filter.assert_called_once_with(job=job)
+        mock_analytics.delete.assert_called_once()
+
+        mock_analytics.reset_mock()
+        mock_assignment.objects.filter.reset_mock()
+        mock_participation.objects.filter.reset_mock()
+
+        job.type.type = AnalyticTypes.participation
+        job_dao.delete_data_for_job(job)
+        mock_participation.objects.filter.assert_called_once_with(job=job)
+        mock_analytics.delete.assert_called_once()
+
+    def test_create_job(self):
+        job_type = JobType()
+        target_date_start = MagicMock()
+        target_date_end = MagicMock()
+        context = MagicMock()
+        with patch("data_aggregator.models.Job.save") as mock_job_save:
+            job = JobDAO().create_job(job_type, target_date_start,
+                                      target_date_end, context=context)
+            mock_job_save.assert_called_once()
+            self.assertEqual(job.type, job_type)
+            self.assertEqual(job.target_date_start, target_date_start)
+            self.assertEqual(job.target_date_end, target_date_end)
+            self.assertEqual(job.context, context)
+
+    def test_run_job(self):
+        job = MagicMock()
+        job.type = MagicMock()
+        job.type.type = AnalyticTypes.assignment
+        with patch("data_aggregator.dao.JobDAO.run_analytics_job") \
+                as mock_run_analytics_job:
+            JobDAO().run_job(job)
+            mock_run_analytics_job.assert_called_once()
+        job.type.type = AnalyticTypes.participation
+        with patch("data_aggregator.dao.JobDAO.run_analytics_job") \
+                as mock_run_analytics_job:
+            JobDAO().run_job(job)
+            mock_run_analytics_job.assert_called_once()
+        job.type.type = TaskTypes.create_assignment_db_view
+        with patch("data_aggregator.dao.JobDAO.run_task_job") \
+                as mock_run_task_job:
+            JobDAO().run_job(job)
+            mock_run_task_job.assert_called_once()
+
+    @patch('data_aggregator.dao.AnalyticsDAO')
+    @patch('data_aggregator.dao.CanvasDAO')
+    @patch('data_aggregator.dao.set_gcs_base_path')
+    def test_run_analytics_job(self, mock_set_gcs_base_path, mock_canvas_dao,
+                               mock_analytics_dao):
+        job = MagicMock()
+        job.type = MagicMock()
+        job.context = {
+            "canvas_course_id": 12345,
+            "sis_term_id": "2021-summer",
+            "week": 1
+        }
+        job_dao = JobDAO()
+        job_dao.delete_data_for_job = MagicMock()
+        mock_analytics = [MagicMock(), MagicMock()]
+        mock_canvas_dao_inst = mock_canvas_dao()
+        mock_canvas_dao_inst.download_raw_analytics_for_course = MagicMock(
+            return_value=mock_analytics
+        )
+        mock_analytics_dao_inst = mock_analytics_dao()
+        mock_analytics_dao_inst.save_assignments_to_db = MagicMock()
+        mock_analytics_dao_inst.save_participations_to_db = MagicMock()
+
+        job.type.type = AnalyticTypes.assignment
+        job_dao.run_analytics_job(job)
+        job_dao.delete_data_for_job.assert_called_once()
+        mock_set_gcs_base_path.assert_called_once_with("2021-summer", 1)
+        mock_canvas_dao_inst.download_raw_analytics_for_course \
+            .assert_called_once_with(12345, AnalyticTypes.assignment)
+        mock_analytics_dao_inst.save_assignments_to_db.assert_called_once()
+        mock_analytics_dao_inst.save_assignments_to_db.assert_called_once_with(
+            mock_analytics, job
+        )
+
+        # reset mock states
+        job_dao.delete_data_for_job.reset_mock()
+        mock_set_gcs_base_path.reset_mock()
+        mock_canvas_dao_inst.reset_mock()
+        mock_canvas_dao_inst.download_raw_analytics_for_course.reset_mock()
+        mock_analytics_dao_inst.save_assignments_to_db.reset_mock()
+        mock_analytics_dao_inst.save_participations_to_db.reset_mock()
+
+        job.type.type = AnalyticTypes.participation
+        job_dao.run_analytics_job(job)
+        job_dao.delete_data_for_job.assert_called_once()
+        mock_set_gcs_base_path.assert_called_once_with("2021-summer", 1)
+        mock_canvas_dao_inst.download_raw_analytics_for_course \
+            .assert_called_once_with(12345, AnalyticTypes.participation)
+        mock_analytics_dao_inst.save_participations_to_db.assert_called_once()
+        mock_analytics_dao_inst.save_participations_to_db \
+            .assert_called_once_with(
+                mock_analytics, job
+            )
+
+    def test_run_task_job(self):
+        job = MagicMock()
+        job.type = MagicMock()
+        job.type.type = TaskTypes.create_terms
+        with patch("data_aggregator.dao.TaskDAO.create_terms") \
+                as mock_create_terms:
+            JobDAO().run_task_job(job)
+            mock_create_terms.assert_called_once()
+        job.type.type = TaskTypes.create_or_update_courses
+        with patch("data_aggregator.dao.TaskDAO.create_or_update_courses") \
+                as mock_create_or_update_courses:
+            JobDAO().run_task_job(job)
+            mock_create_or_update_courses.assert_called_once()
+        job.type.type = TaskTypes.create_or_update_users
+        with patch("data_aggregator.dao.TaskDAO.create_or_update_users") \
+                as mock_create_or_update_users:
+            JobDAO().run_task_job(job)
+            mock_create_or_update_users.assert_called_once()
+        job.type.type = TaskTypes.create_assignment_db_view
+        with patch("data_aggregator.dao.TaskDAO.create_assignment_db_view") \
+                as mock_create_assignment_db_view:
+            JobDAO().run_task_job(job)
+            mock_create_assignment_db_view.assert_called_once()
+        job.type.type = TaskTypes.create_participation_db_view
+        with patch("data_aggregator.dao.TaskDAO."
+                   "create_participation_db_view") \
+                as mock_create_participation_db_view:
+            JobDAO().run_task_job(job)
+            mock_create_participation_db_view.assert_called_once()
+        job.type.type = TaskTypes.create_rad_db_view
+        with patch("data_aggregator.dao.TaskDAO.create_rad_db_view") \
+                as mock_create_rad_db_view:
+            JobDAO().run_task_job(job)
+            mock_create_rad_db_view.assert_called_once()
+        job.type.type = TaskTypes.create_rad_data_file
+        with patch("data_aggregator.dao.LoadRadDAO.create_rad_data_file") \
+                as mock_create_rad_data_file:
+            JobDAO().run_task_job(job)
+            mock_create_rad_data_file.assert_called_once()
+        job.type.type = TaskTypes.build_subaccount_activity_report
+        with patch("data_aggregator.report_builder.ReportBuilder."
+                   "build_subaccount_activity_report") \
+                as mock_build_subaccount_activity_report:
+            JobDAO().run_task_job(job)
+            mock_build_subaccount_activity_report.assert_called_once()
+        job.type.type = "unknown-job-type"
+        with self.assertRaises(ValueError):
+            JobDAO().run_task_job(job)
 
 
 class TestTaskDAO(TestCase):

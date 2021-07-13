@@ -2,15 +2,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from data_aggregator.management.commands._base import CreateJobCommand
-from data_aggregator.dao import AnalyticTypes
 
 
 class Command(CreateJobCommand):
 
-    help = ("Creates assignment jobs for active courses in current term.")
+    help = ("Create job(s) for the specified job type.")
 
     def handle(self, *args, **options):
         """
-        Load assignments jobs for all active courses in the current term
+        Creates jobs to be processed
         """
-        self.create(options, AnalyticTypes.assignment)
+        self.create(options)

@@ -233,12 +233,31 @@ class AnalyticTypes():
     participation = "participation"
 
 
+class TaskTypes():
+
+    create_terms = "create_terms"
+    create_or_update_courses = "create_or_update_courses"
+    create_or_update_users = "create_or_update_users"
+    create_assignment_db_view = "create_assignment_db_view"
+    create_participation_db_view = "create_participation_db_view"
+    create_rad_db_view = "create_rad_db_view"
+    create_rad_data_file = "create_rad_data_file"
+    build_subaccount_activity_report = "build_subaccount_activity_report"
+
+
 class JobType(models.Model):
 
     JOB_CHOICES = (
         (AnalyticTypes.assignment, 'AssignmentJob'),
         (AnalyticTypes.participation, 'ParticipationJob'),
-    )
+        (TaskTypes.create_terms, 'CreateTermsJob'),
+        (TaskTypes.create_or_update_courses, 'CreateOrUpdateCoursesJob'),
+        (TaskTypes.create_or_update_users, 'CreateOrUpdateUsersJob'),
+        (TaskTypes.create_assignment_db_view, 'CreateAssignmentDBViewJob'),
+        (TaskTypes.create_participation_db_view,
+         'CreateParticipationDBViewJob'),
+        (TaskTypes.create_rad_db_view, 'CreateRadDBViewJob'),
+        (TaskTypes.create_rad_data_file, 'CreateRadDataFileJob'))
     type = models.CharField(max_length=64, choices=JOB_CHOICES)
 
 
@@ -352,7 +371,65 @@ class Job(models.Model):
             super(Job, self).save(*args, **kwargs)
 
 
+class AssignmentManager(models.Manager):
+
+    def create_or_update_assignment(self, job, week, course, raw_assign_dict):
+        created = False
+        assignment_id = raw_assign_dict.get('assignment_id')
+        student_id = raw_assign_dict.get('canvas_user_id')
+        try:
+            user = User.objects.get(canvas_user_id=student_id)
+        except User.DoesNotExist:
+            logging.warning(
+                f"User with canvas_user_id {student_id} does not "
+                f"exist in Canvas Analytics DB. Skipping.")
+            return None, created
+        try:
+            assign = (Assignment.objects
+                      .get(user=user,
+                           assignment_id=assignment_id,
+                           week=week))
+            logging.warning(
+                f"Found existing assignment entry for "
+                f"canvas_course_id: {course.canvas_course_id}, "
+                f"user: {user.canvas_user_id}, "
+                f"sis-term-id: {week.term.sis_term_id}, "
+                f"week: {week.week}")
+        except Assignment.DoesNotExist:
+            assign = Assignment()
+            created = True
+        assign.job = job
+        assign.user = user
+        assign.week = week
+        assign.course = course
+        assign.assignment_id = assignment_id
+        assign.title = raw_assign_dict.get('title')
+        assign.unlock_at = raw_assign_dict.get('unlock_at')
+        assign.points_possible = raw_assign_dict.get('points_possible')
+        assign.non_digital_submission = \
+            raw_assign_dict.get('non_digital_submission')
+        assign.due_at = raw_assign_dict.get('due_at')
+        assign.status = raw_assign_dict.get('status')
+        assign.muted = raw_assign_dict.get('muted')
+        assign.max_score = raw_assign_dict.get('max_score')
+        assign.min_score = raw_assign_dict.get('min_score')
+        assign.first_quartile = raw_assign_dict.get('first_quartile')
+        assign.median = raw_assign_dict.get('median')
+        assign.third_quartile = raw_assign_dict.get('third_quartile')
+        assign.excused = raw_assign_dict.get('excused')
+        submission = raw_assign_dict.get('submission')
+        if submission:
+            assign.score = submission.get('score')
+            assign.posted_at = submission.get('posted_at')
+            assign.submitted_at = \
+                submission.get('submitted_at')
+        assign.save()
+        return assign, created
+
+
 class Assignment(models.Model):
+
+    objects = AssignmentManager()
 
     course = models.ForeignKey(Course,
                                on_delete=models.CASCADE)
@@ -389,7 +466,62 @@ class Assignment(models.Model):
         ]
 
 
+class ParticipationManager(models.Manager):
+
+    def create_or_update_participation(self, job, week, course,
+                                       raw_partic_dict):
+        created = False
+        student_id = raw_partic_dict.get('canvas_user_id')
+        try:
+            user = User.objects.get(canvas_user_id=student_id)
+        except User.DoesNotExist:
+            logging.warning(
+                f"User with canvas_user_id {student_id} does not "
+                f"exist in Canvas Analytics DB. Skipping.")
+            return None, created
+        try:
+            partic = (Participation.objects.get(user=user,
+                                                week=week,
+                                                course=course))
+            logging.warning(
+                f"Found existing participation entry for "
+                f"canvas_course_id: {course.canvas_course_id}, "
+                f"user: {user.canvas_user_id}, "
+                f"sis-term-id: {week.term.sis_term_id}, "
+                f"week: {week.week}")
+        except Participation.DoesNotExist:
+            partic = Participation()
+            created = True
+        partic.job = job
+        partic.user = user
+        partic.week = week
+        partic.course = course
+        partic.page_views = raw_partic_dict.get('page_views')
+        partic.max_page_views = raw_partic_dict.get('max_page_views')
+        partic.page_views_level = \
+            raw_partic_dict.get('page_views_level')
+        partic.participations = raw_partic_dict.get('participations')
+        partic.max_participations = raw_partic_dict.get('max_participations')
+        partic.participations_level = \
+            raw_partic_dict.get('participations_level')
+        if raw_partic_dict.get('tardiness_breakdown'):
+            partic.time_total = (raw_partic_dict.get('tardiness_breakdown')
+                                 .get('total'))
+            partic.time_on_time = (raw_partic_dict.get('tardiness_breakdown')
+                                   .get('on_time'))
+            partic.time_late = (raw_partic_dict.get('tardiness_breakdown')
+                                .get('late'))
+            partic.time_missing = (raw_partic_dict.get('tardiness_breakdown')
+                                   .get('missing'))
+            partic.time_floating = (raw_partic_dict.get('tardiness_breakdown')
+                                    .get('floating'))
+        partic.save()
+        return partic, created
+
+
 class Participation(models.Model):
+
+    objects = ParticipationManager()
 
     course = models.ForeignKey(Course,
                                on_delete=models.CASCADE)
@@ -400,10 +532,12 @@ class Participation(models.Model):
     user = models.ForeignKey(User,
                              on_delete=models.CASCADE)
     page_views = models.IntegerField(null=True)
+    max_page_views = models.IntegerField(null=True)
     page_views_level = models.IntegerField(null=True)
     participations = models.IntegerField(null=True)
+    max_participations = models.IntegerField(null=True)
     participations_level = models.IntegerField(null=True)
-    time_tardy = models.IntegerField(null=True)
+    time_total = models.IntegerField(null=True)
     time_on_time = models.IntegerField(null=True)
     time_late = models.IntegerField(null=True)
     time_missing = models.IntegerField(null=True)
