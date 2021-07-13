@@ -23,7 +23,7 @@ autoscaling:
 targetAverageUtilization: 100
 resources:
   limits:
-    cpu: 1000m
+    cpu: 2000m
     memory: 2048Mi
   requests:
     cpu: 100m
