@@ -5,8 +5,8 @@ import unittest
 from django.test import TestCase
 from django.utils import timezone
 from datetime import timedelta
-from data_aggregator.models import Assignment, Job, Term, Week, Course, \
-     JobType, AnalyticTypes, User
+from data_aggregator.models import Assignment, Job, Participation, Term, \
+    Week, Course, JobType, AnalyticTypes, User
 from data_aggregator.utilities import datestring_to_datetime
 from mock import MagicMock, patch
 
@@ -382,6 +382,87 @@ class TestAssignmentManager(TestCase):
                                             job, week, course, raw_assign_dict)
             self.assertEqual(created, True)
             mock_assignment_save.assert_called_once()
+
+
+class TestParticipationManager():
+
+    @patch("data_aggregator.models.Participation.objects.get")
+    @patch("data_aggregator.models.User.objects.get")
+    def test_create_or_update_participation(self, mock_user_get,
+                                            mock_participation_get):
+        job = Job()
+        user = User()
+        term = Term()
+        week = Week()
+        week.week = 1
+        week.term = term
+
+        course = Course()
+        course.term = term
+
+        raw_partic_dict = {
+            'page_views': 9,
+            'max_page_views': 9,
+            'page_views_level': 3,
+            'participations': 0,
+            'max_participations': 0,
+            'participations_level': 0,
+            'tardiness_breakdown': {
+                'missing': 0,
+                'late': 0,
+                'on_time': 0,
+                'floating': 0,
+                'total': 0},
+            'canvas_user_id': 3193994,
+            'canvas_course_id': 835454}
+
+        mock_user_get.return_value = user
+
+        # check for update
+        partic, created = Participation.objects.create_or_update_participation(
+                                            job, week, course, raw_partic_dict)
+
+        mock_user_get.assert_called_once()
+        mock_participation = mock_participation_get.return_value
+        mock_participation.save.assert_called_once()
+
+        self.assertEqual(created, False)
+
+        self.assertEqual(partic.job, job)
+        self.assertEqual(partic.week, week)
+        self.assertEqual(partic.course, course)
+        self.assertEqual(partic.user, user)
+        self.assertEqual(partic.page_views, raw_partic_dict["page_views"])
+        self.assertEqual(partic.max_page_views,
+                         raw_partic_dict["max_page_views"])
+        self.assertEqual(partic.page_views_level,
+                         raw_partic_dict["page_views_level"])
+        self.assertEqual(partic.participations,
+                         raw_partic_dict["participations"])
+        self.assertEqual(partic.max_participations,
+                         raw_partic_dict["max_participations"])
+        self.assertEqual(partic.participations_level,
+                         raw_partic_dict["participations_level"])
+        tardiness_breakdown = raw_partic_dict["tardiness_breakdown"]
+        self.assertEqual(partic.missing, tardiness_breakdown["missing"])
+        self.assertEqual(partic.late, tardiness_breakdown["late"])
+        self.assertEqual(partic.on_time, tardiness_breakdown["on_time"])
+        self.assertEqual(partic.floating, tardiness_breakdown["floating"])
+        self.assertEqual(partic.total, tardiness_breakdown["total"])
+        self.assertEqual(partic.canvas_user_id,
+                         raw_partic_dict["canvas_user_id"])
+        self.assertEqual(partic.canvas_course_id,
+                         raw_partic_dict["canvas_course_id"])
+
+        # check create
+        mock_participation_get.reset_mock()
+        mock_participation_get.side_effect = Participation.DoesNotExist
+        with patch('data_aggregator.models.Participation.save') as \
+                mock_participation_save:
+            _, created = Assignment.objects.create_or_update_participation(
+                                            job, week, course, raw_partic_dict)
+            self.assertEqual(created, True)
+            mock_participation_save.assert_called_once()
 
 
 if __name__ == "__main__":

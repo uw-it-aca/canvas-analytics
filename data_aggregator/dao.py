@@ -559,7 +559,7 @@ class AnalyticsDAO(BaseDAO):
             logging.info(f"Created {create_count} assignments for "
                          f"term={sis_term_id}, week={week_num}, "
                          f"course={canvas_course_id}")
-            logging.info(f"Updated {create_count} assignments for "
+            logging.info(f"Updated {update_count} assignments for "
                          f"term={sis_term_id}, week={week_num}, "
                          f"course={canvas_course_id}")
 
@@ -588,55 +588,19 @@ class AnalyticsDAO(BaseDAO):
             create_count = 0
 
             with transaction.atomic():
-                for i in participation_dicts:
-                    student_id = i.get('canvas_user_id')
-                    try:
-                        user = User.objects.get(canvas_user_id=student_id)
-                    except User.DoesNotExist:
-                        logging.warning(
-                            f"User with canvas_user_id {student_id} does not "
-                            f"exist in Canvas Analytics DB. Skipping.")
-                        continue
-                    try:
-                        partic = (Participation.objects.get(user=user,
-                                                            week=week,
-                                                            course=course))
-                        logging.warning(
-                            f"Found existing participation entry for "
-                            f"canvas_course_id: {canvas_course_id}, "
-                            f"user: {student_id}, sis-term-id: {sis_term_id}, "
-                            f"week: {week_num}")
-                        update_count += 1
-                    except Participation.DoesNotExist:
-                        partic = Participation()
+                for raw_partic_dict in participation_dicts:
+                    _, created = (
+                        Participation.objects.create_or_update_participation(
+                            job, week, course, raw_partic_dict)
+                    )
+                    if created:
                         create_count += 1
-                    partic.job = job
-                    partic.user = user
-                    partic.week = week
-                    partic.course = course
-                    partic.page_views = i.get('page_views')
-                    partic.page_views_level = \
-                        i.get('page_views_level')
-                    partic.participations = i.get('participations')
-                    partic.participations_level = \
-                        i.get('participations_level')
-                    if i.get('tardiness_breakdown'):
-                        partic.time_tardy = (i.get('tardiness_breakdown')
-                                             .get('total'))
-                        partic.time_on_time = (i.get('tardiness_breakdown')
-                                               .get('on_time'))
-                        partic.time_late = (i.get('tardiness_breakdown')
-                                            .get('late'))
-                        partic.time_missing = (i.get('tardiness_breakdown')
-                                               .get('missing'))
-                        partic.time_floating = (i.get('tardiness_breakdown')
-                                                .get('floating'))
-                    partic.page_views = i.get('page_views')
-                    partic.save()
+                    else:
+                        update_count += 1
             logging.info(f"Created {create_count} participations for "
                          f"term={sis_term_id}, week={week_num}, "
                          f"course={canvas_course_id}")
-            logging.info(f"Updated {create_count} participations for "
+            logging.info(f"Updated {update_count} participations for "
                          f"term={sis_term_id}, week={week_num}, "
                          f"course={canvas_course_id}")
 

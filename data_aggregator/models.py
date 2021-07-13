@@ -456,7 +456,61 @@ class Assignment(models.Model):
         ]
 
 
+class ParticipationManager(models.Manager):
+
+    def create_or_update_participation(self, job, week, course,
+                                       raw_partic_dict):
+        created = False
+        student_id = raw_partic_dict.get('canvas_user_id')
+        try:
+            user = User.objects.get(canvas_user_id=student_id)
+        except User.DoesNotExist:
+            logging.warning(
+                f"User with canvas_user_id {student_id} does not "
+                f"exist in Canvas Analytics DB. Skipping.")
+            return None, created
+        try:
+            partic = (Participation.objects.get(user=user,
+                                                week=week,
+                                                course=course))
+            logging.warning(
+                f"Found existing participation entry for "
+                f"canvas_course_id: {course.canvas_course_id}, "
+                f"user: {user.canvas_user_id}, "
+                f"sis-term-id: {week.term.sis_term_id}, "
+                f"week: {week.week}")
+        except Participation.DoesNotExist:
+            partic = Participation()
+            created = True
+        partic.job = job
+        partic.user = user
+        partic.week = week
+        partic.course = course
+        partic.page_views = raw_partic_dict.get('page_views')
+        partic.page_views_level = \
+            raw_partic_dict.get('page_views_level')
+        partic.participations = raw_partic_dict.get('participations')
+        partic.participations_level = \
+            raw_partic_dict.get('participations_level')
+        if raw_partic_dict.get('tardiness_breakdown'):
+            partic.time_tardy = (raw_partic_dict.get('tardiness_breakdown')
+                                 .get('total'))
+            partic.time_on_time = (raw_partic_dict.get('tardiness_breakdown')
+                                   .get('on_time'))
+            partic.time_late = (raw_partic_dict.get('tardiness_breakdown')
+                                .get('late'))
+            partic.time_missing = (raw_partic_dict.get('tardiness_breakdown')
+                                   .get('missing'))
+            partic.time_floating = (raw_partic_dict.get('tardiness_breakdown')
+                                    .get('floating'))
+        partic.page_views = raw_partic_dict.get('page_views')
+        partic.save()
+        return partic, created
+
+
 class Participation(models.Model):
+
+    objects = ParticipationManager()
 
     course = models.ForeignKey(Course,
                                on_delete=models.CASCADE)
