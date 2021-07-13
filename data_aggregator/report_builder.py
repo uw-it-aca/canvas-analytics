@@ -2,22 +2,18 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import csv
-from datetime import datetime
 from django.db import transaction
-from django.utils.timezone import utc
 from django.test import override_settings
 from logging import getLogger
-from data_aggregator.models import Term, Week
+from data_aggregator.models import Report, SubaccountActivity
 from data_aggregator.utilities import set_gcs_base_path
+from data_aggregator.exceptions import TermNotStarted
 from restclients_core.util.retry import retry
 from restclients_core.exceptions import DataFailureException
 from uw_canvas.accounts import Accounts as CanvasAccounts
 from uw_canvas.analytics import Analytics as CanvasAnalytics
 from uw_canvas.reports import Reports as CanvasReports
 from uw_canvas.terms import Terms as CanvasTerms
-
-from data_aggregator.models import Report, SubaccountActivity
-
 
 logger = getLogger(__name__)
 
@@ -122,19 +118,12 @@ class ReportBuilder():
     @transaction.atomic
     @override_settings(RESTCLIENTS_CANVAS_TIMEOUT=90)
     def build_subaccount_activity_report(self, root_account_id, sis_term_id):
-        term, _ = Term.objects.get_or_create_term_from_sis_term_id(
-            sis_term_id=sis_term_id)
-        week, _ = Week.objects.get_or_create_week(
-            sis_term_id=term.sis_term_id)
-
-        if week.week < 1:
+        try:
+            report = Report.objects.get_or_create_report(
+                Report.SUBACCOUNT_ACTIVITY, sis_term_id=sis_term_id)
+        except TermNotStarted as ex:
+            logger.info("Term {} not started".format(ex))
             return
-
-        report = Report(report_type=Report.SUBACCOUNT_ACTIVITY,
-                        started_date=datetime.utcnow().replace(tzinfo=utc),
-                        term_id=term.sis_term_id,
-                        term_week=week.week)
-        report.save()
 
         set_gcs_base_path(report.term_id, report.term_week)
 
@@ -144,7 +133,7 @@ class ReportBuilder():
 
         # save activities and initialize course totals
         activity_data = self.get_account_activities_data(root_account,
-                                                         sis_term_id)
+                                                         report.term_id)
         for activity in activity_data:
             account_courses[activity.subaccount_id] = {
                 "courses": 0,
@@ -159,8 +148,8 @@ class ReportBuilder():
             activity.save()
 
         # calculate course totals
-        xlist_courses = self.get_xlist_courses(root_account, sis_term_id)
-        course_data = self.get_course_data(root_account, sis_term_id)
+        xlist_courses = self.get_xlist_courses(root_account, report.term_id)
+        course_data = self.get_course_data(root_account, report.term_id)
         for row in course_data:
             if not len(row):
                 continue
@@ -198,7 +187,7 @@ class ReportBuilder():
             try:
                 totals = account_courses[sis_account_id]
                 activity = SubaccountActivity.objects.get(
-                    report=report, term_id=sis_term_id,
+                    report=report, term_id=report.term_id,
                     subaccount_id=sis_account_id)
                 activity.courses = totals["courses"]
                 activity.active_courses = totals["active_courses"]
@@ -212,5 +201,4 @@ class ReportBuilder():
             except SubaccountActivity.DoesNotExist:
                 continue
 
-        report.finished_date = datetime.utcnow().replace(tzinfo=utc)
-        report.save()
+        report.finished()

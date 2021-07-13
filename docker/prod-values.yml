@@ -23,7 +23,7 @@ autoscaling:
 targetAverageUtilization: 100
 resources:
   limits:
-    cpu: 1000m
+    cpu: 2000m
     memory: 2048Mi
   requests:
     cpu: 100m
@@ -60,46 +60,55 @@ gcsCredentials:
 cronjob:
   enabled: true
   jobs:
+    # it's best to run these before running any jobs
     - name: add-terms
       schedule: "30 6 * * 6" # At 11:30pm PDT on Friday
       command: ["/scripts/management_command.sh"]
-      args: ["create_terms"]
+      args: ["create_and_run_jobs", "create_terms"]
     - name: add-updt-courses
       schedule: "45 6 * * *" # At 11:45pm PDT every night
       command: ["/scripts/management_command.sh"]
-      args: ["create_or_update_courses"]
+      args: ["create_and_run_jobs", "create_or_update_courses"]
     - name: add-updt-users
       schedule: "45 6 * * *" # At 11:45pm PDT every night
       command: ["/scripts/management_command.sh"]
-      args: ["create_or_update_users"]
+      args: ["create_and_run_jobs", "create_or_update_users"]
+    # adds jobs for cronjob daemons
     - name: add-assign-jobs
       schedule: "0 7 * * 6" # At 12:00am PDT on Saturday
       command: ["/scripts/management_command.sh"]
-      args: ["create_assignment_jobs"]
+      args: ["create_jobs", "assignment"]
     - name: add-partic-jobs
       schedule: "0 7 * * 6" # At 12:00am PDT on Saturday
       command: ["/scripts/management_command.sh"]
-      args: ["create_participation_jobs"]
+      args: ["create_jobs", "participation"]
+    # create the db views upfront
     - name: add-assign-view
-      schedule: "0 6 * * 0" # At 11:00pm PDT on Saturday
+      schedule: "30 6 * * 6" # At 11:30pm PDT on Friday
       command: ["/scripts/management_command.sh"]
-      args: ["create_assignment_db_view"]
+      args: ["create_and_run_jobs", "create_assignment_db_view"]
     - name: add-partic-view
-      schedule: "0 6 * * 0" # At 11:00pm PDT on Saturday
+      schedule: "30 6 * * 6" # At 11:30pm PDT on Friday
       command: ["/scripts/management_command.sh"]
-      args: ["create_participation_db_view"]
+      args: ["create_and_run_jobs", "create_participation_db_view"]
     - name: add-rad-view
-      schedule: "15 6 * * 0" # At 11:15pm PDT on Saturday
+      schedule: "30 6 * * 6" # At 11:30pm PDT on Friday
       command: ["/scripts/management_command.sh"]
-      args: ["create_rad_db_view"]
+      args: ["create_and_run_jobs", "create_rad_db_view"]
+    # stage creating rad file job so that the week is correct
+    - name: add-crt-rad-data
+      schedule: "0 7 * * 6" # At 12:00am PDT on Saturday
+      command: ["/scripts/management_command.sh"]
+      args: ["create_jobs", "create_rad_data_file"]
     - name: crt-rad-data
-      schedule: "30 6 * * 0" # At 11:30pm PDT on Saturday
+      schedule: "0 7 * * 0" # At 12:00am PDT on Sunday
       command: ["/scripts/management_command.sh"]
-      args: ["create_rad_data_file"]
+      args: ["run_jobs", "create_rad_data_file"]
+    # build activity report midday on sunday
     - name: subacct-activity
-      schedule: "0 10 * * 0" # At 2:00am PST on Sunday
+      schedule: "0 10 * * 6" # At 2:00am PDT on Saturday
       command: ["/scripts/management_command.sh"]
-      args: ["build_subaccount_activity_report"]
+      args: ["create_and_run_jobs", "build_subaccount_activity_report"]
 daemon:
   enabled: true
   daemons:

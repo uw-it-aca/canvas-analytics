@@ -50,7 +50,8 @@ class ParticipationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Participation
-        fields = ['sis_user_id', 'page_views', 'page_views_level',
-                  'participations', 'participations_level', 'time_tardy',
-                  'time_on_time', 'time_late', 'time_missing', 'time_floating',
+        fields = ['sis_user_id', 'page_views', 'max_page_views',
+                  'page_views_level', 'participations', 'max_participations',
+                  'participations_level', 'time_total', 'time_on_time',
+                  'time_late', 'time_missing', 'time_floating',
                   'sis_course_id', 'sis_term_id', 'week']

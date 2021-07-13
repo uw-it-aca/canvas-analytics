@@ -10,6 +10,8 @@ FOREVER = 0
 class DataAggregatorGCSCache(RestclientGCSClient):
 
     def get_cache_expiration_time(self, service, url, status=None):
+        if status != 200:
+            return None
         if "canvas" == service:
             if re.match(r'^.*/api/v1/.*/analytics.*', url):
                 return FOREVER
