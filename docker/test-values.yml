@@ -42,7 +42,7 @@ image:
 targetAverageUtilization: 100
 resources:
   limits:
-    cpu: 2000m
+    cpu: 1000m
     memory: 2048Mi
   requests:
     cpu: 100m
