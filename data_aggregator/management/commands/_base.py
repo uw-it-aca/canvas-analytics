@@ -148,8 +148,8 @@ class CreateJobCommand(BaseCommand):
 
     def add_arguments(self, parser):
         subparsers = parser.add_subparsers(title="job_name",
-                                           dest="job_name",
-                                           required=True)
+                                           dest="job_name")
+        subparsers.required = True
 
         subparsers = self._add_subparser(
             subparsers, TaskTypes.create_terms,
