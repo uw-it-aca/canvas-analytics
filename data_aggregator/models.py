@@ -361,7 +361,65 @@ class Job(models.Model):
             super(Job, self).save(*args, **kwargs)
 
 
+class AssignmentManager(models.Manager):
+
+    def create_or_update_assignment(self, job, week, course, raw_assign_dict):
+        created = False
+        assignment_id = raw_assign_dict.get('assignment_id')
+        student_id = raw_assign_dict.get('canvas_user_id')
+        try:
+            user = User.objects.get(canvas_user_id=student_id)
+        except User.DoesNotExist:
+            logging.warning(
+                f"User with canvas_user_id {student_id} does not "
+                f"exist in Canvas Analytics DB. Skipping.")
+            return None, created
+        try:
+            assign = (Assignment.objects
+                      .get(user=user,
+                           assignment_id=assignment_id,
+                           week=week))
+            logging.warning(
+                f"Found existing assignment entry for "
+                f"canvas_course_id: {course.canvas_course_id}, "
+                f"user: {user.canvas_user_id}, "
+                f"sis-term-id: {week.term.sis_term_id}, "
+                f"week: {week.week}")
+        except Assignment.DoesNotExist:
+            assign = Assignment()
+            created = True
+        assign.job = job
+        assign.user = user
+        assign.week = week
+        assign.course = course
+        assign.assignment_id = assignment_id
+        assign.title = raw_assign_dict.get('title')
+        assign.unlock_at = raw_assign_dict.get('unlock_at')
+        assign.points_possible = raw_assign_dict.get('points_possible')
+        assign.non_digital_submission = \
+            raw_assign_dict.get('non_digital_submission')
+        assign.due_at = raw_assign_dict.get('due_at')
+        assign.status = raw_assign_dict.get('status')
+        assign.muted = raw_assign_dict.get('muted')
+        assign.max_score = raw_assign_dict.get('max_score')
+        assign.min_score = raw_assign_dict.get('min_score')
+        assign.first_quartile = raw_assign_dict.get('first_quartile')
+        assign.median = raw_assign_dict.get('median')
+        assign.third_quartile = raw_assign_dict.get('third_quartile')
+        assign.excused = raw_assign_dict.get('excused')
+        submission = raw_assign_dict.get('submission')
+        if submission:
+            assign.score = submission.get('score')
+            assign.posted_at = submission.get('posted_at')
+            assign.submitted_at = \
+                submission.get('submitted_at')
+        assign.save()
+        return assign, created
+
+
 class Assignment(models.Model):
+
+    objects = AssignmentManager()
 
     course = models.ForeignKey(Course,
                                on_delete=models.CASCADE)

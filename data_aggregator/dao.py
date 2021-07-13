@@ -490,10 +490,10 @@ class JobDAO(BaseDAO):
         else:
             # create jobs for all courses in a term
             term, _ = Term.objects.get_or_create_term_from_sis_term_id(
-                sis_term_id=context['sis_term_id'])
+                sis_term_id=context.get('sis_term_id'))
             week, _ = Week.objects.get_or_create_week(
-                                            sis_term_id=context['sis_term_id'],
-                                            week_num=context['week'])
+                                        sis_term_id=context.get('sis_term_id'),
+                                        week_num=context.get('week'))
             courses = Course.objects.filter(status='active').filter(term=term)
             course_count = courses.count()
             if course_count == 0:
@@ -509,6 +509,8 @@ class JobDAO(BaseDAO):
                             f"Adding {job_type.type} jobs for course "
                             f"{course.sis_course_id} "
                             f"({course.canvas_course_id})")
+                        context["sis_term_id"] = term.sis_term_id
+                        context["week"] = week.week
                         context["sis_course_id"] = course.sis_course_id
                         context["canvas_course_id"] = course.canvas_course_id
                         job = self.create_job(job_type, target_date_start,
@@ -545,56 +547,15 @@ class AnalyticsDAO(BaseDAO):
             update_count = 0
             create_count = 0
             with transaction.atomic():
-                for i in assignment_dicts:
-                    student_id = i.get('canvas_user_id')
-                    assignment_id = i.get('assignment_id')
-                    try:
-                        user = User.objects.get(canvas_user_id=student_id)
-                    except User.DoesNotExist:
-                        logging.warning(
-                            f"User with canvas_user_id {student_id} does not "
-                            f"exist in Canvas Analytics DB. Skipping.")
-                        continue
-                    try:
-                        assign = (Assignment.objects
-                                  .get(user=user,
-                                       assignment_id=assignment_id,
-                                       week=week))
-                        logging.warning(
-                            f"Found existing assignment entry for "
-                            f"canvas_course_id: {canvas_course_id}, "
-                            f"user: {student_id}, sis-term-id: {sis_term_id}, "
-                            f"week: {week_num}")
-                        update_count += 1
-                    except Assignment.DoesNotExist:
-                        assign = Assignment()
+                for raw_assign_dict in assignment_dicts:
+                    _, created = (
+                        Assignment.objects.create_or_update_assignment(
+                            job, week, course, raw_assign_dict)
+                    )
+                    if created:
                         create_count += 1
-                    assign.job = job
-                    assign.user = user
-                    assign.assignment_id = assignment_id
-                    assign.week = week
-                    assign.title = i.get('title')
-                    assign.unlock_at = i.get('unlock_at')
-                    assign.points_possible = i.get('points_possible')
-                    assign.non_digital_submission = \
-                        i.get('non_digital_submission')
-                    assign.due_at = i.get('due_at')
-                    assign.status = i.get('status')
-                    assign.muted = i.get('muted')
-                    assign.max_score = i.get('max_score')
-                    assign.min_score = i.get('min_score')
-                    assign.first_quartile = i.get('first_quartile')
-                    assign.median = i.get('median')
-                    assign.third_quartile = i.get('third_quartile')
-                    assign.excused = i.get('excused')
-                    submission = i.get('submission')
-                    if submission:
-                        assign.score = submission.get('score')
-                        assign.posted_at = submission.get('posted_at')
-                        assign.submitted_at = \
-                            submission.get('submitted_at')
-                    assign.course = course
-                    assign.save()
+                    else:
+                        update_count += 1
             logging.info(f"Created {create_count} assignments for "
                          f"term={sis_term_id}, week={week_num}, "
                          f"course={canvas_course_id}")
