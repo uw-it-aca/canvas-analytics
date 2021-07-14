@@ -32,6 +32,7 @@
         <b-form class="d-flex flex-nowrap" inline>
           <label class="ml-2 mr-2">Auto Refresh</label>
           <b-form-select v-model="refreshTime" id="refresh-select" name="refresh-select">
+            <b-form-select-option :value="15">15s</b-form-select-option>
             <b-form-select-option :value="30">30s</b-form-select-option>
             <b-form-select-option :value="60">60s</b-form-select-option>
             <b-form-select-option :value="99999">Off</b-form-select-option>
