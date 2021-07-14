@@ -6,7 +6,6 @@
           <label class="mr-2">Action</label>
           <b-form-select v-model="selectedAction" id="action-select" name="action-select">
             <b-form-select-option :value="'restart'">Restart selected</b-form-select-option>
-            <b-form-select-option :value="'clear'">Clear status of selected</b-form-select-option>
           </b-form-select>
           <b-button @click="handleAction()" variant="primary" size="md">
             Run
@@ -303,23 +302,6 @@ export default {
             if (choice) {
               _this.restartJobs(jobsToRestart).then(function(choice) {
                 jobsToRestart.forEach(function (job, index) {
-                  _this._setLocalPendingStatus(job);
-                });
-              });
-            }
-          });
-        }
-      } else if (this.selectedAction == 'clear') {
-        let _this = this;
-        let jobsToClear = this.selectedJobs;
-        if (jobsToClear.length == 0) {
-          this.showNoSelectedJobsError();
-        } else {
-          this.showRunActionWarning(jobsToClear, this.selectedAction)
-          .then(choice => {
-            if (choice) {
-              _this.clearJobs(jobsToClear).then(function() {
-                jobsToClear.forEach(function (job, index) {
                   _this._setLocalPendingStatus(job);
                 });
               });

@@ -4,7 +4,7 @@
 
 import unittest
 from data_aggregator.models import Job
-from data_aggregator.views.api.jobs import JobRestartView, JobClearView
+from data_aggregator.views.api.jobs import JobRestartView
 from django.utils import timezone
 from data_aggregator.tests.api_utils import BaseAPITestCase
 from data_aggregator.utilities import datestring_to_datetime
@@ -66,63 +66,6 @@ class TestJobRestartView(BaseAPITestCase):
                                             {"job_ids": [1]})
             JobRestartView().post(request)
             self.assertTrue(mock_restart_jobs.called)
-
-
-class TestJobClearView(BaseAPITestCase):
-
-    fixtures = ['data_aggregator/fixtures/mock_data/da_job.json',
-                'data_aggregator/fixtures/mock_data/da_jobtype.json']
-
-    def test_post(self):
-        with patch.object(
-                timezone, "now",
-                return_value=datestring_to_datetime("2021-04-2T12:00:00.0Z")):
-            """
-            clear list of jobs and assert that their statuses changed
-            """
-            jobs_to_clear = Job.objects.filter(id__in=[1, 2])
-            # claim jobs in order to reset the test
-            for job in jobs_to_clear:
-                self.assertEqual(job.status, "pending")
-                job.claim_job()
-                self.assertEqual(job.status, "claimed")
-            # post to endpoint to clear jobs
-            request = self.get_post_request('/api/internal/jobs/clear/',
-                                            {"job_ids": [1, 2]})
-            response = JobClearView().post(request)
-            self.assertEqual(response.status_code, 200)
-            # confirm that jobs were cleared and now pending
-            reset_jobs = Job.objects.filter(id__in=[1, 2])
-            for job in reset_jobs:
-                self.assertEqual(job.status, "pending")
-
-            """
-            clear single of job and assert that other jobs are not effected
-            """
-            # claim both jobs #1 and #2
-            for job in Job.objects.filter(id__in=[1, 2]):
-                self.assertEqual(job.status, "pending")
-                job.claim_job()
-                self.assertEqual(job.status, "claimed")
-            # post to endpoint to clear job #1
-            request = self.get_post_request('/api/internal/jobs/clear/',
-                                            {"job_ids": [1]})
-            response = JobClearView().post(request)
-            self.assertEqual(response.status_code, 200)
-            # confirm that job #1 were cleared and now pending
-            jobs_to_clear = Job.objects.filter(id__in=[1])
-            for job in jobs_to_clear:
-                self.assertEqual(job.status, "pending")
-            # confirm that job #2 is still claimed
-            job_to_exclude = Job.objects.get(id=2)
-            self.assertEqual(job_to_exclude.status, "claimed")
-
-        # assert that Job.objects.clear_jobs is called
-        with patch.object(Job.objects, "clear_jobs") as mock_clear_jobs:
-            request = self.get_post_request('/api/internal/jobs/clear/',
-                                            {"job_ids": [1]})
-            JobClearView().post(request)
-            self.assertTrue(mock_clear_jobs.called)
 
 
 if __name__ == "__main__":

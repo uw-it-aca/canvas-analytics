@@ -200,22 +200,6 @@ class TestJob(TestCase):
         self.assertEqual(job.message, "")
         self.assertEqual(job.created, TestJob.created)
 
-    def test_clear_job(self):
-        job = self.get_test_job_full()
-        orig_target_date_start = job.target_date_start
-        orig_target_date_end = job.target_date_end
-        # retart job
-        job.clear_job(save=False)
-        # assert values after restart
-        self.assertEqual(job.type, TestJob.type)
-        self.assertEqual(job.target_date_start, orig_target_date_start)
-        self.assertEqual(job.target_date_end, orig_target_date_end)
-        self.assertEqual(job.pid, None)
-        self.assertEqual(job.start, None)
-        self.assertEqual(job.end, None)
-        self.assertEqual(job.message, "")
-        self.assertEqual(job.created, TestJob.created)
-
     def test_claim_job(self):
         job = self.get_test_job_full()
         job.pid = None  # set pid to None
@@ -307,25 +291,6 @@ class TestJobManager(TestCase):
             job_ids = [job.id for job in active_jobs]
             # restart all active jobs in the target range
             mock_jm.restart_jobs(job_ids)
-            # query for all active jobs again and ensure that they were
-            # restarted
-            active_jobs = mock_jm.get_active_jobs(AnalyticTypes.assignment)
-            for job in active_jobs:
-                self.assertEqual(job.status, "pending")
-
-    def test_clear_jobs(self):
-        with patch.object(
-                timezone, "now",
-                return_value=datestring_to_datetime("2021-04-2T12:00:00.0Z")):
-            mock_jm = self.get_mock_job_manager()
-            # claim all active jobs in the target range
-            active_jobs = mock_jm.get_active_jobs(AnalyticTypes.assignment)
-            for job in active_jobs:
-                job.claim_job()
-                self.assertEqual(job.status, "claimed")
-            job_ids = [job.id for job in active_jobs]
-            # restart all active jobs in the target range
-            mock_jm.clear_jobs(job_ids)
             # query for all active jobs again and ensure that they were
             # restarted
             active_jobs = mock_jm.get_active_jobs(AnalyticTypes.assignment)

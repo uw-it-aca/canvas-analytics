@@ -362,15 +362,6 @@ class Job(models.Model):
         if kwargs.get("save", True) is True:
             super(Job, self).save(*args, **kwargs)
 
-    def clear_job(self, *args, **kwargs):
-        self.pid = None
-        self.start = None
-        self.end = None
-        self.message = ""
-        if kwargs.get("save", True) is True:
-            super(Job, self).save(*args, **kwargs)
-
-
 class AssignmentManager(models.Manager):
 
     def _map_assignment_data(self, assign, raw_assign_dict):

@@ -136,20 +136,3 @@ class JobRestartView(RESTDispatch):
         job_ids = data["job_ids"]
         Job.objects.restart_jobs(job_ids)
         return self.json_response(content={"reset": True})
-
-
-class JobClearView(RESTDispatch):
-    '''
-    API endpoint to clear a job
-
-    /api/internal/jobs/clear/
-
-    HTTP POST accepts the following dictionary paramters:
-    * job_ids: list of job ids to clear
-    '''
-
-    def post(self, request, *args, **kwargs):
-        data = json.loads(request.body.decode('utf-8'))
-        job_ids = data["job_ids"]
-        Job.objects.clear_jobs(job_ids)
-        return self.json_response(content={"clear": True})
