@@ -50,7 +50,7 @@ const store = new Vuex.Store({
     // data filters
     perPage: 250,
     currPage: 1,
-    sortBy: 'status',
+    sortBy: 'job_type',
     sortDesc: false,
     jobType: [],
     jobStatus: [],
