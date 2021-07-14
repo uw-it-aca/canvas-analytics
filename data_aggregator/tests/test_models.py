@@ -427,6 +427,14 @@ class TestJobManager(TestCase):
 
 class TestAssignmentManager(TestCase):
 
+    fixtures = ['data_aggregator/fixtures/mock_data/da_assignment.json',
+                'data_aggregator/fixtures/mock_data/da_course.json',
+                'data_aggregator/fixtures/mock_data/da_job.json',
+                'data_aggregator/fixtures/mock_data/da_jobtype.json',
+                'data_aggregator/fixtures/mock_data/da_term.json',
+                'data_aggregator/fixtures/mock_data/da_user.json',
+                'data_aggregator/fixtures/mock_data/da_week.json']
+
     @patch("data_aggregator.models.Assignment")
     @patch("data_aggregator.models.User.objects.get")
     def test_create_or_update_assignment(self, mock_user_get,
@@ -512,8 +520,45 @@ class TestAssignmentManager(TestCase):
         self.assertEqual(created, False)
         mock_existing_assignment.save.assert_called_once()
 
+    def test_integrity_error(self):
+        # assert that saving a non unique participation raises an integrity
+        # error
+        assign = Assignment.objects.all().first()
+        duplicate_assign = Assignment()
+        duplicate_assign.course = assign.course
+        duplicate_assign.job = assign.job
+        duplicate_assign.week = assign.week
+        duplicate_assign.user = assign.user
+        duplicate_assign.assignment_id = assign.assignment_id
+        duplicate_assign.title = assign.title
+        duplicate_assign.unlock_at = assign.unlock_at
+        duplicate_assign.points_possible = assign.points_possible
+        duplicate_assign.non_digital_submission = assign.non_digital_submission
+        duplicate_assign.due_at = assign.due_at
+        duplicate_assign.status = assign.status
+        duplicate_assign.muted = assign.muted
+        duplicate_assign.min_score = assign.min_score
+        duplicate_assign.max_score = assign.max_score
+        duplicate_assign.first_quartile = assign.first_quartile
+        duplicate_assign.median = assign.median
+        duplicate_assign.third_quartile = assign.third_quartile
+        duplicate_assign.excused = assign.excused
+        duplicate_assign.score = assign.score
+        duplicate_assign.posted_at = assign.posted_at
+        duplicate_assign.submitted_at = assign.submitted_at
+        with self.assertRaises(IntegrityError):
+            duplicate_assign.save()
+
 
 class TestParticipationManager(TestCase):
+
+    fixtures = ['data_aggregator/fixtures/mock_data/da_participation.json',
+                'data_aggregator/fixtures/mock_data/da_course.json',
+                'data_aggregator/fixtures/mock_data/da_job.json',
+                'data_aggregator/fixtures/mock_data/da_jobtype.json',
+                'data_aggregator/fixtures/mock_data/da_term.json',
+                'data_aggregator/fixtures/mock_data/da_user.json',
+                'data_aggregator/fixtures/mock_data/da_week.json']
 
     @patch("data_aggregator.models.Participation")
     @patch("data_aggregator.models.User.objects.get")
@@ -587,6 +632,29 @@ class TestParticipationManager(TestCase):
                                         job, week, course, raw_partic_dict)
         self.assertEqual(created, False)
         mock_existing_participation.save.assert_called_once()
+
+    def test_integrity_error(self):
+        # assert that saving a non unique participation raises an integrity
+        # error
+        partic = Participation.objects.all().first()
+        duplicate_partic = Participation()
+        duplicate_partic.course = partic.course
+        duplicate_partic.job = partic.job
+        duplicate_partic.week = partic.week
+        duplicate_partic.user = partic.user
+        duplicate_partic.page_views = partic.page_views
+        duplicate_partic.max_page_views = partic.max_page_views
+        duplicate_partic.page_views_level = partic.page_views_level
+        duplicate_partic.participations = partic.participations
+        duplicate_partic.max_participations = partic.max_participations
+        duplicate_partic.participations_level = partic.participations_level
+        duplicate_partic.time_total = partic.time_total
+        duplicate_partic.time_on_time = partic.time_on_time
+        duplicate_partic.time_late = partic.time_late
+        duplicate_partic.time_missing = partic.time_missing
+        duplicate_partic.time_floating = partic.time_floating
+        with self.assertRaises(IntegrityError):
+            duplicate_partic.save()
 
 
 if __name__ == "__main__":
