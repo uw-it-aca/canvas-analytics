@@ -275,14 +275,30 @@ export default {
     },
   },
   methods: {
+    canRestartJob: function(job) {
+      if (job.job_type == 'assignment' ||
+          job.job_type == 'participation') {
+        return true
+      } else {
+        return false
+      }
+    },
     handleAction: function() {
       if (this.selectedAction == 'restart') {
         let _this = this;
         let jobsToRestart = this.selectedJobs;
-        if (jobsToRestart.length == 0) {
-          this.showNoSelectedJobsWarning();
+        let nonRestartableJobs = new Array();
+        jobsToRestart.forEach(function (job, index) {
+          if (!_this.canRestartJob(job)) {
+            nonRestartableJobs.push(job);
+          }
+        });
+        if (nonRestartableJobs.length > 0) {
+          this.showNotSupportedActionWarning(nonRestartableJobs, this.selectedAction);
+        } else if (jobsToRestart.length == 0) {
+          this.showNoSelectedJobsError();
         } else {
-          this.showActionWarning(jobsToRestart, this.selectedAction)
+          this.showRunActionWarning(jobsToRestart, this.selectedAction)
           .then(choice => {
             if (choice) {
               _this.restartJobs(jobsToRestart).then(function(choice) {
@@ -297,9 +313,9 @@ export default {
         let _this = this;
         let jobsToClear = this.selectedJobs;
         if (jobsToClear.length == 0) {
-          this.showNoSelectedJobsWarning();
+          this.showNoSelectedJobsError();
         } else {
-          this.showActionWarning(jobsToClear, this.selectedAction)
+          this.showRunActionWarning(jobsToClear, this.selectedAction)
           .then(choice => {
             if (choice) {
               _this.clearJobs(jobsToClear).then(function() {
@@ -326,7 +342,7 @@ export default {
             centered: true
           })
     },
-    showNoSelectedJobsWarning: function() {
+    showNoSelectedJobsError: function() {
         this.$bvModal.msgBoxOk(
           'Select jobs to perform an action',
           {
@@ -340,7 +356,37 @@ export default {
             centered: true
           })
     },
-    showActionWarning: function(jobs, action) {
+    showNotSupportedActionWarning: function(jobs, action) {
+        const h = this.$createElement;
+        let cntByType = utilities.countByProperty(jobs, "job_type");
+        let listItems = [];
+        for (const [key, value] of Object.entries(cntByType)) {
+          listItems.push(
+            h('div', {class: [key]}, key + ": " + value)
+          );
+        }
+        const warningVNode = h('div', [
+          h('p', {class: ['text-left']}, [
+            'The action ',
+            h('b', action),
+            ' is not supported for the following job types:',
+          ]),
+          listItems
+        ]);
+        this.$bvModal.msgBoxOk(
+          warningVNode,
+          {
+            title: 'Unable to ' + action,
+            size: 'sm',
+            buttonSize: 'md',
+            okVariant: 'secondary',
+            okTitle: 'Dismiss',
+            footerClass: 'p-2',
+            hideHeaderClose: false,
+            centered: true
+          })
+    },
+    showRunActionWarning: function(jobs, action) {
       // create warning message
       const h = this.$createElement;
       let cntByStatus = utilities.countByProperty(jobs, "status");
