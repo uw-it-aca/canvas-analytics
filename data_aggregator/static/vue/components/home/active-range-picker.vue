@@ -66,14 +66,14 @@ export default {
     },
   },
   created: function() {
-    // default to current month
+    // default to current week
     if (!this.activeDateRange.startDate && !this.activeDateRange.endDate) {
       let today = moment().utc();
-      let firstDayMonth = today.clone().startOf('month').toDate();
-      let lastDayMonth = today.clone().endOf('month').toDate();
+      let firstDayWeek = today.clone().startOf('isoWeek').toDate();
+      let lastDayWeek = today.clone().endOf('isoWeek').toDate();
       let defaultRange = {
-        startDate: firstDayMonth,
-        endDate: lastDayMonth
+        startDate: firstDayWeek,
+        endDate: lastDayWeek
       };
       this.activeDateRange = defaultRange;
     }
