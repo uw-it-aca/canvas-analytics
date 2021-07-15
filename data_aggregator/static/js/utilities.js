@@ -78,7 +78,11 @@ const utilities = {
             const seconds = Math.floor(duration.seconds());
             parts.push(seconds+" "+(seconds > 1 ? "secs" : "sec"));
         }
-    
+
+        if (parts.length == 0 && duration.seconds() < 1) {
+            parts.push("<1 sec");
+        }
+
         return parts.join(", ");
     }
 };

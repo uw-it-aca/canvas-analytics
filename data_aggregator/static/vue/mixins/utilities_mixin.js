@@ -20,7 +20,7 @@ const utilitiesMixin = {
             return utilities.formatDuration(duration);
         },
     }
-}
+};
 
 export default utilitiesMixin;
     

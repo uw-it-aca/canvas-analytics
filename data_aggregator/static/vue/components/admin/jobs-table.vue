@@ -6,7 +6,6 @@
           <label class="mr-2">Action</label>
           <b-form-select v-model="selectedAction" id="action-select" name="action-select">
             <b-form-select-option :value="'restart'">Restart selected</b-form-select-option>
-            <b-form-select-option :value="'clear'">Clear status of selected</b-form-select-option>
           </b-form-select>
           <b-button @click="handleAction()" variant="primary" size="md">
             Run
@@ -33,6 +32,7 @@
         <b-form class="d-flex flex-nowrap" inline>
           <label class="ml-2 mr-2">Auto Refresh</label>
           <b-form-select v-model="refreshTime" id="refresh-select" name="refresh-select">
+            <b-form-select-option :value="15">15s</b-form-select-option>
             <b-form-select-option :value="30">30s</b-form-select-option>
             <b-form-select-option :value="60">60s</b-form-select-option>
             <b-form-select-option :value="99999">Off</b-form-select-option>
@@ -119,6 +119,10 @@
 
         <template #cell(selected)="row">
           <input type="checkbox" id="checkbox" @click="select" v-model="row.item.selected">
+        </template>
+
+        <template #cell(job_type)="row">
+          <a :href="'/admin/jobs/' + row.item.id">{{row.item.job_type}}</a>
         </template>
 
         <template #cell(context)="row">
@@ -275,14 +279,30 @@ export default {
     },
   },
   methods: {
+    canRestartJob: function(job) {
+      if (job.job_type == 'assignment' ||
+          job.job_type == 'participation') {
+        return true
+      } else {
+        return false
+      }
+    },
     handleAction: function() {
       if (this.selectedAction == 'restart') {
         let _this = this;
         let jobsToRestart = this.selectedJobs;
-        if (jobsToRestart.length == 0) {
-          this.showNoSelectedJobsWarning();
+        let nonRestartableJobs = new Array();
+        jobsToRestart.forEach(function (job, index) {
+          if (!_this.canRestartJob(job)) {
+            nonRestartableJobs.push(job);
+          }
+        });
+        if (nonRestartableJobs.length > 0) {
+          this.showNotSupportedActionWarning(nonRestartableJobs, this.selectedAction);
+        } else if (jobsToRestart.length == 0) {
+          this.showNoSelectedJobsError();
         } else {
-          this.showActionWarning(jobsToRestart, this.selectedAction)
+          this.showRunActionWarning(jobsToRestart, this.selectedAction)
           .then(choice => {
             if (choice) {
               _this.restartJobs(jobsToRestart).then(function(choice) {
@@ -293,28 +313,13 @@ export default {
             }
           });
         }
-      } else if (this.selectedAction == 'clear') {
-        let _this = this;
-        let jobsToClear = this.selectedJobs;
-        if (jobsToClear.length == 0) {
-          this.showNoSelectedJobsWarning();
-        } else {
-          this.showActionWarning(jobsToClear, this.selectedAction)
-          .then(choice => {
-            if (choice) {
-              _this.clearJobs(jobsToClear).then(function() {
-                jobsToClear.forEach(function (job, index) {
-                  _this._setLocalPendingStatus(job);
-                });
-              });
-            }
-          });
-        }
       }
     },
     showError: function(job) {
+        const h = this.$createElement;
+        let traceback = h('pre', job.message)
         this.$bvModal.msgBoxOk(
-          job.message,
+          traceback,
           {
             title: 'Error Log',
             size: 'xl',
@@ -326,7 +331,7 @@ export default {
             centered: true
           })
     },
-    showNoSelectedJobsWarning: function() {
+    showNoSelectedJobsError: function() {
         this.$bvModal.msgBoxOk(
           'Select jobs to perform an action',
           {
@@ -340,7 +345,37 @@ export default {
             centered: true
           })
     },
-    showActionWarning: function(jobs, action) {
+    showNotSupportedActionWarning: function(jobs, action) {
+        const h = this.$createElement;
+        let cntByType = utilities.countByProperty(jobs, "job_type");
+        let listItems = [];
+        for (const [key, value] of Object.entries(cntByType)) {
+          listItems.push(
+            h('div', {class: [key]}, key + ": " + value)
+          );
+        }
+        const warningVNode = h('div', [
+          h('p', {class: ['text-left']}, [
+            'The action ',
+            h('b', action),
+            ' is not supported for the following job types:',
+          ]),
+          listItems
+        ]);
+        this.$bvModal.msgBoxOk(
+          warningVNode,
+          {
+            title: 'Unable to ' + action,
+            size: 'sm',
+            buttonSize: 'md',
+            okVariant: 'secondary',
+            okTitle: 'Dismiss',
+            footerClass: 'p-2',
+            hideHeaderClose: false,
+            centered: true
+          })
+    },
+    showRunActionWarning: function(jobs, action) {
       // create warning message
       const h = this.$createElement;
       let cntByStatus = utilities.countByProperty(jobs, "status");
@@ -415,36 +450,6 @@ export default {
 
 <style lang="scss">
   @import "../../../css/data_aggregator/variables.scss";
-
-  .pending {
-      color: #818182;
-      background-color: map-get($theme-colors, "pending-bg");
-  }
-
-  .claimed {
-      color: #7237b5;
-      background-color: map-get($theme-colors, "claimed-bg");
-  }
-
-  .running {
-    color: #0c5460;
-    background-color: map-get($theme-colors, "running-bg");
-  }
-
-  .completed {
-    color: #155724;
-    background-color: map-get($theme-colors, "completed-bg");
-  }
-
-  .failed {
-    color: #721c24;
-    background-color: map-get($theme-colors, "failed-bg");
-  }
-
-  .expired {
-    color: #721c24;
-    background-color: map-get($theme-colors, "expired-bg");
-  }
 
   .error-badge {
     color: #721c24;
