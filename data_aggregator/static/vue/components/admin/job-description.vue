@@ -5,7 +5,9 @@
     <dd v-else>N/A</dd>
 
     <dt>Status</dt>
-    <dd v-if="job.status" :class="job.status">{{job.status}}</dd>
+    <dd v-if="job.status">
+      <b-badge :class="job.status">{{job.status}}</b-badge>
+    </dd>
     <dd v-else>N/A</dd>
 
     <dt>Start</dt>
