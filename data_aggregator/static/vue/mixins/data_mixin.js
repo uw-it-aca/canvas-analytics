@@ -65,23 +65,8 @@ const dataMixin = {
                 axiosConfig
             );
         },
-        clearJobs: async function(jobs) {
-            const csrfToken = this.$store.state.csrfToken;
-            const axiosConfig = {
-            headers: {
-                'Content-Type': 'application/json;charset=UTF-8',
-                'Access-Control-Allow-Origin': '*',
-                'X-CSRFToken': csrfToken
-            }
-            };
-            return axios.post(
-                `api/internal/jobs/clear/`,
-                {"job_ids": jobs.map(job => job.id)},
-                axiosConfig
-            );
-        },
     },
-}
+};
 
 export default dataMixin;
     

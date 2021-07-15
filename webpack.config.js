@@ -9,8 +9,9 @@ module.exports = {
     mode: 'development',
     context: __dirname,
     entry: {
-        home: './data_aggregator/static/vue/home.js',
-        api: './data_aggregator/static/vue/api.js',
+        admin_jobs: './data_aggregator/static/vue/admin/jobs.js',
+        admin_job_detail: './data_aggregator/static/vue/admin/job_detail.js',
+        api_analytics: './data_aggregator/static/vue/api/analytics.js',
     },
     output: {
         path: path.resolve('./data_aggregator/static/data_aggregator/bundles/'),

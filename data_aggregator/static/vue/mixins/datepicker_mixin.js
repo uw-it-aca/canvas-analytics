@@ -14,9 +14,9 @@ const datePickerMixin = {
             monthNames: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
             firstDay: 0
           },
-        }
+        };
     },
-}
+};
 
 export default datePickerMixin;
     

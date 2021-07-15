@@ -4,7 +4,7 @@
 import os
 import logging
 from datetime import datetime, date, timedelta
-from django.db import models
+from django.db import models, IntegrityError
 from django.utils import timezone
 from data_aggregator.exceptions import TermNotStarted
 from data_aggregator import utilities
@@ -321,6 +321,21 @@ class Job(models.Model):
                 not self.message):
             return JobStatusTypes.claimed
 
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "type": self.type.type,
+            "status": self.status,
+            "target_date_start": self.target_date_start,
+            "target_date_end": self.target_date_end,
+            "context": self.context,
+            "pid": self.pid,
+            "start": self.start,
+            "end": self.end,
+            "message": self.message,
+            "created": self.created
+        }
+
     def claim_job(self, *args, **kwargs):
         self.pid = os.getpid()
         self.start = None
@@ -362,47 +377,10 @@ class Job(models.Model):
         if kwargs.get("save", True) is True:
             super(Job, self).save(*args, **kwargs)
 
-    def clear_job(self, *args, **kwargs):
-        self.pid = None
-        self.start = None
-        self.end = None
-        self.message = ""
-        if kwargs.get("save", True) is True:
-            super(Job, self).save(*args, **kwargs)
-
 
 class AssignmentManager(models.Manager):
 
-    def create_or_update_assignment(self, job, week, course, raw_assign_dict):
-        created = False
-        assignment_id = raw_assign_dict.get('assignment_id')
-        student_id = raw_assign_dict.get('canvas_user_id')
-        try:
-            user = User.objects.get(canvas_user_id=student_id)
-        except User.DoesNotExist:
-            logging.warning(
-                f"User with canvas_user_id {student_id} does not "
-                f"exist in Canvas Analytics DB. Skipping.")
-            return None, created
-        try:
-            assign = (Assignment.objects
-                      .get(user=user,
-                           assignment_id=assignment_id,
-                           week=week))
-            logging.warning(
-                f"Found existing assignment entry for "
-                f"canvas_course_id: {course.canvas_course_id}, "
-                f"user: {user.canvas_user_id}, "
-                f"sis-term-id: {week.term.sis_term_id}, "
-                f"week: {week.week}")
-        except Assignment.DoesNotExist:
-            assign = Assignment()
-            created = True
-        assign.job = job
-        assign.user = user
-        assign.week = week
-        assign.course = course
-        assign.assignment_id = assignment_id
+    def _map_assignment_data(self, assign, raw_assign_dict):
         assign.title = raw_assign_dict.get('title')
         assign.unlock_at = raw_assign_dict.get('unlock_at')
         assign.points_possible = raw_assign_dict.get('points_possible')
@@ -423,7 +401,45 @@ class AssignmentManager(models.Manager):
             assign.posted_at = submission.get('posted_at')
             assign.submitted_at = \
                 submission.get('submitted_at')
-        assign.save()
+        return assign
+
+    def create_or_update_assignment(self, job, week, course, raw_assign_dict):
+        created = True
+        assignment_id = raw_assign_dict.get('assignment_id')
+        student_id = raw_assign_dict.get('canvas_user_id')
+        try:
+            user = User.objects.get(canvas_user_id=student_id)
+        except User.DoesNotExist:
+            logging.warning(
+                f"User with canvas_user_id {student_id} does not "
+                f"exist in Canvas Analytics DB. Skipping.")
+            return None, created
+        assign = Assignment()
+        assign.job = job
+        assign.user = user
+        assign.week = week
+        assign.course = course
+        assign.assignment_id = assignment_id
+        assign = self._map_assignment_data(assign, raw_assign_dict)
+        try:
+            assign.save()
+        except IntegrityError:
+            # we update only if the unique contraint isn't satisified in order
+            # to avoid checking for an assignment on every insert
+            created = False
+            assign = (Assignment.objects
+                      .get(user=user,
+                           assignment_id=assignment_id,
+                           week=week))
+            assign = self._map_assignment_data(assign, raw_assign_dict)
+            assign.save()
+            logging.warning(
+                f"Found existing assignment entry for "
+                f"canvas_course_id: {course.canvas_course_id}, "
+                f"user: {user.canvas_user_id}, "
+                f"sis-term-id: {week.term.sis_term_id}, "
+                f"week: {week.week}")
+
         return assign, created
 
 
@@ -468,34 +484,7 @@ class Assignment(models.Model):
 
 class ParticipationManager(models.Manager):
 
-    def create_or_update_participation(self, job, week, course,
-                                       raw_partic_dict):
-        created = False
-        student_id = raw_partic_dict.get('canvas_user_id')
-        try:
-            user = User.objects.get(canvas_user_id=student_id)
-        except User.DoesNotExist:
-            logging.warning(
-                f"User with canvas_user_id {student_id} does not "
-                f"exist in Canvas Analytics DB. Skipping.")
-            return None, created
-        try:
-            partic = (Participation.objects.get(user=user,
-                                                week=week,
-                                                course=course))
-            logging.warning(
-                f"Found existing participation entry for "
-                f"canvas_course_id: {course.canvas_course_id}, "
-                f"user: {user.canvas_user_id}, "
-                f"sis-term-id: {week.term.sis_term_id}, "
-                f"week: {week.week}")
-        except Participation.DoesNotExist:
-            partic = Participation()
-            created = True
-        partic.job = job
-        partic.user = user
-        partic.week = week
-        partic.course = course
+    def _map_participation_data(self, partic, raw_partic_dict):
         partic.page_views = raw_partic_dict.get('page_views')
         partic.max_page_views = raw_partic_dict.get('max_page_views')
         partic.page_views_level = \
@@ -515,7 +504,42 @@ class ParticipationManager(models.Manager):
                                    .get('missing'))
             partic.time_floating = (raw_partic_dict.get('tardiness_breakdown')
                                     .get('floating'))
-        partic.save()
+        return partic
+
+    def create_or_update_participation(self, job, week, course,
+                                       raw_partic_dict):
+        created = True
+        student_id = raw_partic_dict.get('canvas_user_id')
+        try:
+            user = User.objects.get(canvas_user_id=student_id)
+        except User.DoesNotExist:
+            logging.warning(
+                f"User with canvas_user_id {student_id} does not "
+                f"exist in Canvas Analytics DB. Skipping.")
+            return None, created
+        partic = Participation()
+        partic.job = job
+        partic.user = user
+        partic.week = week
+        partic.course = course
+        partic = self._map_participation_data(partic, raw_partic_dict)
+        try:
+            partic.save()
+        except IntegrityError:
+            # we update only if the unique contraint isn't satisified in order
+            # to avoid checking for a participation on every insert
+            created = False
+            partic = (Participation.objects.get(user=user,
+                                                week=week,
+                                                course=course))
+            partic = self._map_participation_data(partic, raw_partic_dict)
+            partic.save()
+            logging.warning(
+                f"Found existing participation entry for "
+                f"canvas_course_id: {course.canvas_course_id}, "
+                f"user: {user.canvas_user_id}, "
+                f"sis-term-id: {week.term.sis_term_id}, "
+                f"week: {week.week}")
         return partic, created
 
 

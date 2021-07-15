@@ -9,7 +9,7 @@ const setTermAndExtractData = (response, urlExtra) => {
   let proccessValue = {};
   proccessValue[urlExtra] = response.data;
   return proccessValue;
-}
+};
 
 const fetchBuilder = (url, postProcess, type) => {
   return ({commit, getters}, urlExtra = '') => {
@@ -34,7 +34,7 @@ const fetchBuilder = (url, postProcess, type) => {
       }).catch((error)=>{
         if (process.env.NODE_ENV === "development") {
           console.log(error);
-        };
+        }
         commit(
           'setStatus', 
           {
@@ -111,7 +111,7 @@ const buildWith = (
       if (Array.isArray(state.value)) {
         state.value = data;
       } else {
-        state.value = {...state.value, ...data}
+        state.value = {...state.value, ...data};
       }
     },
     setStatus(state, status) {

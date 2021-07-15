@@ -20,7 +20,7 @@ def get_user_pass(netid):
     return 'pass'
 
 
-class BaseAPITestCase(TestCase):
+class BaseViewTestCase(TestCase):
 
     def setUp(self):
         self.client = Client(HTTP_USER_AGENT='Mozilla/5.0')

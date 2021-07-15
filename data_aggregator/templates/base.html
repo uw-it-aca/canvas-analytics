@@ -3,10 +3,8 @@
 <html lang="en">
 
 <head>
-  {% load json_script %}
-  {{ jobtypes|json_script:'jobtypes' }}
-  {{ terms|json_script:'terms' }}
-  {{ job_ranges|json_script:'job_ranges' }}
+  {% block head_content %}
+  {% endblock head_content %}
 
   <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
   <meta content="utf-8" http-equiv="encoding">
@@ -26,8 +24,14 @@
     </b-row>
     <b-row role="main">
       <div id="vue_root" hidden>
-        {% block body_content %}
-        {% endblock body_content %}
+        <b-breadcrumb>
+          {% block breadcrumbs %}
+          {% endblock breadcrumbs %}
+        </b-breadcrumb>
+        <div class="vue_body_content">
+          {% block body_content %}
+          {% endblock body_content %}
+        </div>
       </div>
     </b-row>
     <b-row>

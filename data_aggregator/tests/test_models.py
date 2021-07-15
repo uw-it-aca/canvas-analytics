@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import unittest
+from django.db.utils import IntegrityError
 from django.test import TestCase
 from django.utils import timezone
 from datetime import timedelta
@@ -144,6 +145,7 @@ class TestWeekManager(TestCase):
 class TestJob(TestCase):
 
     type = JobType()
+    type.type = AnalyticTypes.assignment
     target_date_start = timezone.now()
     target_date_end = timezone.now() + timedelta(days=1)
     start = timezone.now()
@@ -193,22 +195,6 @@ class TestJob(TestCase):
         self.assertEqual(job.type, TestJob.type)
         self.assertNotEqual(job.target_date_start, orig_target_date_start)
         self.assertNotEqual(job.target_date_end, orig_target_date_end)
-        self.assertEqual(job.pid, None)
-        self.assertEqual(job.start, None)
-        self.assertEqual(job.end, None)
-        self.assertEqual(job.message, "")
-        self.assertEqual(job.created, TestJob.created)
-
-    def test_clear_job(self):
-        job = self.get_test_job_full()
-        orig_target_date_start = job.target_date_start
-        orig_target_date_end = job.target_date_end
-        # retart job
-        job.clear_job(save=False)
-        # assert values after restart
-        self.assertEqual(job.type, TestJob.type)
-        self.assertEqual(job.target_date_start, orig_target_date_start)
-        self.assertEqual(job.target_date_end, orig_target_date_end)
         self.assertEqual(job.pid, None)
         self.assertEqual(job.start, None)
         self.assertEqual(job.end, None)
@@ -280,6 +266,18 @@ class TestJob(TestCase):
             job.start = None
             job.start_job(save=False)
 
+    def test_to_dict(self):
+        job = self.get_test_job_full()
+        job_dict = job.to_dict()
+        self.assertEqual(job_dict["type"], job.type.type)
+        self.assertEqual(job_dict["target_date_start"], job.target_date_start)
+        self.assertEqual(job_dict["target_date_end"], job.target_date_end)
+        self.assertEqual(job_dict["pid"], job.pid)
+        self.assertEqual(job_dict["start"], job.start)
+        self.assertEqual(job_dict["end"], job.end)
+        self.assertEqual(job_dict["message"], job.message)
+        self.assertEqual(job_dict["created"], job.created)
+
 
 class TestJobManager(TestCase):
 
@@ -306,25 +304,6 @@ class TestJobManager(TestCase):
             job_ids = [job.id for job in active_jobs]
             # restart all active jobs in the target range
             mock_jm.restart_jobs(job_ids)
-            # query for all active jobs again and ensure that they were
-            # restarted
-            active_jobs = mock_jm.get_active_jobs(AnalyticTypes.assignment)
-            for job in active_jobs:
-                self.assertEqual(job.status, "pending")
-
-    def test_clear_jobs(self):
-        with patch.object(
-                timezone, "now",
-                return_value=datestring_to_datetime("2021-04-2T12:00:00.0Z")):
-            mock_jm = self.get_mock_job_manager()
-            # claim all active jobs in the target range
-            active_jobs = mock_jm.get_active_jobs(AnalyticTypes.assignment)
-            for job in active_jobs:
-                job.claim_job()
-                self.assertEqual(job.status, "claimed")
-            job_ids = [job.id for job in active_jobs]
-            # restart all active jobs in the target range
-            mock_jm.clear_jobs(job_ids)
             # query for all active jobs again and ensure that they were
             # restarted
             active_jobs = mock_jm.get_active_jobs(AnalyticTypes.assignment)
@@ -426,10 +405,18 @@ class TestJobManager(TestCase):
 
 class TestAssignmentManager(TestCase):
 
-    @patch("data_aggregator.models.Assignment.objects.get")
+    fixtures = ['data_aggregator/fixtures/mock_data/da_assignment.json',
+                'data_aggregator/fixtures/mock_data/da_course.json',
+                'data_aggregator/fixtures/mock_data/da_job.json',
+                'data_aggregator/fixtures/mock_data/da_jobtype.json',
+                'data_aggregator/fixtures/mock_data/da_term.json',
+                'data_aggregator/fixtures/mock_data/da_user.json',
+                'data_aggregator/fixtures/mock_data/da_week.json']
+
+    @patch("data_aggregator.models.Assignment")
     @patch("data_aggregator.models.User.objects.get")
     def test_create_or_update_assignment(self, mock_user_get,
-                                         mock_assignment_get):
+                                         mock_assignment):
         job = Job()
         user = User()
         term = Term()
@@ -466,15 +453,15 @@ class TestAssignmentManager(TestCase):
 
         mock_user_get.return_value = user
 
-        # check for update
+        # check for create
         assign, created = Assignment.objects.create_or_update_assignment(
                                             job, week, course, raw_assign_dict)
 
         mock_user_get.assert_called_once()
-        mock_assignment = mock_assignment_get.return_value
-        mock_assignment.save.assert_called_once()
+        mock_assignment_inst = mock_assignment()
+        mock_assignment_inst.save.assert_called_once()
 
-        self.assertEqual(created, False)
+        self.assertEqual(created, True)
 
         self.assertEqual(assign.job, job)
         self.assertEqual(assign.week, week)
@@ -503,23 +490,58 @@ class TestAssignmentManager(TestCase):
         self.assertEqual(assign.posted_at, submission["posted_at"])
         self.assertEqual(assign.submitted_at, submission["submitted_at"])
 
-        # check create
-        mock_assignment_get.reset_mock()
-        mock_assignment_get.side_effect = Assignment.DoesNotExist
-        with patch('data_aggregator.models.Assignment.save') as \
-                mock_assignment_save:
-            _, created = Assignment.objects.create_or_update_assignment(
-                                            job, week, course, raw_assign_dict)
-            self.assertEqual(created, True)
-            mock_assignment_save.assert_called_once()
+        # check update
+        mock_assignment_inst.save.side_effect = IntegrityError
+        mock_existing_assignment = mock_assignment.objects.get.return_value
+        _, created = Assignment.objects.create_or_update_assignment(
+                                        job, week, course, raw_assign_dict)
+        self.assertEqual(created, False)
+        mock_existing_assignment.save.assert_called_once()
+
+    def test_integrity_error(self):
+        # assert that saving a non unique participation raises an integrity
+        # error
+        assign = Assignment.objects.all().first()
+        duplicate_assign = Assignment()
+        duplicate_assign.course = assign.course
+        duplicate_assign.job = assign.job
+        duplicate_assign.week = assign.week
+        duplicate_assign.user = assign.user
+        duplicate_assign.assignment_id = assign.assignment_id
+        duplicate_assign.title = assign.title
+        duplicate_assign.unlock_at = assign.unlock_at
+        duplicate_assign.points_possible = assign.points_possible
+        duplicate_assign.non_digital_submission = assign.non_digital_submission
+        duplicate_assign.due_at = assign.due_at
+        duplicate_assign.status = assign.status
+        duplicate_assign.muted = assign.muted
+        duplicate_assign.min_score = assign.min_score
+        duplicate_assign.max_score = assign.max_score
+        duplicate_assign.first_quartile = assign.first_quartile
+        duplicate_assign.median = assign.median
+        duplicate_assign.third_quartile = assign.third_quartile
+        duplicate_assign.excused = assign.excused
+        duplicate_assign.score = assign.score
+        duplicate_assign.posted_at = assign.posted_at
+        duplicate_assign.submitted_at = assign.submitted_at
+        with self.assertRaises(IntegrityError):
+            duplicate_assign.save()
 
 
 class TestParticipationManager(TestCase):
 
-    @patch("data_aggregator.models.Participation.objects.get")
+    fixtures = ['data_aggregator/fixtures/mock_data/da_participation.json',
+                'data_aggregator/fixtures/mock_data/da_course.json',
+                'data_aggregator/fixtures/mock_data/da_job.json',
+                'data_aggregator/fixtures/mock_data/da_jobtype.json',
+                'data_aggregator/fixtures/mock_data/da_term.json',
+                'data_aggregator/fixtures/mock_data/da_user.json',
+                'data_aggregator/fixtures/mock_data/da_week.json']
+
+    @patch("data_aggregator.models.Participation")
     @patch("data_aggregator.models.User.objects.get")
     def test_create_or_update_participation(self, mock_user_get,
-                                            mock_participation_get):
+                                            mock_participation):
         job = Job()
         user = User()
         term = Term()
@@ -548,15 +570,15 @@ class TestParticipationManager(TestCase):
 
         mock_user_get.return_value = user
 
-        # check for update
+        # check for create
         partic, created = Participation.objects.create_or_update_participation(
                                             job, week, course, raw_partic_dict)
 
         mock_user_get.assert_called_once()
-        mock_participation = mock_participation_get.return_value
-        mock_participation.save.assert_called_once()
+        mock_participation_inst = mock_participation()
+        mock_participation_inst.save.assert_called_once()
 
-        self.assertEqual(created, False)
+        self.assertEqual(created, True)
 
         self.assertEqual(partic.job, job)
         self.assertEqual(partic.week, week)
@@ -580,15 +602,37 @@ class TestParticipationManager(TestCase):
         self.assertEqual(partic.time_floating, tardiness_breakdown["floating"])
         self.assertEqual(partic.time_total, tardiness_breakdown["total"])
 
-        # check create
-        mock_participation_get.reset_mock()
-        mock_participation_get.side_effect = Participation.DoesNotExist
-        with patch('data_aggregator.models.Participation.save') as \
-                mock_participation_save:
-            _, created = Participation.objects.create_or_update_participation(
-                                            job, week, course, raw_partic_dict)
-            self.assertEqual(created, True)
-            mock_participation_save.assert_called_once()
+        # check update
+        mock_participation_inst.save.side_effect = IntegrityError
+        mock_existing_participation = \
+            mock_participation.objects.get.return_value
+        _, created = Participation.objects.create_or_update_participation(
+                                        job, week, course, raw_partic_dict)
+        self.assertEqual(created, False)
+        mock_existing_participation.save.assert_called_once()
+
+    def test_integrity_error(self):
+        # assert that saving a non unique participation raises an integrity
+        # error
+        partic = Participation.objects.all().first()
+        duplicate_partic = Participation()
+        duplicate_partic.course = partic.course
+        duplicate_partic.job = partic.job
+        duplicate_partic.week = partic.week
+        duplicate_partic.user = partic.user
+        duplicate_partic.page_views = partic.page_views
+        duplicate_partic.max_page_views = partic.max_page_views
+        duplicate_partic.page_views_level = partic.page_views_level
+        duplicate_partic.participations = partic.participations
+        duplicate_partic.max_participations = partic.max_participations
+        duplicate_partic.participations_level = partic.participations_level
+        duplicate_partic.time_total = partic.time_total
+        duplicate_partic.time_on_time = partic.time_on_time
+        duplicate_partic.time_late = partic.time_late
+        duplicate_partic.time_missing = partic.time_missing
+        duplicate_partic.time_floating = partic.time_floating
+        with self.assertRaises(IntegrityError):
+            duplicate_partic.save()
 
 
 if __name__ == "__main__":

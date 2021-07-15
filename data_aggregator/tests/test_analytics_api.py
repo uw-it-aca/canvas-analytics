@@ -5,11 +5,11 @@ import unittest
 from data_aggregator.views.api.analytics import AccountParticipationView, \
     AccountAssignmentView, TermParticipationView, TermAssignmentView, \
     UserView, UserParticipationView, UserAssignmentView
-from data_aggregator.tests.api_utils import BaseAPITestCase
+from data_aggregator.tests.view_utils import BaseViewTestCase
 from mock import MagicMock
 
 
-class AnalyticsAPITestCase(BaseAPITestCase):
+class AnalyticsAPITestCase(BaseViewTestCase):
 
     fixtures = ['data_aggregator/fixtures/mock_data/da_assignment.json',
                 'data_aggregator/fixtures/mock_data/da_course.json',
