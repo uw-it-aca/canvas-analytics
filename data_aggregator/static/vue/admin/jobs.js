@@ -1,14 +1,14 @@
-import {Vue} from './base.js';
+import {Vue} from '../base.js';
 import Vuex from 'vuex';
 import axios from 'axios';
 
 // custom components
-import ActiveRangePicker from './components/home/active-range-picker.vue';
-import JobsTable from './components/home/jobs-table.vue';
-import JobsFilter from './components/home/jobs-filter.vue';
-import Chart from './components/home/chart.vue';
-import TimeDifferenceWidget from './components/home/widgets/time-difference-widget.vue';
-import TimeWidget from './components/home/widgets/time-widget.vue';
+import ActiveRangePicker from '../components/admin/active-range-picker.vue';
+import JobsTable from '../components/admin/jobs-table.vue';
+import JobsFilter from '../components/admin/jobs-filter.vue';
+import Chart from '../components/admin/chart.vue';
+import TimeDifferenceWidget from '../components/admin/widgets/time-difference-widget.vue';
+import TimeWidget from '../components/admin/widgets/time-widget.vue';
 
 Vue.component('jobs-table', JobsTable);
 Vue.component('jobs-filter', JobsFilter);
@@ -28,12 +28,12 @@ import 'vue-multiselect/dist/vue-multiselect.min.css';
 Vue.component('multiselect', Multiselect)
 
 // stores
-import home_store from './vuex/store/home_store.js';
+import admin_store from '../vuex/store/admin_store.js';
 
 const store = new Vuex.Store({
   state: {
     // data set on load
-    pageTitle: "Home",
+    pageTitle: "Jobs Admin",
     csrfToken: document.getElementsByName('csrfmiddlewaretoken')[0].value,
     getJobsAjaxRequest: null,
     terms: JSON.parse(document.getElementById('terms').innerHTML), // job terms loaded on page load
@@ -113,14 +113,14 @@ const store = new Vuex.Store({
     },
   },
   modules: {
-    'home_store': home_store
+    'admin_store': admin_store
   }
 });
 
 // initialize root component 
-import dataMixin from './mixins/data_mixin';
-import utilitiesMixin from './mixins/utilities_mixin';
-import utilities from "../js/utilities.js";
+import dataMixin from '../mixins/data_mixin';
+import utilitiesMixin from '../mixins/utilities_mixin';
+import utilities from "../../js/utilities.js";
 import {mapState} from 'vuex';
 
 new Vue({

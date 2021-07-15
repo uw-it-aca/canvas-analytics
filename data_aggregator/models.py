@@ -321,6 +321,21 @@ class Job(models.Model):
                 not self.message):
             return JobStatusTypes.claimed
 
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "type": self.type.type,
+            "status": self.status,
+            "target_date_start": self.target_date_start,
+            "target_date_end": self.target_date_end,
+            "context": self.context,
+            "pid": self.pid,
+            "start": self.start,
+            "end": self.end,
+            "message": self.message,
+            "created": self.created
+        }
+
     def claim_job(self, *args, **kwargs):
         self.pid = os.getpid()
         self.start = None
@@ -361,6 +376,7 @@ class Job(models.Model):
         self.message = ""
         if kwargs.get("save", True) is True:
             super(Job, self).save(*args, **kwargs)
+
 
 class AssignmentManager(models.Manager):
 

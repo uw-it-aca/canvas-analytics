@@ -121,6 +121,10 @@
           <input type="checkbox" id="checkbox" @click="select" v-model="row.item.selected">
         </template>
 
+        <template #cell(job_type)="row">
+          <a :href="'/admin/jobs/' + row.item.id">{{row.item.job_type}}</a>
+        </template>
+
         <template #cell(context)="row">
           <ul class="list-unstyled m-0">
             <li v-for="(value, name) in row.item.context" :key="value">
@@ -312,8 +316,10 @@ export default {
       }
     },
     showError: function(job) {
+        const h = this.$createElement;
+        let traceback = h('pre', job.message)
         this.$bvModal.msgBoxOk(
-          job.message,
+          traceback,
           {
             title: 'Error Log',
             size: 'xl',
@@ -444,36 +450,6 @@ export default {
 
 <style lang="scss">
   @import "../../../css/data_aggregator/variables.scss";
-
-  .pending {
-      color: #818182;
-      background-color: map-get($theme-colors, "pending-bg");
-  }
-
-  .claimed {
-      color: #7237b5;
-      background-color: map-get($theme-colors, "claimed-bg");
-  }
-
-  .running {
-    color: #0c5460;
-    background-color: map-get($theme-colors, "running-bg");
-  }
-
-  .completed {
-    color: #155724;
-    background-color: map-get($theme-colors, "completed-bg");
-  }
-
-  .failed {
-    color: #721c24;
-    background-color: map-get($theme-colors, "failed-bg");
-  }
-
-  .expired {
-    color: #721c24;
-    background-color: map-get($theme-colors, "expired-bg");
-  }
 
   .error-badge {
     color: #721c24;
