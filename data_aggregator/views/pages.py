@@ -6,7 +6,8 @@ from uw_saml.utils import get_user
 from uw_saml.decorators import group_required
 from django.utils.decorators import method_decorator
 from django.conf import settings
-from data_aggregator.models import AnalyticTypes, Assignment, Participation, Term, JobType, Job
+from data_aggregator.models import AnalyticTypes, Assignment, Participation, \
+    Term, JobType, Job
 from django.db import models
 from django.db.models.functions import Cast
 
@@ -54,7 +55,7 @@ class JobAdminDetailView(DetailView):
         context['ga_key'] = getattr(settings, "GA_KEY", None)
         related_objects = []
         job = self.get_object()
-        if job["type"]== AnalyticTypes.assignment:
+        if job["type"] == AnalyticTypes.assignment:
             related_objects = \
                 Assignment.objects.filter(job__id=job["id"]).values()
         elif job["type"] == AnalyticTypes.participation:
