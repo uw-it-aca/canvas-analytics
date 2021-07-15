@@ -6,12 +6,12 @@ import unittest
 from data_aggregator.models import Job
 from data_aggregator.views.api.jobs import JobRestartView
 from django.utils import timezone
-from data_aggregator.tests.api_utils import BaseAPITestCase
+from data_aggregator.tests.view_utils import BaseViewTestCase
 from data_aggregator.utilities import datestring_to_datetime
 from mock import patch
 
 
-class TestJobRestartView(BaseAPITestCase):
+class TestJobRestartView(BaseViewTestCase):
 
     fixtures = ['data_aggregator/fixtures/mock_data/da_job.json',
                 'data_aggregator/fixtures/mock_data/da_jobtype.json']
