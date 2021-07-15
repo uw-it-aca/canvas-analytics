@@ -49,11 +49,7 @@ class JobAdminDetailView(DetailView):
         job = super(JobAdminDetailView, self).get_object(queryset=queryset)
         return job.to_dict()
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['netid'] = get_user(self.request)
-        context['ga_key'] = getattr(settings, "GA_KEY", None)
-        related_objects = []
+    def get_related_objects(self):
         job = self.get_object()
         if job["type"] == AnalyticTypes.assignment:
             related_objects = \
@@ -61,8 +57,13 @@ class JobAdminDetailView(DetailView):
         elif job["type"] == AnalyticTypes.participation:
             related_objects = \
                 Participation.objects.filter(job__id=job["id"]).values()
-        context['related_objects'] = [entry for entry in related_objects]
-        print(context['related_objects'])
+        return [entry for entry in related_objects]
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['netid'] = get_user(self.request)
+        context['ga_key'] = getattr(settings, "GA_KEY", None)
+        context['related_objects'] = self.get_related_objects()
         return context
 
 

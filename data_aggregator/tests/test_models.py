@@ -145,6 +145,7 @@ class TestWeekManager(TestCase):
 class TestJob(TestCase):
 
     type = JobType()
+    type.type = AnalyticTypes.assignment
     target_date_start = timezone.now()
     target_date_end = timezone.now() + timedelta(days=1)
     start = timezone.now()
@@ -264,6 +265,18 @@ class TestJob(TestCase):
             job.pid = None
             job.start = None
             job.start_job(save=False)
+
+    def test_to_dict(self):
+        job = self.get_test_job_full()
+        job_dict = job.to_dict()
+        self.assertEqual(job_dict["type"], job.type.type)
+        self.assertEqual(job_dict["target_date_start"], job.target_date_start)
+        self.assertEqual(job_dict["target_date_end"], job.target_date_end)
+        self.assertEqual(job_dict["pid"], job.pid)
+        self.assertEqual(job_dict["start"], job.start)
+        self.assertEqual(job_dict["end"], job.end)
+        self.assertEqual(job_dict["message"], job.message)
+        self.assertEqual(job_dict["created"], job.created)
 
 
 class TestJobManager(TestCase):
