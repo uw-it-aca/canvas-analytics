@@ -23,9 +23,9 @@ import 'vue2-daterange-picker/dist/vue2-daterange-picker.css';
 Vue.component('date-range-picker', DateRangePicker);
 
 // multiselect component - https://vue-multiselect.js.org/
-import Multiselect from 'vue-multiselect'
+import Multiselect from 'vue-multiselect';
 import 'vue-multiselect/dist/vue-multiselect.min.css';
-Vue.component('multiselect', Multiselect)
+Vue.component('multiselect', Multiselect);
 
 // stores
 import admin_store from '../vuex/store/admin_store.js';
@@ -68,9 +68,6 @@ const store = new Vuex.Store({
     },
     setLoading(state, value) {
       state.isLoading = value;
-    },
-    setActiveDateRange(state, value) {
-      state.activeDateRange = value;
     },
     setJobs(state, value) {
       state.jobs = value;
@@ -130,7 +127,7 @@ new Vue({
   data: function() {
     return {
       refreshTimer: null,
-    }
+    };
   },
   beforeCreate: function () {
     // parse url arguments when app is loaded 
@@ -140,58 +137,61 @@ new Vue({
     
     // convert the hash string into a dictionary
     try {
-      hash = hash?JSON.parse('{"' + hash.replace(/&/g, '","').replace(/=/g,'":"') + '"}',
-                function(key, value) { return key===""?value:decodeURIComponent(value) }):{};
+      hash = hash?JSON.parse(
+        '{"' + hash.replace(/&/g, '","').replace(/=/g,'":"') + '"}',
+        function(key, value) { 
+          return key ==="" ? value:decodeURIComponent(value);
+        }): {};
     } catch (e) {
       hash = {}; // invalid hash query string
     }
 
     // update store with values from hash
-    if(hash["perPage"]) {
-      this.$store.commit('setPerPage',  parseInt(hash["perPage"]));
+    if(hash.perPage) {
+      this.$store.commit('setPerPage',  parseInt(hash.perPage));
     }
-    if(hash["currPage"]) {
-      this.$store.commit('setCurrPage',  parseInt(hash["currPage"]));
+    if(hash.currPage) {
+      this.$store.commit('setCurrPage',  parseInt(hash.currPage));
     }
-    if(hash["sortBy"]) {
-      this.$store.commit('setSortBy',  hash["sortBy"]);
+    if(hash.sortBy) {
+      this.$store.commit('setSortBy',  hash.sortBy);
     }
-    if(hash["sortDesc"]) {
+    if(hash.sortDesc) {
       this.$store.commit('setSortDesc',
-                         (hash["sortDesc"].toLowerCase() === 'true'));
+                         (hash.sortDesc.toLowerCase() === 'true'));
     }
-    if(hash["startDate"]) {
-      let dateStr = utilities.toIsoDateStr(utilities.parseIsoDateStr(hash["startDate"]));
+    if(hash.startDate) {
+      let dateStr = utilities.toIsoDateStr(utilities.parseIsoDateStr(hash.startDate));
       this.$store.commit('setActiveRangeStartDate', dateStr);
     }
-    if(hash["endDate"]) {
-      let dateStr = utilities.toIsoDateStr(utilities.parseIsoDateStr(hash["endDate"]));
+    if(hash.endDate) {
+      let dateStr = utilities.toIsoDateStr(utilities.parseIsoDateStr(hash.endDate));
       this.$store.commit('setActiveRangeEndDate', dateStr);
     }
-    if(hash["jobStartDate"]) {
-      let dateStr = utilities.toIsoDateStr(utilities.parseIsoDateStr(hash["jobStartDate"]));
+    if(hash.jobStartDate) {
+      let dateStr = utilities.toIsoDateStr(utilities.parseIsoDateStr(hash.jobStartDate));
       this.$store.commit('setJobRangeStartDate', dateStr);
     }
 
-    if(hash["jobEndDate"]) {
-      let dateStr = utilities.toIsoDateStr(utilities.parseIsoDateStr(hash["jobEndDate"]));
+    if(hash.jobEndDate) {
+      let dateStr = utilities.toIsoDateStr(utilities.parseIsoDateStr(hash.jobEndDate));
       this.$store.commit('setJobRangeEndDate', dateStr);
   }
 
-    if(hash["refreshTime"]) {
-      this.$store.commit('setRefreshTime', parseInt(hash["refreshTime"]))
+    if(hash.refreshTime) {
+      this.$store.commit('setRefreshTime', parseInt(hash.refreshTime));
     }
-    if(hash["jobType"]) {
-      this.$store.commit('setJobType', hash["jobType"].split(','))
+    if(hash.jobType) {
+      this.$store.commit('setJobType', hash.jobType.split(','));
     }
-    if(hash["jobStatus"]) {
-      this.$store.commit('setJobStatus', hash["jobStatus"].split(','))
+    if(hash.jobStatus) {
+      this.$store.commit('setJobStatus', hash.jobStatus.split(','));
     }
   },
   created: function() {
-    document.title = 'Canvas Analytics: ' + store.state['pageTitle'];
+    document.title = 'Canvas Analytics: ' + store.state.pageTitle;
     document.getElementById('vue_root').hidden = false;
-    this.changeSelection() // run without delay and with loading indicators 
+    this.changeSelection(); // run without delay and with loading indicators 
     this.refreshTimer = setInterval(this.refreshJobs, this.refreshTime * 1000);
     this.refreshTimer = setInterval(this.refreshJobsGroupedByStatus,
                                     this.refreshTime * 1000);
@@ -248,7 +248,7 @@ new Vue({
         if (response.data) {
           // we need to reset all selected ids on every refresh
           let _this = this;
-          let selectedJobIds = this.selectedJobs.map(job => job.id)
+          let selectedJobIds = this.selectedJobs.map(job => job.id);
           response.data.jobs.forEach(function (job, index) {
             if(selectedJobIds.includes(job.id)) {
               job.selected = true;
@@ -282,36 +282,36 @@ new Vue({
           // we need to reset all selected ids on every refresh
           _this.$store.commit('setJobsGroupedByStatus', response.data);
         }
-      })
+      });
       return promise;
     },
     changeSelection: function() {
-      this.updateURL()
+      this.updateURL();
       this.$store.commit('setLoading', true);
       let _this = this;
       this.refreshJobsGroupedByStatus();
       this.refreshJobs().finally(response => {
         _this.$store.commit('setLoading', false);
-      })
+      });
     },
     updateURL: function() {
       let params = {};
-      params['perPage'] = this.$store.state.perPage;
-      params['currPage'] = this.$store.state.currPage;
-      params['sortBy'] = this.$store.state.sortBy;
-      params['sortDesc'] = this.$store.state.sortDesc;
-      params['startDate'] = utilities.toIsoDateStr(
+      params.perPage = this.$store.state.perPage;
+      params.currPage = this.$store.state.currPage;
+      params.sortBy = this.$store.state.sortBy;
+      params.sortDesc = this.$store.state.sortDesc;
+      params.startDate = utilities.toIsoDateStr(
         this.$store.state.activeDateRange.startDate);
-      params['endDate'] = utilities.toIsoDateStr(
+      params.endDate = utilities.toIsoDateStr(
         this.$store.state.activeDateRange.endDate);
-      params['refreshTime'] = this.$store.state.refreshTime;
+      params.refreshTime = this.$store.state.refreshTime;
       if(this.$store.state.jobType.length > 0)
-        params['jobType'] = this.$store.state.jobType.join(",");
+        params.jobType = this.$store.state.jobType.join(",");
       if(this.$store.state.jobStatus.length > 0)
-        params['jobStatus'] = this.$store.state.jobStatus.join(",");
+        params.jobStatus = this.$store.state.jobStatus.join(",");
       let queryParams = Object.keys(params).map(function(k) {
-        return encodeURIComponent(k) + '=' + encodeURIComponent(params[k])
-      }).join('&')
+        return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
+      }).join('&');
       let url = window.location.href.split("#")[0];
       window.location.replace(url + "#" + decodeURIComponent(queryParams));
     },
@@ -319,4 +319,4 @@ new Vue({
   beforeDestroy () {
     clearInterval(this.refreshTimer);
   },
-})
+});

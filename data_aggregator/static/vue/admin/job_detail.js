@@ -33,15 +33,14 @@ new Vue({
   el: '#vue_root',
   store: store,
   data: function() {
-    return {
-    }
+    return {};
   },
   created: function() {
-    document.title = 'Canvas Analytics: ' + store.state['pageTitle'];
+    document.title = 'Canvas Analytics: ' + store.state.pageTitle;
     document.getElementById('vue_root').hidden = false;
   },
   computed: {
     ...mapState({
     }),
   },
-})
+});

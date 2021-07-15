@@ -1,8 +1,8 @@
 import Vue from 'vue';
 import Vuex from 'vuex';
 
-import { BootstrapVue, BootstrapVueIcons } from 'bootstrap-vue'
-import VueGoogleCharts from 'vue-google-charts'
+import { BootstrapVue, BootstrapVueIcons } from 'bootstrap-vue';
+import VueGoogleCharts from 'vue-google-charts';
 
 // Import Bootstrap an BootstrapVue CSS files (order is important)
 import 'bootstrap/dist/css/bootstrap.css';
