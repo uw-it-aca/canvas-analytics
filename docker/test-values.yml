@@ -55,20 +55,52 @@ gcsCredentials:
 cronjob:
   enabled: true
   jobs:
-    # it's best to run these before running any jobs
+    #
+    # Friday
+    #      11:00pm        11:15pm        11:30pm        11:45pm        (PDT)
+    # -------|--------------|--------------|--------------|--------------...
+    #    add-terms  add-updt-courses add-updt-users   add-assign-view
+    #                                                 add-partic-view
+    #                                                 add-rad-view
+    #
+    # Saturday
+    #      12:00am                        2:00pm                      (PDT)
+    # -------|-----------------------------|----------------------------...
+    #   add-assign-jobs               add-crt-rad-data (create_jobs)
+    #   add-partic-jobs
+    #
+    # Sunday
+    #      3:00am                                                     (PDT)
+    # -------|----------------------------------------------------------...
+    #   create_rad_data_file (run_jobs)
+    #
+    # run jobs for loading term, course, and user metadata
     - name: add-terms
-      schedule: "30 6 * * 6" # At 11:30pm PDT on Friday
+      schedule: "0 6 * * 6" # At 11:00pm PDT on Friday
       command: ["/scripts/management_command.sh"]
       args: ["create_and_run_jobs", "create_terms"]
     - name: add-updt-courses
-      schedule: "45 6 * * *" # At 11:45pm PDT every night
+      schedule: "15 6 * * *" # At 11:15pm PDT every night
       command: ["/scripts/management_command.sh"]
       args: ["create_and_run_jobs", "create_or_update_courses"]
     - name: add-updt-users
-      schedule: "45 6 * * *" # At 11:45pm PDT every night
+      schedule: "30 6 * * *" # At 11:30pm PDT every night
       command: ["/scripts/management_command.sh"]
       args: ["create_and_run_jobs", "create_or_update_users"]
-    # adds jobs for cronjob daemons
+    # run jobs to create db views upfront
+    - name: add-assign-view
+      schedule: "45 6 * * 6" # At 11:45pm PDT on Friday
+      command: ["/scripts/management_command.sh"]
+      args: ["create_and_run_jobs", "create_assignment_db_view"]
+    - name: add-partic-view
+      schedule: "45 6 * * 6" # At 11:45pm PDT on Friday
+      command: ["/scripts/management_command.sh"]
+      args: ["create_and_run_jobs", "create_participation_db_view"]
+    - name: add-rad-view
+      schedule: "45 6 * * 6" # At 11:45pm PDT on Friday
+      command: ["/scripts/management_command.sh"]
+      args: ["create_and_run_jobs", "create_rad_db_view"]
+    # adds analytics jobs for cronjob daemons to run
     - name: add-assign-jobs
       schedule: "0 7 * * 6" # At 12:00am PDT on Saturday
       command: ["/scripts/management_command.sh"]
@@ -77,31 +109,20 @@ cronjob:
       schedule: "0 7 * * 6" # At 12:00am PDT on Saturday
       command: ["/scripts/management_command.sh"]
       args: ["create_jobs", "participation"]
-    # create the db views upfront
-    - name: add-assign-view
-      schedule: "30 6 * * 6" # At 11:30pm PDT on Friday
-      command: ["/scripts/management_command.sh"]
-      args: ["create_and_run_jobs", "create_assignment_db_view"]
-    - name: add-partic-view
-      schedule: "30 6 * * 6" # At 11:30pm PDT on Friday
-      command: ["/scripts/management_command.sh"]
-      args: ["create_and_run_jobs", "create_participation_db_view"]
-    - name: add-rad-view
-      schedule: "30 6 * * 6" # At 11:30pm PDT on Friday
-      command: ["/scripts/management_command.sh"]
-      args: ["create_and_run_jobs", "create_rad_db_view"]
-    # stage creating rad file job so that the week is correct
+    # add rad file job upfront so that it is created for the correct week
     - name: add-crt-rad-data
-      schedule: "0 7 * * 6" # At 12:00am PDT on Saturday
+      schedule: "0 21 * * 6" # At 2:00pm PDT on Saturday
       command: ["/scripts/management_command.sh"]
       args: ["create_jobs", "create_rad_data_file"]
+    # run create rad data file job
     - name: crt-rad-data
-      schedule: "0 7 * * 0" # At 12:00am PDT on Sunday
+      schedule: "0 10 * * 0" # At 3:00am PDT on Sunday
       command: ["/scripts/management_command.sh"]
       args: ["run_jobs", "create_rad_data_file"]
 daemon:
   enabled: true
   daemons:
+    # polling for active analytics jobs every minute
     - name: run-assign-jobs
       command: ["/scripts/management_daemon.sh"]
       args: ['--cron', '* * * * *', "run_jobs", 'assignment']
