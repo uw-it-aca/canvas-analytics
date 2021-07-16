@@ -114,10 +114,10 @@ daemon:
   daemons:
     - name: run-assign-jobs
       command: ["/scripts/management_daemon.sh"]
-      args: ['--cron', '* * * * *', 'run_assignment_jobs']
+      args: ['--cron', '* * * * *', "run_jobs", 'assignment']
     - name: run-partic-jobs
       command: ["/scripts/management_daemon.sh"]
-      args: ['--cron', '* * * * *', 'run_participation_jobs']
+      args: ['--cron', '* * * * *', "run_jobs", 'participation']
 certs:
   mounted: true
   certPath: /certs/apps.canvas.uw.edu-uwca.cert
