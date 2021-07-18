@@ -183,6 +183,10 @@ class CreateJobCommand(BaseCommand):
             subparsers, TaskTypes.create_rad_data_file, include_week=True)
 
         subparsers = self._add_subparser(
+            subparsers, TaskTypes.build_subaccount_activity_report,
+            include_account=True)
+
+        subparsers = self._add_subparser(
             subparsers, AnalyticTypes.assignment,
             include_week=True, include_course=True)
 
