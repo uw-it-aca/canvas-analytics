@@ -426,8 +426,8 @@ class JobDAO(BaseDAO):
             LoadRadDAO().create_rad_data_file(sis_term_id=sis_term_id,
                                               week_num=week_num)
         elif job_type == TaskTypes.build_subaccount_activity_report:
-            ReportBuilder().build_subaccount_activity_report(subaccount_id,
-                                                             sis_term_id)
+            ReportBuilder().build_subaccount_activity_report(
+                subaccount_id, sis_term_id=sis_term_id, week_num=week_num)
         else:
             raise ValueError(f"Unknown job type {job_type}")
 

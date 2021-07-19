@@ -117,10 +117,13 @@ class ReportBuilder():
 
     @transaction.atomic
     @override_settings(RESTCLIENTS_CANVAS_TIMEOUT=90)
-    def build_subaccount_activity_report(self, root_account_id, sis_term_id):
+    def build_subaccount_activity_report(self, root_account_id,
+                                         sis_term_id=None, week_num=None):
         try:
             report = Report.objects.get_or_create_report(
-                Report.SUBACCOUNT_ACTIVITY, sis_term_id=sis_term_id)
+                Report.SUBACCOUNT_ACTIVITY,
+                sis_term_id=sis_term_id,
+                week_num=week_num)
         except TermNotStarted as ex:
             logger.info("Term {} not started".format(ex))
             return
