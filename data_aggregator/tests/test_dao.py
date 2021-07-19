@@ -403,47 +403,67 @@ class TestJobDAO(TestCase):
         job = MagicMock()
         job.type = MagicMock()
         job.type.type = TaskTypes.create_terms
+        job.context = {
+            "sis_term_id": "2021-summer",
+            "week": 4,
+            "subaccount_id": "uwcourse"
+        }
+
         with patch("data_aggregator.dao.TaskDAO.create_terms") \
                 as mock_create_terms:
             JobDAO().run_task_job(job)
-            mock_create_terms.assert_called_once()
+            mock_create_terms.assert_called_once_with(
+                sis_term_id="2021-summer")
         job.type.type = TaskTypes.create_or_update_courses
         with patch("data_aggregator.dao.TaskDAO.create_or_update_courses") \
                 as mock_create_or_update_courses:
             JobDAO().run_task_job(job)
-            mock_create_or_update_courses.assert_called_once()
+            mock_create_or_update_courses.assert_called_once_with(
+                sis_term_id="2021-summer")
         job.type.type = TaskTypes.create_or_update_users
         with patch("data_aggregator.dao.TaskDAO.create_or_update_users") \
                 as mock_create_or_update_users:
             JobDAO().run_task_job(job)
-            mock_create_or_update_users.assert_called_once()
+            mock_create_or_update_users.assert_called_once_with(
+                sis_term_id="2021-summer")
         job.type.type = TaskTypes.create_assignment_db_view
         with patch("data_aggregator.dao.TaskDAO.create_assignment_db_view") \
                 as mock_create_assignment_db_view:
             JobDAO().run_task_job(job)
-            mock_create_assignment_db_view.assert_called_once()
+            mock_create_assignment_db_view.assert_called_once_with(
+                 sis_term_id="2021-summer",
+                 week_num=4)
         job.type.type = TaskTypes.create_participation_db_view
         with patch("data_aggregator.dao.TaskDAO."
                    "create_participation_db_view") \
                 as mock_create_participation_db_view:
             JobDAO().run_task_job(job)
-            mock_create_participation_db_view.assert_called_once()
+            mock_create_participation_db_view.assert_called_once_with(
+                 sis_term_id="2021-summer",
+                 week_num=4)
         job.type.type = TaskTypes.create_rad_db_view
         with patch("data_aggregator.dao.TaskDAO.create_rad_db_view") \
                 as mock_create_rad_db_view:
             JobDAO().run_task_job(job)
-            mock_create_rad_db_view.assert_called_once()
+            mock_create_rad_db_view.assert_called_once_with(
+                 sis_term_id="2021-summer",
+                 week_num=4)
         job.type.type = TaskTypes.create_rad_data_file
         with patch("data_aggregator.dao.LoadRadDAO.create_rad_data_file") \
                 as mock_create_rad_data_file:
             JobDAO().run_task_job(job)
-            mock_create_rad_data_file.assert_called_once()
+            mock_create_rad_data_file.assert_called_once_with(
+                 sis_term_id="2021-summer",
+                 week_num=4)
         job.type.type = TaskTypes.build_subaccount_activity_report
         with patch("data_aggregator.report_builder.ReportBuilder."
                    "build_subaccount_activity_report") \
                 as mock_build_subaccount_activity_report:
             JobDAO().run_task_job(job)
-            mock_build_subaccount_activity_report.assert_called_once()
+            mock_build_subaccount_activity_report.assert_called_once_with(
+                 "uwcourse",
+                 sis_term_id="2021-summer",
+                 week_num=4)
         job.type.type = "unknown-job-type"
         with self.assertRaises(ValueError):
             JobDAO().run_task_job(job)
@@ -507,13 +527,13 @@ class TestLoadRadDAO(TestCase):
         td = TaskDAO()
         sis_term_id = "2013-spring"
         week = 1
-        td.create_assignment_db_view(sis_term_id, week)
-        td.create_participation_db_view(sis_term_id, week)
-        td.create_rad_db_view(sis_term_id, week)
+        td.create_assignment_db_view(sis_term_id=sis_term_id, week_num=week)
+        td.create_participation_db_view(sis_term_id=sis_term_id, week_num=week)
+        td.create_rad_db_view(sis_term_id=sis_term_id, week_num=week)
         week = 2
-        td.create_assignment_db_view(sis_term_id, week)
-        td.create_participation_db_view(sis_term_id, week)
-        td.create_rad_db_view(sis_term_id, week)
+        td.create_assignment_db_view(sis_term_id=sis_term_id, week_num=week)
+        td.create_participation_db_view(sis_term_id=sis_term_id, week_num=week)
+        td.create_rad_db_view(sis_term_id=sis_term_id, week_num=week)
         super().setUpTestData()
 
     def _get_test_load_rad_dao(self):

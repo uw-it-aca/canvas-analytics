@@ -416,9 +416,11 @@ class JobDAO(BaseDAO):
         elif job_type == TaskTypes.create_or_update_users:
             TaskDAO().create_or_update_users(sis_term_id=sis_term_id)
         elif job_type == TaskTypes.create_assignment_db_view:
-            TaskDAO().create_assignment_db_view(sis_term_id, week_num)
+            TaskDAO().create_assignment_db_view(sis_term_id=sis_term_id,
+                                                week_num=week_num)
         elif job_type == TaskTypes.create_participation_db_view:
-            TaskDAO().create_participation_db_view(sis_term_id, week_num)
+            TaskDAO().create_participation_db_view(sis_term_id=sis_term_id,
+                                                   week_num=week_num)
         elif job_type == TaskTypes.create_rad_db_view:
             TaskDAO().create_rad_db_view(sis_term_id=sis_term_id,
                                          week_num=week_num)
@@ -426,8 +428,8 @@ class JobDAO(BaseDAO):
             LoadRadDAO().create_rad_data_file(sis_term_id=sis_term_id,
                                               week_num=week_num)
         elif job_type == TaskTypes.build_subaccount_activity_report:
-            ReportBuilder().build_subaccount_activity_report(subaccount_id,
-                                                             sis_term_id)
+            ReportBuilder().build_subaccount_activity_report(
+                subaccount_id, sis_term_id=sis_term_id, week_num=week_num)
         else:
             raise ValueError(f"Unknown job type {job_type}")
 
@@ -715,7 +717,7 @@ class TaskDAO(BaseDAO):
         logging.info(f"Updated {update_count} user(s).")
         return user_count
 
-    def create_rad_db_view(self, sis_term_id, week_num):
+    def create_rad_db_view(self, sis_term_id=None, week_num=None):
         """
         Create rad db view for given week and sis-term-id
 
@@ -848,7 +850,7 @@ class TaskDAO(BaseDAO):
         )
         return True
 
-    def create_participation_db_view(self, sis_term_id, week_num):
+    def create_participation_db_view(self, sis_term_id=None, week_num=None):
         """
         Create participation db view for given week and sis-term-id
 
@@ -908,7 +910,7 @@ class TaskDAO(BaseDAO):
         )
         return True
 
-    def create_assignment_db_view(self, sis_term_id, week_num):
+    def create_assignment_db_view(self, sis_term_id=None, week_num=None):
         """
         Create assignment db view for given week and sis-term-id
 
