@@ -25,13 +25,13 @@ class TestRadView(TestCase):
         td = TaskDAO()
         sis_term_id = "2013-spring"
         week = 1
-        td.create_assignment_db_view(sis_term_id, week)
-        td.create_participation_db_view(sis_term_id, week)
-        td.create_rad_db_view(sis_term_id, week)
+        td.create_assignment_db_view(sis_term_id=sis_term_id, week_num=week)
+        td.create_participation_db_view(sis_term_id=sis_term_id, week_num=week)
+        td.create_rad_db_view(sis_term_id=sis_term_id, week_num=week)
         week = 2
-        td.create_assignment_db_view(sis_term_id, week)
-        td.create_participation_db_view(sis_term_id, week)
-        td.create_rad_db_view(sis_term_id, week)
+        td.create_assignment_db_view(sis_term_id=sis_term_id, week_num=week)
+        td.create_participation_db_view(sis_term_id=sis_term_id, week_num=week)
+        td.create_rad_db_view(sis_term_id=sis_term_id, week_num=week)
         super().setUpTestData()
 
     def test_get_view_name(self):

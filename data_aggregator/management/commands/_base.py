@@ -6,8 +6,9 @@ import traceback
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from data_aggregator.management.commands._mixins import RunJobMixin
-from data_aggregator.models import AnalyticTypes, Job, JobType, TaskTypes
-from data_aggregator.utilities import datestring_to_datetime
+from data_aggregator.models import AnalyticTypes, Job, JobType, TaskTypes, \
+    Term
+from data_aggregator.utilities import datestring_to_datetime, get_relative_week
 from data_aggregator.dao import JobDAO
 from data_aggregator.threads import ThreadPool
 
@@ -99,20 +100,24 @@ class CreateJobCommand(BaseCommand):
         )
         # we add the job name as a hidden argument so that it can be read
         # when processing the command
+        if include_week or include_term:
+            # use current term and week of term as the default
+            term = Term.objects.get_current_term()
+            default_sis_term_id = term.sis_term_id
+            default_week = get_relative_week(term.first_day_quarter,
+                                             tz_name="US/Pacific")
         if include_term:
             subparser.add_argument(
                 "--sis_term_id",
                 type=str,
                 help=("Term to run job for."),
-                default=None,
-                required=False)
+                default=default_sis_term_id)
         if include_week:
             subparser.add_argument(
                 "--week",
                 type=int,
                 help=("Week to run job for."),
-                default=None,
-                required=False)
+                default=default_week)
         if include_course:
             subparser.add_argument(
                 "--canvas_course_id",
@@ -184,6 +189,7 @@ class CreateJobCommand(BaseCommand):
 
         subparsers = self._add_subparser(
             subparsers, TaskTypes.build_subaccount_activity_report,
+            include_week=True,
             include_account=True)
 
         subparsers = self._add_subparser(
@@ -234,8 +240,7 @@ class CreateJobCommand(BaseCommand):
         if job_type.type == AnalyticTypes.assignment or \
                 job_type.type == AnalyticTypes.participation:
             jobs = JobDAO().create_analytic_jobs(
-                job_type, target_date_start, target_date_end,
-                context=context)
+                job_type, target_date_start, target_date_end, context=context)
         else:
             # creates a single job or the given job type, target dates, and
             # context

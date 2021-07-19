@@ -14,6 +14,10 @@ from uw_sws import SWS_TIMEZONE
 
 class TermManager(models.Manager):
 
+    def get_current_term(self):
+        curr_date = timezone.now()
+        return self.get_term_for_date(curr_date)
+
     def get_term_for_date(self, date):
         """
         Return term intersecting with supplied date
@@ -37,8 +41,7 @@ class TermManager(models.Manager):
         """
         if sis_term_id is None:
             # try to lookup the current term based on the date
-            curr_date = timezone.now()
-            term = self.get_term_for_date(curr_date)
+            term = self.get_current_term()
             if term:
                 # return current term
                 return term, False
@@ -604,11 +607,14 @@ class RadDbView(models.Model):
 
 
 class ReportManager(models.Manager):
-    def get_or_create_report(self, report_type, sis_term_id=None):
+
+    def get_or_create_report(self, report_type,
+                             sis_term_id=None, week_num=None):
         term, _ = Term.objects.get_or_create_term_from_sis_term_id(
             sis_term_id=sis_term_id)
         week, _ = Week.objects.get_or_create_week(
-            sis_term_id=term.sis_term_id)
+            sis_term_id=term.sis_term_id,
+            week_num=week_num)
 
         if week.week < 1:
             raise TermNotStarted(term.sis_term_id)
