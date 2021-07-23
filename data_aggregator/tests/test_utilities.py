@@ -81,10 +81,6 @@ class TestUtilities(TestCase):
         self.assertEqual(week, 12)
 
     def test_datestring_to_datetime(self):
-        """
-        tests datestring_to_datetime
-        """
-
         # bad input string
         with self.assertRaises(ValueError):
             utilities.datestring_to_datetime("Bad string")
@@ -140,6 +136,29 @@ class TestUtilities(TestCase):
         # already a datetime object
         ret1 = utilities.datestring_to_datetime(ret)
         self.assertEqual(ret1, ret)
+
+    def test_get_rad_weekday(self):
+        # sunday
+        dt = datetime.datetime(2021, 7, 18)
+        self.assertEqual(utilities.get_rad_weekday(dt), 0)
+        # monday
+        dt = datetime.datetime(2021, 7, 19)
+        self.assertEqual(utilities.get_rad_weekday(dt), 1)
+        # tuesday
+        dt = datetime.datetime(2021, 7, 20)
+        self.assertEqual(utilities.get_rad_weekday(dt), 2)
+        # wednesday
+        dt = datetime.datetime(2021, 7, 21)
+        self.assertEqual(utilities.get_rad_weekday(dt), 3)
+        # thursday
+        dt = datetime.datetime(2021, 7, 22)
+        self.assertEqual(utilities.get_rad_weekday(dt), 4)
+        # friday
+        dt = datetime.datetime(2021, 7, 23)
+        self.assertEqual(utilities.get_rad_weekday(dt), 5)
+        # saturday
+        dt = datetime.datetime(2021, 7, 24)
+        self.assertEqual(utilities.get_rad_weekday(dt), 6)
 
 
 if __name__ == "__main__":
