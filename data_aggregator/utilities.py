@@ -70,6 +70,22 @@ def get_relative_week(relative_date, cmp_dt=None, tz_name="UTC"):
         return week
 
 
+def get_rad_weekday(date):
+    """
+    Returns numeric representation of a weekday according to RAD's data load
+    schedule.
+
+    :param date: date to return weekday for
+    :type value: datetime.date
+    """
+    isoday = date.isoweekday()
+    if isoday == 7:
+        # Sunday
+        return 0
+    else:
+        return isoday
+
+
 def get_term_number(quarter_name):
     """
     Returns quarter info for the specified code.

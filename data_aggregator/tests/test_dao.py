@@ -526,14 +526,14 @@ class TestLoadRadDAO(TestCase):
         # Set up data for the whole TestCase
         td = TaskDAO()
         sis_term_id = "2013-spring"
-        week = 1
-        td.create_assignment_db_view(sis_term_id=sis_term_id, week_num=week)
-        td.create_participation_db_view(sis_term_id=sis_term_id, week_num=week)
-        td.create_rad_db_view(sis_term_id=sis_term_id, week_num=week)
-        week = 2
-        td.create_assignment_db_view(sis_term_id=sis_term_id, week_num=week)
-        td.create_participation_db_view(sis_term_id=sis_term_id, week_num=week)
-        td.create_rad_db_view(sis_term_id=sis_term_id, week_num=week)
+        weeks = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+        for week in weeks:
+            td.create_assignment_db_view(sis_term_id=sis_term_id,
+                                         week_num=week)
+            td.create_participation_db_view(sis_term_id=sis_term_id,
+                                            week_num=week)
+            td.create_rad_db_view(sis_term_id=sis_term_id,
+                                  week_num=week)
         super().setUpTestData()
 
     def _get_test_load_rad_dao(self):
@@ -639,7 +639,7 @@ class TestLoadRadDAO(TestCase):
     def test_get_rad_dbview_df(self):
         lrd = self._get_test_load_rad_dao()
         mock_rad_dbview_df = lrd.get_rad_dbview_df(sis_term_id="2013-spring",
-                                                   week_num=1)
+                                                   week_num=3)
         self.assertEqual(
             mock_rad_dbview_df.columns.values.tolist(),
             ["canvas_user_id", "full_name", "term", "week", "assignments",
@@ -690,7 +690,7 @@ class TestLoadRadDAO(TestCase):
             MagicMock(return_value=self._get_mock_eop_advisers_df())
         lrd.get_iss_advisers_df = \
             MagicMock(return_value=self._get_mock_iss_advisers_df())
-        mock_rad_df = lrd.get_rad_df(sis_term_id="2013-spring", week_num=1)
+        mock_rad_df = lrd.get_rad_df(sis_term_id="2013-spring", week_num=3)
         self.assertEqual(mock_rad_df.columns.values.tolist(),
                          ["uw_netid", "student_no", "student_name_lowc",
                           "activity", "assignments", "grades", "pred",

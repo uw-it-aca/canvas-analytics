@@ -14,5 +14,85 @@
   "term": 1,
   "week": 2
  }
+},
+{
+ "model": "data_aggregator.week",
+ "pk": 3,
+ "fields": {
+  "term": 1,
+  "week": 3
+ }
+},
+{
+ "model": "data_aggregator.week",
+ "pk": 4,
+ "fields": {
+    "term": 1,
+    "week": 4
+ }
+},
+{
+ "model": "data_aggregator.week",
+ "pk": 5,
+ "fields": {
+    "term": 1,
+    "week": 5
+ }
+},
+{
+ "model": "data_aggregator.week",
+ "pk": 6,
+ "fields": {
+    "term": 1,
+    "week": 6
+ }
+},
+{
+ "model": "data_aggregator.week",
+ "pk": 7,
+ "fields": {
+    "term": 1,
+    "week": 7
+ }
+},
+{
+ "model": "data_aggregator.week",
+ "pk": 8,
+ "fields": {
+    "term": 1,
+    "week": 8
+ }
+},
+{
+ "model": "data_aggregator.week",
+ "pk": 9,
+ "fields": {
+    "term": 1,
+    "week": 9
+ }
+},
+{
+ "model": "data_aggregator.week",
+ "pk": 10,
+ "fields": {
+    "term": 1,
+    "week": 10
+ }
+},
+{
+ "model": "data_aggregator.week",
+ "pk": 11,
+ "fields": {
+    "term": 1,
+    "week": 11
+ }
+},
+{
+ "model": "data_aggregator.week",
+ "pk": 12,
+ "fields": {
+    "term": 1,
+    "week": 12
+ }
 }
 ]

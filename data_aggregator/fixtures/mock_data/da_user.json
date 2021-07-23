@@ -1,302 +1,317 @@
 [
-{
- "model": "data_aggregator.user",
- "pk": 1479110,
- "fields": {
-  "canvas_user_id": 3179956,
-  "login_id": "jjpieper",
-  "sis_user_id": "896C60D888F54DDFBB54E91D12401BF2",
-  "first_name": "JORDAN JOSEPH",
-  "last_name": "PIEPER",
-  "full_name": "JORDAN JOSEPH PIEPER",
-  "sortable_name": "PIEPER, JORDAN JOSEPH",
-  "email": "jjpieper@uw.edu",
-  "status": "active"
+ {
+  "model": "data_aggregator.user",
+  "pk": 1479110,
+  "fields": {
+   "canvas_user_id": 3179956,
+   "login_id": "jjpieper",
+   "sis_user_id": "896C60D888F54DDFBB54E91D12401BF2",
+   "first_name": "JORDAN JOSEPH",
+   "last_name": "PIEPER",
+   "full_name": "JORDAN JOSEPH PIEPER",
+   "sortable_name": "PIEPER, JORDAN JOSEPH",
+   "email": "jjpieper@uw.edu",
+   "status": "active"
+  }
+ },
+ {
+  "model": "data_aggregator.user",
+  "pk": 1481853,
+  "fields": {
+   "canvas_user_id": 3199810,
+   "login_id": "sanghp",
+   "sis_user_id": "2CA6997C06E04A458BD500BFC649B48A",
+   "first_name": "Sang",
+   "last_name": "Park",
+   "full_name": "Sang Park",
+   "sortable_name": "Park, Sang",
+   "email": "sanghp@uw.edu",
+   "status": "active"
+  }
+ },
+ {
+  "model": "data_aggregator.user",
+  "pk": 1485375,
+  "fields": {
+   "canvas_user_id": 3173257,
+   "login_id": "shoh7",
+   "sis_user_id": "CE0E6CCABB3D43E1BD2160D6D39D54AF",
+   "first_name": "SHO",
+   "last_name": "HAYASHIDA",
+   "full_name": "SHO HAYASHIDA",
+   "sortable_name": "HAYASHIDA, SHO",
+   "email": "shoh7@uw.edu",
+   "status": "active"
+  }
+ },
+ {
+  "model": "data_aggregator.user",
+  "pk": 1488569,
+  "fields": {
+   "canvas_user_id": 3193350,
+   "login_id": "jacklee",
+   "sis_user_id": "10B93109310B421B8E874CF6314E60A7",
+   "first_name": "Jack",
+   "last_name": "Lee",
+   "full_name": "Jack Lee",
+   "sortable_name": "Lee, Jack",
+   "email": "jacklee@uw.edu",
+   "status": "active"
+  }
+ },
+ {
+  "model": "data_aggregator.user",
+  "pk": 1495208,
+  "fields": {
+   "canvas_user_id": 3134869,
+   "login_id": "ciaraw",
+   "sis_user_id": "0B2CF9AAEAC846A6A1CC3B3790F4F74E",
+   "first_name": "CIARA NICOLE",
+   "last_name": "WEEMS",
+   "full_name": "CIARA NICOLE WEEMS",
+   "sortable_name": "WEEMS, CIARA NICOLE",
+   "email": "ciaraw@uw.edu",
+   "status": "active"
+  }
+ },
+ {
+  "model": "data_aggregator.user",
+  "pk": 1504494,
+  "fields": {
+   "canvas_user_id": 3179219,
+   "login_id": "budiae",
+   "sis_user_id": "6453B8382E5A46C687DA7F45C1532C58",
+   "first_name": "Elvira",
+   "last_name": "Budiawan",
+   "full_name": "Elvira Budiawan",
+   "sortable_name": "Budiawan, Elvira",
+   "email": "budiae@uw.edu",
+   "status": "active"
+  }
+ },
+ {
+  "model": "data_aggregator.user",
+  "pk": 1506085,
+  "fields": {
+   "canvas_user_id": 953607,
+   "login_id": "sventura",
+   "sis_user_id": "84543F6DD9B3469D9CFC29236911025E",
+   "first_name": "Sean",
+   "last_name": "Ventura",
+   "full_name": "Sean Ventura",
+   "sortable_name": "Ventura, Sean",
+   "email": "sventura@uw.edu",
+   "status": "active"
+  }
+ },
+ {
+  "model": "data_aggregator.user",
+  "pk": 1509461,
+  "fields": {
+   "canvas_user_id": 3174248,
+   "login_id": "chhouk",
+   "sis_user_id": "5B20F61D186A4AF096BA196F4A4FD6C3",
+   "first_name": "Christopher",
+   "last_name": "Chhoukdean",
+   "full_name": "Christopher Chhoukdean",
+   "sortable_name": "Chhoukdean, Christopher",
+   "email": "chhouk@uw.edu",
+   "status": "active"
+  }
+ },
+ {
+  "model": "data_aggregator.user",
+  "pk": 1515890,
+  "fields": {
+   "canvas_user_id": 3159192,
+   "login_id": "ghvn",
+   "sis_user_id": "760F00273C5F4CAD967D59F997D5EA93",
+   "first_name": "Gia Hoang",
+   "last_name": "Nguyen",
+   "full_name": "Gia Hoang Vi Nguyen",
+   "sortable_name": "Nguyen, Gia Hoang Vi",
+   "email": "ghvn@uw.edu",
+   "status": "active"
+  }
+ },
+ {
+  "model": "data_aggregator.user",
+  "pk": 1518665,
+  "fields": {
+   "canvas_user_id": 3172062,
+   "login_id": "drwolf",
+   "sis_user_id": "1BA25B21C8F64574B8522D3C25A9EDE8",
+   "first_name": "CHING TING",
+   "last_name": "HSU",
+   "full_name": "CHING TING HSU",
+   "sortable_name": "HSU, CHING TING",
+   "email": "drwolf@uw.edu",
+   "status": "active"
+  }
+ },
+ {
+  "model": "data_aggregator.user",
+  "pk": 1520746,
+  "fields": {
+   "canvas_user_id": 3211636,
+   "login_id": "juuls",
+   "sis_user_id": "F03F6636F12E463989D668C3032CDA27",
+   "first_name": "Sarah Darlene",
+   "last_name": "Juul",
+   "full_name": "Sarah Darlene Juul",
+   "sortable_name": "Juul, Sarah Darlene",
+   "email": "juuls@uw.edu",
+   "status": "active"
+  }
+ },
+ {
+  "model": "data_aggregator.user",
+  "pk": 1527296,
+  "fields": {
+   "canvas_user_id": 3176834,
+   "login_id": "tatiaw",
+   "sis_user_id": "C593551530BE471EBF39752FAF9A58BA",
+   "first_name": "Tatiana",
+   "last_name": "Weems",
+   "full_name": "Tatiana Weems",
+   "sortable_name": "Weems, Tatiana",
+   "email": "tatiaw@uw.edu",
+   "status": "active"
+  }
+ },
+ {
+  "model": "data_aggregator.user",
+  "pk": 1538447,
+  "fields": {
+   "canvas_user_id": 3137675,
+   "login_id": "mckeed",
+   "sis_user_id": "5BA259B827C311DB9C4BA86F58A27E6F",
+   "first_name": "Dorothy Ambrozic",
+   "last_name": "McKee",
+   "full_name": "Dorothy Ambrozic McKee",
+   "sortable_name": "McKee, Dorothy Ambrozic",
+   "email": "mckeed@uw.edu",
+   "status": "active"
+  }
+ },
+ {
+  "model": "data_aggregator.user",
+  "pk": 1555173,
+  "fields": {
+   "canvas_user_id": 3206905,
+   "login_id": "susiek94",
+   "sis_user_id": "46303D00ECED4D718DF80EE05A3515E8",
+   "first_name": "Susie",
+   "last_name": "Kim",
+   "full_name": "Susie Kim",
+   "sortable_name": "Kim, Susie",
+   "email": "susiek94@uw.edu",
+   "status": "active"
+  }
+ },
+ {
+  "model": "data_aggregator.user",
+  "pk": 1559264,
+  "fields": {
+   "canvas_user_id": 3176444,
+   "login_id": "jwc40",
+   "sis_user_id": "6F6AD8FCDEFE4E9DAD7902CBF233FC1D",
+   "first_name": "Jon William",
+   "last_name": "Collier",
+   "full_name": "Jon William Collier",
+   "sortable_name": "Collier, Jon William",
+   "email": "jwc40@uw.edu",
+   "status": "active"
+  }
+ },
+ {
+  "model": "data_aggregator.user",
+  "pk": 1571587,
+  "fields": {
+   "canvas_user_id": 3154542,
+   "login_id": "tiba",
+   "sis_user_id": "938DF4A463D44B80BC7B1310ECEE08F9",
+   "first_name": "Tadamasa",
+   "last_name": "Iba",
+   "full_name": "Tadamasa Iba",
+   "sortable_name": "Iba, Tadamasa",
+   "email": "tiba@uw.edu",
+   "status": "active"
+  }
+ },
+ {
+  "model": "data_aggregator.user",
+  "pk": 1586092,
+  "fields": {
+   "canvas_user_id": 3188561,
+   "login_id": "jburau",
+   "sis_user_id": "3CCAD54988DA4593AA46534C38C7154F",
+   "first_name": "Justin Johnathan",
+   "last_name": "Burau",
+   "full_name": "Justin Johnathan Burau",
+   "sortable_name": "Burau, Justin Johnathan",
+   "email": "jburau@uw.edu",
+   "status": "active"
+  }
+ },
+ {
+  "model": "data_aggregator.user",
+  "pk": 1599210,
+  "fields": {
+   "canvas_user_id": 3138045,
+   "login_id": "scott93",
+   "sis_user_id": "7AACB615EED24183AC57CDE71CE69CE8",
+   "first_name": "Dan",
+   "last_name": "Scott",
+   "full_name": "Dan Scott",
+   "sortable_name": "Scott, Dan",
+   "email": "scott93@uw.edu",
+   "status": "active"
+  }
+ },
+ {
+  "model": "data_aggregator.user",
+  "pk": 1601450,
+  "fields": {
+   "canvas_user_id": 3193425,
+   "login_id": "lpetrin",
+   "sis_user_id": "BB2F7BA9A7224BE2BF9709CD383CFAE5",
+   "first_name": "Lucas Andre",
+   "last_name": "Petrin",
+   "full_name": "Lucas Andre Petrin",
+   "sortable_name": "Petrin, Lucas Andre",
+   "email": "lpetrin@uw.edu",
+   "status": "active"
+  }
+ },
+ {
+  "model": "data_aggregator.user",
+  "pk": 1641153,
+  "fields": {
+   "canvas_user_id": 3203389,
+   "login_id": "tuyd",
+   "sis_user_id": "4C284BF8BE0F426FAD24FEBC37A80E57",
+   "first_name": "Dalica",
+   "last_name": "Tuy",
+   "full_name": "Dalica Tuy",
+   "sortable_name": "Tuy, Dalica",
+   "email": "tuyd@uw.edu",
+   "status": "active"
+  }
+ },
+ {
+  "model": "data_aggregator.user",
+  "pk": 1641154,
+  "fields": {
+   "canvas_user_id": 1234567,
+   "login_id": "jdoe",
+   "sis_user_id": "4C284BF8BE0F426FAD24FEBC37A23457",
+   "first_name": "John",
+   "last_name": "Doe",
+   "full_name": "John Doe",
+   "sortable_name": "Doe, Jobn",
+   "email": "jdoe@uw.edu",
+   "status": "active"
+  }
  }
-},
-{
- "model": "data_aggregator.user",
- "pk": 1481853,
- "fields": {
-  "canvas_user_id": 3199810,
-  "login_id": "sanghp",
-  "sis_user_id": "2CA6997C06E04A458BD500BFC649B48A",
-  "first_name": "Sang",
-  "last_name": "Park",
-  "full_name": "Sang Park",
-  "sortable_name": "Park, Sang",
-  "email": "sanghp@uw.edu",
-  "status": "active"
- }
-},
-{
- "model": "data_aggregator.user",
- "pk": 1485375,
- "fields": {
-  "canvas_user_id": 3173257,
-  "login_id": "shoh7",
-  "sis_user_id": "CE0E6CCABB3D43E1BD2160D6D39D54AF",
-  "first_name": "SHO",
-  "last_name": "HAYASHIDA",
-  "full_name": "SHO HAYASHIDA",
-  "sortable_name": "HAYASHIDA, SHO",
-  "email": "shoh7@uw.edu",
-  "status": "active"
- }
-},
-{
- "model": "data_aggregator.user",
- "pk": 1488569,
- "fields": {
-  "canvas_user_id": 3193350,
-  "login_id": "jacklee",
-  "sis_user_id": "10B93109310B421B8E874CF6314E60A7",
-  "first_name": "Jack",
-  "last_name": "Lee",
-  "full_name": "Jack Lee",
-  "sortable_name": "Lee, Jack",
-  "email": "jacklee@uw.edu",
-  "status": "active"
- }
-},
-{
- "model": "data_aggregator.user",
- "pk": 1495208,
- "fields": {
-  "canvas_user_id": 3134869,
-  "login_id": "ciaraw",
-  "sis_user_id": "0B2CF9AAEAC846A6A1CC3B3790F4F74E",
-  "first_name": "CIARA NICOLE",
-  "last_name": "WEEMS",
-  "full_name": "CIARA NICOLE WEEMS",
-  "sortable_name": "WEEMS, CIARA NICOLE",
-  "email": "ciaraw@uw.edu",
-  "status": "active"
- }
-},
-{
- "model": "data_aggregator.user",
- "pk": 1504494,
- "fields": {
-  "canvas_user_id": 3179219,
-  "login_id": "budiae",
-  "sis_user_id": "6453B8382E5A46C687DA7F45C1532C58",
-  "first_name": "Elvira",
-  "last_name": "Budiawan",
-  "full_name": "Elvira Budiawan",
-  "sortable_name": "Budiawan, Elvira",
-  "email": "budiae@uw.edu",
-  "status": "active"
- }
-},
-{
- "model": "data_aggregator.user",
- "pk": 1506085,
- "fields": {
-  "canvas_user_id": 953607,
-  "login_id": "sventura",
-  "sis_user_id": "84543F6DD9B3469D9CFC29236911025E",
-  "first_name": "Sean",
-  "last_name": "Ventura",
-  "full_name": "Sean Ventura",
-  "sortable_name": "Ventura, Sean",
-  "email": "sventura@uw.edu",
-  "status": "active"
- }
-},
-{
- "model": "data_aggregator.user",
- "pk": 1509461,
- "fields": {
-  "canvas_user_id": 3174248,
-  "login_id": "chhouk",
-  "sis_user_id": "5B20F61D186A4AF096BA196F4A4FD6C3",
-  "first_name": "Christopher",
-  "last_name": "Chhoukdean",
-  "full_name": "Christopher Chhoukdean",
-  "sortable_name": "Chhoukdean, Christopher",
-  "email": "chhouk@uw.edu",
-  "status": "active"
- }
-},
-{
- "model": "data_aggregator.user",
- "pk": 1515890,
- "fields": {
-  "canvas_user_id": 3159192,
-  "login_id": "ghvn",
-  "sis_user_id": "760F00273C5F4CAD967D59F997D5EA93",
-  "first_name": "Gia Hoang",
-  "last_name": "Nguyen",
-  "full_name": "Gia Hoang Vi Nguyen",
-  "sortable_name": "Nguyen, Gia Hoang Vi",
-  "email": "ghvn@uw.edu",
-  "status": "active"
- }
-},
-{
- "model": "data_aggregator.user",
- "pk": 1518665,
- "fields": {
-  "canvas_user_id": 3172062,
-  "login_id": "drwolf",
-  "sis_user_id": "1BA25B21C8F64574B8522D3C25A9EDE8",
-  "first_name": "CHING TING",
-  "last_name": "HSU",
-  "full_name": "CHING TING HSU",
-  "sortable_name": "HSU, CHING TING",
-  "email": "drwolf@uw.edu",
-  "status": "active"
- }
-},
-{
- "model": "data_aggregator.user",
- "pk": 1520746,
- "fields": {
-  "canvas_user_id": 3211636,
-  "login_id": "juuls",
-  "sis_user_id": "F03F6636F12E463989D668C3032CDA27",
-  "first_name": "Sarah Darlene",
-  "last_name": "Juul",
-  "full_name": "Sarah Darlene Juul",
-  "sortable_name": "Juul, Sarah Darlene",
-  "email": "juuls@uw.edu",
-  "status": "active"
- }
-},
-{
- "model": "data_aggregator.user",
- "pk": 1527296,
- "fields": {
-  "canvas_user_id": 3176834,
-  "login_id": "tatiaw",
-  "sis_user_id": "C593551530BE471EBF39752FAF9A58BA",
-  "first_name": "Tatiana",
-  "last_name": "Weems",
-  "full_name": "Tatiana Weems",
-  "sortable_name": "Weems, Tatiana",
-  "email": "tatiaw@uw.edu",
-  "status": "active"
- }
-},
-{
- "model": "data_aggregator.user",
- "pk": 1538447,
- "fields": {
-  "canvas_user_id": 3137675,
-  "login_id": "mckeed",
-  "sis_user_id": "5BA259B827C311DB9C4BA86F58A27E6F",
-  "first_name": "Dorothy Ambrozic",
-  "last_name": "McKee",
-  "full_name": "Dorothy Ambrozic McKee",
-  "sortable_name": "McKee, Dorothy Ambrozic",
-  "email": "mckeed@uw.edu",
-  "status": "active"
- }
-},
-{
- "model": "data_aggregator.user",
- "pk": 1555173,
- "fields": {
-  "canvas_user_id": 3206905,
-  "login_id": "susiek94",
-  "sis_user_id": "46303D00ECED4D718DF80EE05A3515E8",
-  "first_name": "Susie",
-  "last_name": "Kim",
-  "full_name": "Susie Kim",
-  "sortable_name": "Kim, Susie",
-  "email": "susiek94@uw.edu",
-  "status": "active"
- }
-},
-{
- "model": "data_aggregator.user",
- "pk": 1559264,
- "fields": {
-  "canvas_user_id": 3176444,
-  "login_id": "jwc40",
-  "sis_user_id": "6F6AD8FCDEFE4E9DAD7902CBF233FC1D",
-  "first_name": "Jon William",
-  "last_name": "Collier",
-  "full_name": "Jon William Collier",
-  "sortable_name": "Collier, Jon William",
-  "email": "jwc40@uw.edu",
-  "status": "active"
- }
-},
-{
- "model": "data_aggregator.user",
- "pk": 1571587,
- "fields": {
-  "canvas_user_id": 3154542,
-  "login_id": "tiba",
-  "sis_user_id": "938DF4A463D44B80BC7B1310ECEE08F9",
-  "first_name": "Tadamasa",
-  "last_name": "Iba",
-  "full_name": "Tadamasa Iba",
-  "sortable_name": "Iba, Tadamasa",
-  "email": "tiba@uw.edu",
-  "status": "active"
- }
-},
-{
- "model": "data_aggregator.user",
- "pk": 1586092,
- "fields": {
-  "canvas_user_id": 3188561,
-  "login_id": "jburau",
-  "sis_user_id": "3CCAD54988DA4593AA46534C38C7154F",
-  "first_name": "Justin Johnathan",
-  "last_name": "Burau",
-  "full_name": "Justin Johnathan Burau",
-  "sortable_name": "Burau, Justin Johnathan",
-  "email": "jburau@uw.edu",
-  "status": "active"
- }
-},
-{
- "model": "data_aggregator.user",
- "pk": 1599210,
- "fields": {
-  "canvas_user_id": 3138045,
-  "login_id": "scott93",
-  "sis_user_id": "7AACB615EED24183AC57CDE71CE69CE8",
-  "first_name": "Dan",
-  "last_name": "Scott",
-  "full_name": "Dan Scott",
-  "sortable_name": "Scott, Dan",
-  "email": "scott93@uw.edu",
-  "status": "active"
- }
-},
-{
- "model": "data_aggregator.user",
- "pk": 1601450,
- "fields": {
-  "canvas_user_id": 3193425,
-  "login_id": "lpetrin",
-  "sis_user_id": "BB2F7BA9A7224BE2BF9709CD383CFAE5",
-  "first_name": "Lucas Andre",
-  "last_name": "Petrin",
-  "full_name": "Lucas Andre Petrin",
-  "sortable_name": "Petrin, Lucas Andre",
-  "email": "lpetrin@uw.edu",
-  "status": "active"
- }
-},
-{
- "model": "data_aggregator.user",
- "pk": 1641153,
- "fields": {
-  "canvas_user_id": 3203389,
-  "login_id": "tuyd",
-  "sis_user_id": "4C284BF8BE0F426FAD24FEBC37A80E57",
-  "first_name": "Dalica",
-  "last_name": "Tuy",
-  "full_name": "Dalica Tuy",
-  "sortable_name": "Tuy, Dalica",
-  "email": "tuyd@uw.edu",
-  "status": "active"
- }
-}
 ]
