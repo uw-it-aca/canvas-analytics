@@ -899,6 +899,34 @@ class TestLoadRadDAO(TestCase):
                           "international", "isso", "campus_code",
                           "summer"])
 
+    @patch('data_aggregator.dao.Week')
+    @patch('data_aggregator.dao.Term')
+    def test_create_rad_data_file(self, mock_term_model, mock_week_model):
+        lrd = self._get_test_load_rad_dao()
+        mock_term_inst = mock_term_model()
+        mock_term_inst.sis_term_id = "2021-summer"
+        mock_term_model.objects.get_or_create_term_from_sis_term_id = \
+            MagicMock(return_value=(mock_term_inst, None))
+        mock_week_inst = mock_week_model()
+        mock_week_inst.week = 5
+        mock_week_model.objects.get_or_create_week = \
+            MagicMock(return_value=(mock_week_inst, None))
+        lrd.get_rad_df = MagicMock()
+        mock_rcd = lrd.get_rad_df.return_value
+        mock_rcd.to_csv = MagicMock()
+        mock_file_obj = mock_rcd.to_csv.return_value
+        lrd.upload_to_gcs_bucket = MagicMock()
+
+        lrd.create_rad_data_file(sis_term_id="2021-summer", week_num=5)
+        lrd.get_rad_df.assert_called_once_with(sis_term_id="2021-summer",
+                                               week_num=5)
+        mock_rcd.to_csv.assert_called_once_with(sep=",",
+                                                index=False,
+                                                encoding="UTF-8")
+        lrd.upload_to_gcs_bucket.assert_called_once_with(
+            "rad_data/2021-summer-week-5-rad-data.csv",
+            mock_file_obj)
+
 
 if __name__ == "__main__":
     unittest.main()
