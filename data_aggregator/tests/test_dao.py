@@ -5,6 +5,7 @@ import os
 import unittest
 import pandas as pd
 import numpy as np
+from io import StringIO
 from django.test import TestCase
 from data_aggregator.dao import AnalyticTypes, CanvasDAO, JobDAO, LoadRadDAO, \
     BaseDAO, TaskDAO
@@ -16,16 +17,19 @@ class TestBaseDAO(TestCase):
 
     def get_test_base_dao(self):
         # mock gcs blob
-        mock_gcs_blob = MagicMock()
-        mock_gcs_blob.upload_from_file = MagicMock(return_value=True)
-        mock_gcs_blob.download_as_string = \
+        self.mock_gcs_blob = MagicMock()
+        self.mock_gcs_blob.upload_from_file = MagicMock(return_value=True)
+        self.mock_gcs_blob.upload_from_string = MagicMock(return_value=True)
+        self.mock_gcs_blob.download_as_string = \
             MagicMock(return_value=b"test-return-value")
         # mock gcs bucket
-        mock_gcs_bucket = MagicMock()
-        mock_gcs_bucket.get_blob = MagicMock(return_value=mock_gcs_blob)
+        self.mock_gcs_bucket = MagicMock()
+        self.mock_gcs_bucket.get_blob = \
+            MagicMock(return_value=self.mock_gcs_blob)
         # mock gcs client
-        mock_gcs_client = MagicMock()
-        mock_gcs_client.get_bucket = MagicMock(return_value=mock_gcs_bucket)
+        self.mock_gcs_client = MagicMock()
+        self.mock_gcs_client.get_bucket = \
+            MagicMock(return_value=self.mock_gcs_bucket)
 
         # mock content
         mock_s3_content = MagicMock()
@@ -42,10 +46,62 @@ class TestBaseDAO(TestCase):
         base_dao = BaseDAO()
         base_dao.get_gcs_bucket_name = \
             MagicMock(return_value="test_gcs_bucket")
-        base_dao.get_gcs_client = MagicMock(return_value=mock_gcs_client)
+        base_dao.get_gcs_client = MagicMock(return_value=self.mock_gcs_client)
         base_dao.get_s3_bucket_name = MagicMock(return_value="test_s3_bucket")
         base_dao.get_s3_client = MagicMock(return_value=mock_s3_client)
+        base_dao.get_gcs_num_retries = MagicMock(return_value=3)
+        base_dao.get_gcs_timeout = MagicMock(return_value=60)
         return base_dao
+
+    @patch('data_aggregator.dao.storage')
+    def test_get_gcs_client(self, mock_storage):
+        base_dao = BaseDAO()
+        mock_client = mock_storage.Client()
+        client = base_dao.get_gcs_client()
+        self.assertEqual(client, mock_client)
+
+    @patch('data_aggregator.dao.client')
+    def test_get_s3_client(self, mock_s3_client):
+        base_dao = BaseDAO()
+        mock_client_inst = mock_s3_client()
+        client = base_dao.get_s3_client()
+        self.assertEqual(client, mock_client_inst)
+
+    @patch('data_aggregator.dao.settings')
+    @patch('data_aggregator.dao.getattr')
+    def test_get_gcs_bucket_name(self, mock_getattr, mock_settings):
+        base_dao = BaseDAO()
+        base_dao.get_gcs_bucket_name()
+        mock_getattr.assert_called_once_with(mock_settings,
+                                             "RAD_METADATA_BUCKET_NAME",
+                                             "")
+
+    @patch('data_aggregator.dao.settings')
+    @patch('data_aggregator.dao.getattr')
+    def test_get_s3_bucket_name(self, mock_getattr, mock_settings):
+        base_dao = BaseDAO()
+        base_dao.get_s3_bucket_name()
+        mock_getattr.assert_called_once_with(mock_settings,
+                                             "IDP_BUCKET_NAME",
+                                             "")
+
+    @patch('data_aggregator.dao.settings')
+    @patch('data_aggregator.dao.getattr')
+    def test_get_gcs_timeout(self, mock_getattr, mock_settings):
+        base_dao = BaseDAO()
+        base_dao.get_gcs_timeout()
+        mock_getattr.assert_called_once_with(mock_settings,
+                                             "GCS_TIMEOUT",
+                                             60)
+
+    @patch('data_aggregator.dao.settings')
+    @patch('data_aggregator.dao.getattr')
+    def test_get_gcs_num_retries(self, mock_getattr, mock_settings):
+        base_dao = BaseDAO()
+        base_dao.get_gcs_num_retries()
+        mock_getattr.assert_called_once_with(mock_settings,
+                                             "GCS_NUM_RETRIES",
+                                             3)
 
     def test_download_from_gcs_bucket(self):
         base_dao = self.get_test_base_dao()
@@ -56,6 +112,41 @@ class TestBaseDAO(TestCase):
         base_dao = self.get_test_base_dao()
         content = base_dao.download_from_s3_bucket("test_url_key")
         self.assertEqual(content, "test-return-value")
+
+    def test_upload_to_gcs_bucket(self):
+        base_dao = self.get_test_base_dao()
+        # upload string
+        base_dao.upload_to_gcs_bucket("test_url_key", "test_content_str")
+        self.mock_gcs_blob.upload_from_string.assert_called_once_with(
+            str("test_content_str"),
+            num_retries=base_dao.get_gcs_num_retries.return_value,
+            timeout=base_dao.get_gcs_timeout.return_value)
+        # upload file like object
+        mock_file = StringIO("test_content_str")
+        base_dao.upload_to_gcs_bucket("test_url_key",
+                                      mock_file)
+        self.mock_gcs_blob.upload_from_file.assert_called_once_with(
+            mock_file,
+            num_retries=base_dao.get_gcs_num_retries.return_value,
+            timeout=base_dao.get_gcs_timeout.return_value)
+
+        # test non-existing blob
+        self.mock_gcs_bucket.get_blob.return_value = None
+        mock_new_blob = self.mock_gcs_bucket.blob()
+        # upload new blob from string
+        base_dao.upload_to_gcs_bucket("test_url_key", "test_content_str")
+        mock_new_blob.upload_from_string.assert_called_once_with(
+            str("test_content_str"),
+            num_retries=base_dao.get_gcs_num_retries.return_value,
+            timeout=base_dao.get_gcs_timeout.return_value)
+        # upload new blob from file
+        mock_file = StringIO("test_content_str")
+        base_dao.upload_to_gcs_bucket("test_url_key",
+                                      mock_file)
+        mock_new_blob.upload_from_file.assert_called_once_with(
+            mock_file,
+            num_retries=base_dao.get_gcs_num_retries.return_value,
+            timeout=base_dao.get_gcs_timeout.return_value)
 
 
 class TestAnalyticTypes(TestCase):
