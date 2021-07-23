@@ -39,8 +39,8 @@ class TestBaseDAO(TestCase):
         mock_s3_obj.__getitem__.side_effect = \
             MagicMock(return_value=mock_s3_content)
         # mock s3 client
-        mock_s3_client = MagicMock()
-        mock_s3_client.get_object = MagicMock(return_value=mock_s3_obj)
+        self.mock_s3_client = MagicMock()
+        self.mock_s3_client.get_object = MagicMock(return_value=mock_s3_obj)
 
         # mock base dao
         base_dao = BaseDAO()
@@ -48,24 +48,23 @@ class TestBaseDAO(TestCase):
             MagicMock(return_value="test_gcs_bucket")
         base_dao.get_gcs_client = MagicMock(return_value=self.mock_gcs_client)
         base_dao.get_s3_bucket_name = MagicMock(return_value="test_s3_bucket")
-        base_dao.get_s3_client = MagicMock(return_value=mock_s3_client)
+        base_dao.get_s3_client = MagicMock(return_value=self.mock_s3_client)
         base_dao.get_gcs_num_retries = MagicMock(return_value=3)
         base_dao.get_gcs_timeout = MagicMock(return_value=60)
         return base_dao
 
-    @patch('data_aggregator.dao.storage')
-    def test_get_gcs_client(self, mock_storage):
-        base_dao = BaseDAO()
-        mock_client = mock_storage.Client()
+    def test_get_gcs_client(self):
+        base_dao = self.get_test_base_dao()
         client = base_dao.get_gcs_client()
-        self.assertEqual(client, mock_client)
+        self.assertEqual(client, self.mock_gcs_client)
 
-    @patch('data_aggregator.dao.client')
-    def test_get_s3_client(self, mock_s3_client):
-        base_dao = BaseDAO()
-        mock_client_inst = mock_s3_client()
+    @patch('data_aggregator.dao.settings')
+    def test_get_s3_client(self, mock_settings):
+        mock_settings.AWS_ACCESS_ID = MagicMock()
+        mock_settings.AWS_ACCESS_KEY = MagicMock()
+        base_dao = self.get_test_base_dao()
         client = base_dao.get_s3_client()
-        self.assertEqual(client, mock_client_inst)
+        self.assertEqual(client, self.mock_s3_client)
 
     @patch('data_aggregator.dao.settings')
     @patch('data_aggregator.dao.getattr')
