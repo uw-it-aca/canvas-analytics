@@ -11,6 +11,7 @@ from data_aggregator.dao import AnalyticTypes, AnalyticsDAO, CanvasDAO, \
     JobDAO, LoadRadDAO, BaseDAO, TaskDAO
 from data_aggregator.models import JobType, TaskTypes
 from mock import call, patch, MagicMock
+from restclients_core.exceptions import DataFailureException
 
 
 class TestBaseDAO(TestCase):
@@ -52,6 +53,9 @@ class TestBaseDAO(TestCase):
         base_dao.get_gcs_num_retries = MagicMock(return_value=3)
         base_dao.get_gcs_timeout = MagicMock(return_value=60)
         return base_dao
+
+    def mock_get_term_after_side_effect(self, sws_term):
+        raise DataFailureException('url', 'status', 'msg')
 
     @patch('data_aggregator.dao.storage')
     def test_get_gcs_client(self, mock_storage):
@@ -150,6 +154,23 @@ class TestBaseDAO(TestCase):
             mock_file,
             num_retries=base_dao.get_gcs_num_retries.return_value,
             timeout=base_dao.get_gcs_timeout.return_value)
+
+    @patch('data_aggregator.dao.get_term_after')
+    @patch('data_aggregator.dao.get_term_by_year_and_quarter')
+    @patch('data_aggregator.dao.get_current_term')
+    def test_get_sws_terms(self,
+                           mock_get_current_term,
+                           mock_get_term_by_year_and_quarter,
+                           mock_get_term_after):
+        mock_sws_term1 = MagicMock()
+        mock_get_current_term.return_value = mock_sws_term1
+        mock_get_term_by_year_and_quarter.return_value = mock_sws_term1
+        mock_get_term_after.side_effect = self.mock_get_term_after_side_effect
+        base_dao = BaseDAO()
+        terms = base_dao.get_sws_terms()
+        self.assertEqual(terms, [mock_sws_term1])
+        terms = base_dao.get_sws_terms(sis_term_id="2021-summer")
+        self.assertEqual(terms, [mock_sws_term1])
 
 
 class TestAnalyticTypes(TestCase):
