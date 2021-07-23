@@ -738,8 +738,8 @@ class TestLoadRadDAO(TestCase):
 
     def _get_test_load_rad_dao(self):
         lrd = LoadRadDAO()
-        lrd._get_gcs_client = MagicMock()
-        lrd._get_s3_client = MagicMock()
+        lrd.get_gcs_client = MagicMock()
+        lrd.get_s3_client = MagicMock()
         return lrd
 
     def _get_mock_student_categories_df(self):
@@ -871,6 +871,26 @@ class TestLoadRadDAO(TestCase):
         self.assertEqual(
             mock_iss_advisers_df.columns.values.tolist(),
             ["student_no", "adviser_name", "staff_id"])
+
+    def test_get_last_idp_file(self):
+        lrd = self._get_test_load_rad_dao()
+        mock_s3_bucket_name = MagicMock()
+        lrd.get_s3_bucket_name = MagicMock(return_value=mock_s3_bucket_name)
+        mock_bucket_objects = {
+            'Contents': [
+                {'Key': "file_name_1"},
+                {'Key': "file_name_2"},
+            ]
+        }
+        mock_s3_client = lrd.get_s3_client.return_value
+        mock_s3_client.list_objects_v2 = \
+            MagicMock(return_value=mock_bucket_objects)
+        lastest_file_name = lrd.get_last_idp_file()
+        lrd.get_s3_client.assert_called_once()
+        lrd.get_s3_bucket_name.assert_called_once()
+        mock_s3_client.list_objects_v2.assert_called_once_with(
+            Bucket=mock_s3_bucket_name)
+        self.assertEqual(lastest_file_name, "file_name_2")
 
     def test_get_idp_df(self):
         mock_idp_df = self._get_mock_idp_df()
