@@ -7,10 +7,10 @@ import pandas as pd
 import numpy as np
 from io import StringIO
 from django.test import TestCase
-from data_aggregator.dao import AnalyticTypes, CanvasDAO, JobDAO, LoadRadDAO, \
-    BaseDAO, TaskDAO
+from data_aggregator.dao import AnalyticTypes, AnalyticsDAO, CanvasDAO, \
+    JobDAO, LoadRadDAO, BaseDAO, TaskDAO
 from data_aggregator.models import JobType, TaskTypes
-from mock import patch, MagicMock
+from mock import call, patch, MagicMock
 
 
 class TestBaseDAO(TestCase):
@@ -561,6 +561,91 @@ class TestJobDAO(TestCase):
         job.type.type = "unknown-job-type"
         with self.assertRaises(ValueError):
             JobDAO().run_task_job(job)
+
+
+class TestAnalyticsDAO(TestCase):
+
+    def mock_create_or_update_analytic(self, job, week, course,
+                                       raw_assign_dict):
+        return raw_assign_dict, True
+
+    @patch('data_aggregator.dao.Assignment')
+    @patch('data_aggregator.dao.Week')
+    @patch('data_aggregator.dao.Course')
+    def test_save_assignments_to_db(self,
+                                    mock_course_model,
+                                    mock_week_model,
+                                    mock_assignment_model):
+        mock_job = MagicMock()
+        mock_job.context = {}
+        mock_job.context["canvas_course_id"] = 1234567
+        mock_job.context["sis_term_id"] = "2021-summer"
+        mock_job.context["week"] = 5
+        mock_week = MagicMock()
+        mock_week_model.objects.get = MagicMock(return_value=mock_week)
+        mock_course = MagicMock()
+        mock_course_model.objects.get = MagicMock(return_value=mock_course)
+        mock_assignment1 = MagicMock()
+        mock_assignment2 = MagicMock()
+        mock_assignments = [mock_assignment1, mock_assignment2]
+        mock_assignment_model.objects.create_or_update_assignment = \
+            MagicMock(side_effect=self.mock_create_or_update_analytic)
+
+        analytics_dao = AnalyticsDAO()
+        analytics_dao.save_assignments_to_db(mock_assignments, mock_job)
+        mock_week_model.objects.get.assert_called_once_with(
+                                        term__sis_term_id="2021-summer",
+                                        week=5)
+        mock_course_model.objects.get.assert_called_once_with(
+                                        canvas_course_id=1234567,
+                                        term__sis_term_id="2021-summer")
+        call_args_list = (
+            mock_assignment_model.objects.create_or_update_assignment
+            .call_args_list)
+        assert (call_args_list[0] ==
+                call(mock_job, mock_week, mock_course, mock_assignment1))
+        assert (call_args_list[1] ==
+                call(mock_job, mock_week, mock_course, mock_assignment2))
+        self.assertEqual(len(call_args_list), 2)
+
+    @patch('data_aggregator.dao.Participation')
+    @patch('data_aggregator.dao.Week')
+    @patch('data_aggregator.dao.Course')
+    def test_save_participations_to_db(self,
+                                       mock_course_model,
+                                       mock_week_model,
+                                       mock_participation_model):
+        mock_job = MagicMock()
+        mock_job.context = {}
+        mock_job.context["canvas_course_id"] = 1234567
+        mock_job.context["sis_term_id"] = "2021-summer"
+        mock_job.context["week"] = 5
+        mock_week = MagicMock()
+        mock_week_model.objects.get = MagicMock(return_value=mock_week)
+        mock_course = MagicMock()
+        mock_course_model.objects.get = MagicMock(return_value=mock_course)
+        mock_participation1 = MagicMock()
+        mock_participation2 = MagicMock()
+        mock_participations = [mock_participation1, mock_participation2]
+        mock_participation_model.objects.create_or_update_participation = \
+            MagicMock(side_effect=self.mock_create_or_update_analytic)
+
+        analytics_dao = AnalyticsDAO()
+        analytics_dao.save_participations_to_db(mock_participations, mock_job)
+        mock_week_model.objects.get.assert_called_once_with(
+                                        term__sis_term_id="2021-summer",
+                                        week=5)
+        mock_course_model.objects.get.assert_called_once_with(
+                                        canvas_course_id=1234567,
+                                        term__sis_term_id="2021-summer")
+        call_args_list = (
+            mock_participation_model.objects.create_or_update_participation
+            .call_args_list)
+        assert (call_args_list[0] ==
+                call(mock_job, mock_week, mock_course, mock_participation1))
+        assert (call_args_list[1] ==
+                call(mock_job, mock_week, mock_course, mock_participation2))
+        self.assertEqual(len(call_args_list), 2)
 
 
 class TestTaskDAO(TestCase):
