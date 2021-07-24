@@ -399,6 +399,76 @@ class TestCanvasDAO(TestCase):
 
 class TestJobDAO(TestCase):
 
+    @patch('data_aggregator.dao.Course')
+    @patch('data_aggregator.dao.Term')
+    @patch('data_aggregator.dao.Week')
+    def test_create_analytic_jobs(self, mock_week_model, mock_term_model,
+                                  mock_course_model):
+        job_dao = JobDAO()
+        mock_job_type = MagicMock()
+        mock_job_type.type = AnalyticTypes.assignment
+        mock_context = {
+            'canvas_course_id': 1234567,
+            'sis_course_id': "abcdefg",
+            'sis_term_id': "2021-summer",
+            'week': 5
+        }
+        job_dao.create_job = MagicMock()
+        mock_term_inst = mock_term_model()
+        mock_term_inst.sis_term_id = "2021-summer"
+        mock_target_date_start = MagicMock()
+        mock_target_date_end = MagicMock()
+        mock_term_model.objects.get_or_create_term_from_sis_term_id = \
+            MagicMock(return_value=(mock_term_inst, None))
+        mock_week_inst = mock_week_model()
+        mock_week_inst.week = 5
+        mock_week_model.objects.get_or_create_week = \
+            MagicMock(return_value=(mock_week_inst, None))
+        mock_course1 = MagicMock()
+        mock_course1.canvas_course_id = 1234567
+        mock_course1.sis_course_id = "abcdefg"
+        mock_course2 = MagicMock()
+        mock_course2.canvas_course_id = 9876543
+        mock_course2.sis_course_id = "xyzabcd"
+        mock_courses_qs = MagicMock()
+        mock_courses_qs.__iter__.return_value = [mock_course1, mock_course2]
+        mock_course_model.objects.filter.return_value.filter.return_value = \
+            mock_courses_qs
+        mock_courses_qs.count.return_value = 2
+
+        # passed context
+        jobs = job_dao.create_analytic_jobs(mock_job_type,
+                                            mock_target_date_start,
+                                            mock_target_date_end,
+                                            context=mock_context)
+        job_dao.create_job.assert_called_once_with(
+            mock_job_type, mock_target_date_start,
+            mock_target_date_end, context=mock_context)
+        self.assertEqual(len(jobs), 1)
+
+        # no context
+        jobs = job_dao.create_analytic_jobs(mock_job_type,
+                                            mock_target_date_start,
+                                            mock_target_date_end)
+        call_args_list = job_dao.create_job.call_args_list
+        assert (call_args_list[0] ==
+                call(mock_job_type, mock_target_date_start,
+                     mock_target_date_end,
+                     context={
+                        'canvas_course_id': mock_course1.canvas_course_id,
+                        'sis_course_id': mock_course1.sis_course_id,
+                        'sis_term_id': '2021-summer',
+                        'week': 5}))
+        assert (call_args_list[1] ==
+                call(mock_job_type, mock_target_date_start,
+                     mock_target_date_end,
+                     context={
+                        'canvas_course_id': mock_course2.canvas_course_id,
+                        'sis_course_id': mock_course2.sis_course_id,
+                        'sis_term_id': '2021-summer',
+                        'week': 5}))
+        self.assertEqual(len(jobs), 2)
+
     @patch("data_aggregator.dao.Participation")
     @patch("data_aggregator.dao.Assignment")
     def test_delete_data_for_job(self, mock_assignment,

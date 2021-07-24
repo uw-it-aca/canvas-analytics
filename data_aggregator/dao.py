@@ -471,6 +471,8 @@ class JobDAO(BaseDAO):
         If context is explicitly passed, only a single job will be created for
         that given context.
         """
+        if context is None:
+            context = {}
         jobs = []
         if job_type.type != AnalyticTypes.assignment and \
                 job_type.type != AnalyticTypes.participation:
@@ -481,7 +483,7 @@ class JobDAO(BaseDAO):
                 context.get('canvas_course_id') is not None and \
                 context.get('sis_course_id') is not None and \
                 context.get('sis_term_id') is not None and \
-                context.get('week_num') is not None:
+                context.get('week') is not None:
             # manually supplied single job context
             logging.debug(
                 f"Adding {job_type.type} job for course "
