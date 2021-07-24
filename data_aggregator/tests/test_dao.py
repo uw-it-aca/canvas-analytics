@@ -5,27 +5,32 @@ import os
 import unittest
 import pandas as pd
 import numpy as np
+from io import StringIO
 from django.test import TestCase
-from data_aggregator.dao import AnalyticTypes, CanvasDAO, JobDAO, LoadRadDAO, \
-    BaseDAO, TaskDAO
+from data_aggregator.dao import AnalyticTypes, AnalyticsDAO, CanvasDAO, \
+    JobDAO, LoadRadDAO, BaseDAO, TaskDAO
 from data_aggregator.models import JobType, TaskTypes
-from mock import patch, MagicMock
+from mock import call, patch, MagicMock
+from restclients_core.exceptions import DataFailureException
 
 
 class TestBaseDAO(TestCase):
 
     def get_test_base_dao(self):
         # mock gcs blob
-        mock_gcs_blob = MagicMock()
-        mock_gcs_blob.upload_from_file = MagicMock(return_value=True)
-        mock_gcs_blob.download_as_string = \
+        self.mock_gcs_blob = MagicMock()
+        self.mock_gcs_blob.upload_from_file = MagicMock(return_value=True)
+        self.mock_gcs_blob.upload_from_string = MagicMock(return_value=True)
+        self.mock_gcs_blob.download_as_string = \
             MagicMock(return_value=b"test-return-value")
         # mock gcs bucket
-        mock_gcs_bucket = MagicMock()
-        mock_gcs_bucket.get_blob = MagicMock(return_value=mock_gcs_blob)
+        self.mock_gcs_bucket = MagicMock()
+        self.mock_gcs_bucket.get_blob = \
+            MagicMock(return_value=self.mock_gcs_blob)
         # mock gcs client
-        mock_gcs_client = MagicMock()
-        mock_gcs_client.get_bucket = MagicMock(return_value=mock_gcs_bucket)
+        self.mock_gcs_client = MagicMock()
+        self.mock_gcs_client.get_bucket = \
+            MagicMock(return_value=self.mock_gcs_bucket)
 
         # mock content
         mock_s3_content = MagicMock()
@@ -35,17 +40,75 @@ class TestBaseDAO(TestCase):
         mock_s3_obj.__getitem__.side_effect = \
             MagicMock(return_value=mock_s3_content)
         # mock s3 client
-        mock_s3_client = MagicMock()
-        mock_s3_client.get_object = MagicMock(return_value=mock_s3_obj)
+        self.mock_s3_client = MagicMock()
+        self.mock_s3_client.get_object = MagicMock(return_value=mock_s3_obj)
 
         # mock base dao
         base_dao = BaseDAO()
         base_dao.get_gcs_bucket_name = \
             MagicMock(return_value="test_gcs_bucket")
-        base_dao.get_gcs_client = MagicMock(return_value=mock_gcs_client)
+        base_dao.get_gcs_client = MagicMock(return_value=self.mock_gcs_client)
         base_dao.get_s3_bucket_name = MagicMock(return_value="test_s3_bucket")
-        base_dao.get_s3_client = MagicMock(return_value=mock_s3_client)
+        base_dao.get_s3_client = MagicMock(return_value=self.mock_s3_client)
+        base_dao.get_gcs_num_retries = MagicMock(return_value=3)
+        base_dao.get_gcs_timeout = MagicMock(return_value=60)
         return base_dao
+
+    def mock_get_term_after_side_effect(self, sws_term):
+        raise DataFailureException('url', 'status', 'msg')
+
+    @patch('data_aggregator.dao.storage')
+    def test_get_gcs_client(self, mock_storage):
+        base_dao = BaseDAO()
+        mock_gcs_client = mock_storage.Client()
+        client = base_dao.get_gcs_client()
+        self.assertEqual(client, mock_gcs_client)
+
+    @patch('data_aggregator.dao.client')
+    @patch('data_aggregator.dao.settings')
+    def test_get_s3_client(self, mock_settings, mock_s3_client):
+        mock_settings.AWS_ACCESS_ID = MagicMock()
+        mock_settings.AWS_ACCESS_KEY = MagicMock()
+        mock_s3_client_inst = mock_s3_client()
+        base_dao = BaseDAO()
+        client = base_dao.get_s3_client()
+        self.assertEqual(client, mock_s3_client_inst)
+
+    @patch('data_aggregator.dao.settings')
+    @patch('data_aggregator.dao.getattr')
+    def test_get_gcs_bucket_name(self, mock_getattr, mock_settings):
+        base_dao = BaseDAO()
+        base_dao.get_gcs_bucket_name()
+        mock_getattr.assert_called_once_with(mock_settings,
+                                             "RAD_METADATA_BUCKET_NAME",
+                                             "")
+
+    @patch('data_aggregator.dao.settings')
+    @patch('data_aggregator.dao.getattr')
+    def test_get_s3_bucket_name(self, mock_getattr, mock_settings):
+        base_dao = BaseDAO()
+        base_dao.get_s3_bucket_name()
+        mock_getattr.assert_called_once_with(mock_settings,
+                                             "IDP_BUCKET_NAME",
+                                             "")
+
+    @patch('data_aggregator.dao.settings')
+    @patch('data_aggregator.dao.getattr')
+    def test_get_gcs_timeout(self, mock_getattr, mock_settings):
+        base_dao = BaseDAO()
+        base_dao.get_gcs_timeout()
+        mock_getattr.assert_called_once_with(mock_settings,
+                                             "GCS_TIMEOUT",
+                                             60)
+
+    @patch('data_aggregator.dao.settings')
+    @patch('data_aggregator.dao.getattr')
+    def test_get_gcs_num_retries(self, mock_getattr, mock_settings):
+        base_dao = BaseDAO()
+        base_dao.get_gcs_num_retries()
+        mock_getattr.assert_called_once_with(mock_settings,
+                                             "GCS_NUM_RETRIES",
+                                             3)
 
     def test_download_from_gcs_bucket(self):
         base_dao = self.get_test_base_dao()
@@ -56,6 +119,58 @@ class TestBaseDAO(TestCase):
         base_dao = self.get_test_base_dao()
         content = base_dao.download_from_s3_bucket("test_url_key")
         self.assertEqual(content, "test-return-value")
+
+    def test_upload_to_gcs_bucket(self):
+        base_dao = self.get_test_base_dao()
+        # upload string
+        base_dao.upload_to_gcs_bucket("test_url_key", "test_content_str")
+        self.mock_gcs_blob.upload_from_string.assert_called_once_with(
+            str("test_content_str"),
+            num_retries=base_dao.get_gcs_num_retries.return_value,
+            timeout=base_dao.get_gcs_timeout.return_value)
+        # upload file like object
+        mock_file = StringIO("test_content_str")
+        base_dao.upload_to_gcs_bucket("test_url_key",
+                                      mock_file)
+        self.mock_gcs_blob.upload_from_file.assert_called_once_with(
+            mock_file,
+            num_retries=base_dao.get_gcs_num_retries.return_value,
+            timeout=base_dao.get_gcs_timeout.return_value)
+
+        # test non-existing blob
+        self.mock_gcs_bucket.get_blob.return_value = None
+        mock_new_blob = self.mock_gcs_bucket.blob()
+        # upload new blob from string
+        base_dao.upload_to_gcs_bucket("test_url_key", "test_content_str")
+        mock_new_blob.upload_from_string.assert_called_once_with(
+            str("test_content_str"),
+            num_retries=base_dao.get_gcs_num_retries.return_value,
+            timeout=base_dao.get_gcs_timeout.return_value)
+        # upload new blob from file
+        mock_file = StringIO("test_content_str")
+        base_dao.upload_to_gcs_bucket("test_url_key",
+                                      mock_file)
+        mock_new_blob.upload_from_file.assert_called_once_with(
+            mock_file,
+            num_retries=base_dao.get_gcs_num_retries.return_value,
+            timeout=base_dao.get_gcs_timeout.return_value)
+
+    @patch('data_aggregator.dao.get_term_after')
+    @patch('data_aggregator.dao.get_term_by_year_and_quarter')
+    @patch('data_aggregator.dao.get_current_term')
+    def test_get_sws_terms(self,
+                           mock_get_current_term,
+                           mock_get_term_by_year_and_quarter,
+                           mock_get_term_after):
+        mock_sws_term1 = MagicMock()
+        mock_get_current_term.return_value = mock_sws_term1
+        mock_get_term_by_year_and_quarter.return_value = mock_sws_term1
+        mock_get_term_after.side_effect = self.mock_get_term_after_side_effect
+        base_dao = BaseDAO()
+        terms = base_dao.get_sws_terms()
+        self.assertEqual(terms, [mock_sws_term1])
+        terms = base_dao.get_sws_terms(sis_term_id="2021-summer")
+        self.assertEqual(terms, [mock_sws_term1])
 
 
 class TestAnalyticTypes(TestCase):
@@ -284,6 +399,76 @@ class TestCanvasDAO(TestCase):
 
 class TestJobDAO(TestCase):
 
+    @patch('data_aggregator.dao.Course')
+    @patch('data_aggregator.dao.Term')
+    @patch('data_aggregator.dao.Week')
+    def test_create_analytic_jobs(self, mock_week_model, mock_term_model,
+                                  mock_course_model):
+        job_dao = JobDAO()
+        mock_job_type = MagicMock()
+        mock_job_type.type = AnalyticTypes.assignment
+        mock_context = {
+            'canvas_course_id': 1234567,
+            'sis_course_id': "abcdefg",
+            'sis_term_id': "2021-summer",
+            'week': 5
+        }
+        job_dao.create_job = MagicMock()
+        mock_term_inst = mock_term_model()
+        mock_term_inst.sis_term_id = "2021-summer"
+        mock_target_date_start = MagicMock()
+        mock_target_date_end = MagicMock()
+        mock_term_model.objects.get_or_create_term_from_sis_term_id = \
+            MagicMock(return_value=(mock_term_inst, None))
+        mock_week_inst = mock_week_model()
+        mock_week_inst.week = 5
+        mock_week_model.objects.get_or_create_week = \
+            MagicMock(return_value=(mock_week_inst, None))
+        mock_course1 = MagicMock()
+        mock_course1.canvas_course_id = 1234567
+        mock_course1.sis_course_id = "abcdefg"
+        mock_course2 = MagicMock()
+        mock_course2.canvas_course_id = 9876543
+        mock_course2.sis_course_id = "xyzabcd"
+        mock_courses_qs = MagicMock()
+        mock_courses_qs.__iter__.return_value = [mock_course1, mock_course2]
+        mock_course_model.objects.filter.return_value.filter.return_value = \
+            mock_courses_qs
+        mock_courses_qs.count.return_value = 2
+
+        # passed context
+        jobs = job_dao.create_analytic_jobs(mock_job_type,
+                                            mock_target_date_start,
+                                            mock_target_date_end,
+                                            context=mock_context)
+        job_dao.create_job.assert_called_once_with(
+            mock_job_type, mock_target_date_start,
+            mock_target_date_end, context=mock_context)
+        self.assertEqual(len(jobs), 1)
+
+        # no context
+        jobs = job_dao.create_analytic_jobs(mock_job_type,
+                                            mock_target_date_start,
+                                            mock_target_date_end)
+        call_args_list = job_dao.create_job.call_args_list
+        assert (call_args_list[0] ==
+                call(mock_job_type, mock_target_date_start,
+                     mock_target_date_end,
+                     context={
+                        'canvas_course_id': mock_course1.canvas_course_id,
+                        'sis_course_id': mock_course1.sis_course_id,
+                        'sis_term_id': '2021-summer',
+                        'week': 5}))
+        assert (call_args_list[1] ==
+                call(mock_job_type, mock_target_date_start,
+                     mock_target_date_end,
+                     context={
+                        'canvas_course_id': mock_course2.canvas_course_id,
+                        'sis_course_id': mock_course2.sis_course_id,
+                        'sis_term_id': '2021-summer',
+                        'week': 5}))
+        self.assertEqual(len(jobs), 2)
+
     @patch("data_aggregator.dao.Participation")
     @patch("data_aggregator.dao.Assignment")
     def test_delete_data_for_job(self, mock_assignment,
@@ -469,11 +654,120 @@ class TestJobDAO(TestCase):
             JobDAO().run_task_job(job)
 
 
+class TestAnalyticsDAO(TestCase):
+
+    def mock_create_or_update_analytic(self, job, week, course,
+                                       raw_assign_dict):
+        return raw_assign_dict, True
+
+    @patch('data_aggregator.dao.Assignment')
+    @patch('data_aggregator.dao.Week')
+    @patch('data_aggregator.dao.Course')
+    def test_save_assignments_to_db(self,
+                                    mock_course_model,
+                                    mock_week_model,
+                                    mock_assignment_model):
+        mock_job = MagicMock()
+        mock_job.context = {}
+        mock_job.context["canvas_course_id"] = 1234567
+        mock_job.context["sis_term_id"] = "2021-summer"
+        mock_job.context["week"] = 5
+        mock_week = MagicMock()
+        mock_week_model.objects.get = MagicMock(return_value=mock_week)
+        mock_course = MagicMock()
+        mock_course_model.objects.get = MagicMock(return_value=mock_course)
+        mock_assignment1 = MagicMock()
+        mock_assignment2 = MagicMock()
+        mock_assignments = [mock_assignment1, mock_assignment2]
+        mock_assignment_model.objects.create_or_update_assignment = \
+            MagicMock(side_effect=self.mock_create_or_update_analytic)
+
+        analytics_dao = AnalyticsDAO()
+        analytics_dao.save_assignments_to_db(mock_assignments, mock_job)
+        mock_week_model.objects.get.assert_called_once_with(
+                                        term__sis_term_id="2021-summer",
+                                        week=5)
+        mock_course_model.objects.get.assert_called_once_with(
+                                        canvas_course_id=1234567,
+                                        term__sis_term_id="2021-summer")
+        call_args_list = (
+            mock_assignment_model.objects.create_or_update_assignment
+            .call_args_list)
+        assert (call_args_list[0] ==
+                call(mock_job, mock_week, mock_course, mock_assignment1))
+        assert (call_args_list[1] ==
+                call(mock_job, mock_week, mock_course, mock_assignment2))
+        self.assertEqual(len(call_args_list), 2)
+
+    @patch('data_aggregator.dao.Participation')
+    @patch('data_aggregator.dao.Week')
+    @patch('data_aggregator.dao.Course')
+    def test_save_participations_to_db(self,
+                                       mock_course_model,
+                                       mock_week_model,
+                                       mock_participation_model):
+        mock_job = MagicMock()
+        mock_job.context = {}
+        mock_job.context["canvas_course_id"] = 1234567
+        mock_job.context["sis_term_id"] = "2021-summer"
+        mock_job.context["week"] = 5
+        mock_week = MagicMock()
+        mock_week_model.objects.get = MagicMock(return_value=mock_week)
+        mock_course = MagicMock()
+        mock_course_model.objects.get = MagicMock(return_value=mock_course)
+        mock_participation1 = MagicMock()
+        mock_participation2 = MagicMock()
+        mock_participations = [mock_participation1, mock_participation2]
+        mock_participation_model.objects.create_or_update_participation = \
+            MagicMock(side_effect=self.mock_create_or_update_analytic)
+
+        analytics_dao = AnalyticsDAO()
+        analytics_dao.save_participations_to_db(mock_participations, mock_job)
+        mock_week_model.objects.get.assert_called_once_with(
+                                        term__sis_term_id="2021-summer",
+                                        week=5)
+        mock_course_model.objects.get.assert_called_once_with(
+                                        canvas_course_id=1234567,
+                                        term__sis_term_id="2021-summer")
+        call_args_list = (
+            mock_participation_model.objects.create_or_update_participation
+            .call_args_list)
+        assert (call_args_list[0] ==
+                call(mock_job, mock_week, mock_course, mock_participation1))
+        assert (call_args_list[1] ==
+                call(mock_job, mock_week, mock_course, mock_participation2))
+        self.assertEqual(len(call_args_list), 2)
+
+
 class TestTaskDAO(TestCase):
 
     def get_test_task_dao(self):
         td = TaskDAO()
         return td
+
+    def mock_get_or_create_from_sws_term(self, sws_term):
+        term = MagicMock()
+        term.sis_term_id = sws_term.sis_term_id
+        return term, True
+
+    @patch('data_aggregator.dao.Term')
+    def test_create_terms(self, mock_term_model):
+        td = self.get_test_task_dao()
+        mock_term1 = MagicMock()
+        mock_term1.sis_term_id = "2021-spring"
+        mock_term2 = MagicMock()
+        mock_term2.sis_term_id = "2021-summer"
+        mock_terms = [mock_term1, mock_term2]
+        td.get_sws_terms = MagicMock(return_value=mock_terms)
+        mock_term_model.objects.get_or_create_from_sws_term = \
+            MagicMock(side_effect=self.mock_get_or_create_from_sws_term)
+        td.create_terms()
+        call_args_list = (
+            mock_term_model.objects.get_or_create_from_sws_term
+            .call_args_list)
+        assert (call_args_list[0] == call(mock_term1))
+        assert (call_args_list[1] == call(mock_term2))
+        self.assertEqual(len(call_args_list), 2)
 
     def test_create_or_update_courses(self):
         td = self.get_test_task_dao()
@@ -526,20 +820,20 @@ class TestLoadRadDAO(TestCase):
         # Set up data for the whole TestCase
         td = TaskDAO()
         sis_term_id = "2013-spring"
-        week = 1
-        td.create_assignment_db_view(sis_term_id=sis_term_id, week_num=week)
-        td.create_participation_db_view(sis_term_id=sis_term_id, week_num=week)
-        td.create_rad_db_view(sis_term_id=sis_term_id, week_num=week)
-        week = 2
-        td.create_assignment_db_view(sis_term_id=sis_term_id, week_num=week)
-        td.create_participation_db_view(sis_term_id=sis_term_id, week_num=week)
-        td.create_rad_db_view(sis_term_id=sis_term_id, week_num=week)
+        weeks = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+        for week in weeks:
+            td.create_assignment_db_view(sis_term_id=sis_term_id,
+                                         week_num=week)
+            td.create_participation_db_view(sis_term_id=sis_term_id,
+                                            week_num=week)
+            td.create_rad_db_view(sis_term_id=sis_term_id,
+                                  week_num=week)
         super().setUpTestData()
 
     def _get_test_load_rad_dao(self):
         lrd = LoadRadDAO()
-        lrd._get_gcs_client = MagicMock()
-        lrd._get_s3_client = MagicMock()
+        lrd.get_gcs_client = MagicMock()
+        lrd.get_s3_client = MagicMock()
         return lrd
 
     def _get_mock_student_categories_df(self):
@@ -639,7 +933,7 @@ class TestLoadRadDAO(TestCase):
     def test_get_rad_dbview_df(self):
         lrd = self._get_test_load_rad_dao()
         mock_rad_dbview_df = lrd.get_rad_dbview_df(sis_term_id="2013-spring",
-                                                   week_num=1)
+                                                   week_num=3)
         self.assertEqual(
             mock_rad_dbview_df.columns.values.tolist(),
             ["canvas_user_id", "full_name", "term", "week", "assignments",
@@ -672,6 +966,26 @@ class TestLoadRadDAO(TestCase):
             mock_iss_advisers_df.columns.values.tolist(),
             ["student_no", "adviser_name", "staff_id"])
 
+    def test_get_last_idp_file(self):
+        lrd = self._get_test_load_rad_dao()
+        mock_s3_bucket_name = MagicMock()
+        lrd.get_s3_bucket_name = MagicMock(return_value=mock_s3_bucket_name)
+        mock_bucket_objects = {
+            'Contents': [
+                {'Key': "file_name_1"},
+                {'Key': "file_name_2"},
+            ]
+        }
+        mock_s3_client = lrd.get_s3_client.return_value
+        mock_s3_client.list_objects_v2 = \
+            MagicMock(return_value=mock_bucket_objects)
+        lastest_file_name = lrd.get_last_idp_file()
+        lrd.get_s3_client.assert_called_once()
+        lrd.get_s3_bucket_name.assert_called_once()
+        mock_s3_client.list_objects_v2.assert_called_once_with(
+            Bucket=mock_s3_bucket_name)
+        self.assertEqual(lastest_file_name, "file_name_2")
+
     def test_get_idp_df(self):
         mock_idp_df = self._get_mock_idp_df()
         self.assertEqual(
@@ -690,7 +1004,7 @@ class TestLoadRadDAO(TestCase):
             MagicMock(return_value=self._get_mock_eop_advisers_df())
         lrd.get_iss_advisers_df = \
             MagicMock(return_value=self._get_mock_iss_advisers_df())
-        mock_rad_df = lrd.get_rad_df(sis_term_id="2013-spring", week_num=1)
+        mock_rad_df = lrd.get_rad_df(sis_term_id="2013-spring", week_num=3)
         self.assertEqual(mock_rad_df.columns.values.tolist(),
                          ["uw_netid", "student_no", "student_name_lowc",
                           "activity", "assignments", "grades", "pred",
@@ -698,6 +1012,34 @@ class TestLoadRadDAO(TestCase):
                           "incoming_freshman", "premajor", "eop",
                           "international", "isso", "campus_code",
                           "summer"])
+
+    @patch('data_aggregator.dao.Week')
+    @patch('data_aggregator.dao.Term')
+    def test_create_rad_data_file(self, mock_term_model, mock_week_model):
+        lrd = self._get_test_load_rad_dao()
+        mock_term_inst = mock_term_model()
+        mock_term_inst.sis_term_id = "2021-summer"
+        mock_term_model.objects.get_or_create_term_from_sis_term_id = \
+            MagicMock(return_value=(mock_term_inst, None))
+        mock_week_inst = mock_week_model()
+        mock_week_inst.week = 5
+        mock_week_model.objects.get_or_create_week = \
+            MagicMock(return_value=(mock_week_inst, None))
+        lrd.get_rad_df = MagicMock()
+        mock_rcd = lrd.get_rad_df.return_value
+        mock_rcd.to_csv = MagicMock()
+        mock_file_obj = mock_rcd.to_csv.return_value
+        lrd.upload_to_gcs_bucket = MagicMock()
+
+        lrd.create_rad_data_file(sis_term_id="2021-summer", week_num=5)
+        lrd.get_rad_df.assert_called_once_with(sis_term_id="2021-summer",
+                                               week_num=5)
+        mock_rcd.to_csv.assert_called_once_with(sep=",",
+                                                index=False,
+                                                encoding="UTF-8")
+        lrd.upload_to_gcs_bucket.assert_called_once_with(
+            "rad_data/2021-summer-week-5-rad-data.csv",
+            mock_file_obj)
 
 
 if __name__ == "__main__":

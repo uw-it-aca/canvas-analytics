@@ -149,6 +149,17 @@ class Week(models.Model):
                              on_delete=models.CASCADE)
     week = models.IntegerField()
 
+    @property
+    def end_date(self):
+        date = self.term.first_day_quarter
+        week_count = 0
+        while week_count < self.week:
+            date += timedelta(days=6-utilities.get_rad_weekday(date))
+            week_count += 1
+            if week_count < self.week:
+                date += timedelta(days=1)
+        return date
+
     class Meta:
         unique_together = ('term', 'week',)
 

@@ -24,14 +24,14 @@ class TestRadView(TestCase):
         # Set up data for the whole TestCase
         td = TaskDAO()
         sis_term_id = "2013-spring"
-        week = 1
-        td.create_assignment_db_view(sis_term_id=sis_term_id, week_num=week)
-        td.create_participation_db_view(sis_term_id=sis_term_id, week_num=week)
-        td.create_rad_db_view(sis_term_id=sis_term_id, week_num=week)
-        week = 2
-        td.create_assignment_db_view(sis_term_id=sis_term_id, week_num=week)
-        td.create_participation_db_view(sis_term_id=sis_term_id, week_num=week)
-        td.create_rad_db_view(sis_term_id=sis_term_id, week_num=week)
+        weeks = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+        for week in weeks:
+            td.create_assignment_db_view(sis_term_id=sis_term_id,
+                                         week_num=week)
+            td.create_participation_db_view(sis_term_id=sis_term_id,
+                                            week_num=week)
+            td.create_rad_db_view(sis_term_id=sis_term_id,
+                                  week_num=week)
         super().setUpTestData()
 
     def test_get_view_name(self):
@@ -47,17 +47,56 @@ class TestRadView(TestCase):
         Test number of rows returned per week
         """
         sis_term_id = "2013-spring"
-        week = 1
         label = "rad"
 
+        week = 1
         self.assertEqual(
             get_row_count(get_view_name(sis_term_id, week, label)),
-            20)
-
+            0)
         week = 2
         self.assertEqual(
             get_row_count(get_view_name(sis_term_id, week, label)),
-            6)
+            0)
+        week = 3
+        self.assertEqual(
+            get_row_count(get_view_name(sis_term_id, week, label)),
+            20)
+        week = 4
+        self.assertEqual(
+            get_row_count(get_view_name(sis_term_id, week, label)),
+            20)
+        week = 5
+        self.assertEqual(
+            get_row_count(get_view_name(sis_term_id, week, label)),
+            20)
+        week = 6
+        self.assertEqual(
+            get_row_count(get_view_name(sis_term_id, week, label)),
+            0)
+        week = 7
+        self.assertEqual(
+            get_row_count(get_view_name(sis_term_id, week, label)),
+            0)
+        week = 8
+        self.assertEqual(
+            get_row_count(get_view_name(sis_term_id, week, label)),
+            20)
+        week = 9
+        self.assertEqual(
+            get_row_count(get_view_name(sis_term_id, week, label)),
+            0)
+        week = 10
+        self.assertEqual(
+            get_row_count(get_view_name(sis_term_id, week, label)),
+            20)
+        week = 11
+        self.assertEqual(
+            get_row_count(get_view_name(sis_term_id, week, label)),
+            0)
+        week = 12
+        self.assertEqual(
+            get_row_count(get_view_name(sis_term_id, week, label)),
+            0)
 
 
 if __name__ == "__main__":
