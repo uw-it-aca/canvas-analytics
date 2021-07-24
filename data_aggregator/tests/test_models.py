@@ -5,7 +5,7 @@ import unittest
 from django.db.utils import IntegrityError
 from django.test import TestCase
 from django.utils import timezone
-from datetime import timedelta
+from datetime import timedelta, date
 from data_aggregator.models import Assignment, Job, Participation, Term, \
     Week, Course, JobType, AnalyticTypes, User
 from data_aggregator.utilities import datestring_to_datetime
@@ -140,6 +140,70 @@ class TestWeekManager(TestCase):
         self.mock_week_get_or_create.assert_called_with(
             term=self.mock_term,
             week=2)
+
+
+class TestWeek(TestCase):
+
+    def test_get_week_end_date(self):
+        # 2021-summer
+        term = Term()
+        term.first_day_quarter = date(2021, 6, 20)
+        week = Week()
+        week.term = term
+        week.week = 1
+        self.assertEqual(week.end_date, date(2021, 6, 26))
+        week.week = 2
+        self.assertEqual(week.end_date, date(2021, 7, 3))
+        week.week = 3
+        self.assertEqual(week.end_date, date(2021, 7, 10))
+        week.week = 4
+        self.assertEqual(week.end_date, date(2021, 7, 17))
+        week.week = 5
+        self.assertEqual(week.end_date, date(2021, 7, 24))
+        week.week = 6
+        self.assertEqual(week.end_date, date(2021, 7, 31))
+        week.week = 7
+        self.assertEqual(week.end_date, date(2021, 8, 7))
+        week.week = 8
+        self.assertEqual(week.end_date, date(2021, 8, 14))
+        week.week = 9
+        self.assertEqual(week.end_date, date(2021, 8, 21))
+        week.week = 10
+        self.assertEqual(week.end_date, date(2021, 8, 28))
+        week.week = 11
+        self.assertEqual(week.end_date, date(2021, 9, 4))
+        week.week = 12
+        self.assertEqual(week.end_date, date(2021, 9, 11))
+
+        # 2021-autumn
+        term = Term()
+        term.first_day_quarter = date(2021, 9, 28)
+        week = Week()
+        week.term = term
+        week.week = 1
+        self.assertEqual(week.end_date, date(2021, 10, 2))
+        week.week = 2
+        self.assertEqual(week.end_date, date(2021, 10, 9))
+        week.week = 3
+        self.assertEqual(week.end_date, date(2021, 10, 16))
+        week.week = 4
+        self.assertEqual(week.end_date, date(2021, 10, 23))
+        week.week = 5
+        self.assertEqual(week.end_date, date(2021, 10, 30))
+        week.week = 6
+        self.assertEqual(week.end_date, date(2021, 11, 6))
+        week.week = 7
+        self.assertEqual(week.end_date, date(2021, 11, 13))
+        week.week = 8
+        self.assertEqual(week.end_date, date(2021, 11, 20))
+        week.week = 9
+        self.assertEqual(week.end_date, date(2021, 11, 27))
+        week.week = 10
+        self.assertEqual(week.end_date, date(2021, 12, 4))
+        week.week = 11
+        self.assertEqual(week.end_date, date(2021, 12, 11))
+        week.week = 12
+        self.assertEqual(week.end_date, date(2021, 12, 18))
 
 
 class TestJob(TestCase):

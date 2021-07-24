@@ -43,7 +43,7 @@ class TestAccountParticipationView(AnalyticsAPITestCase):
             request,
             version=1,
             sis_account_id="uwcourse:seattle:arts-&-sciences:phil:phil")
-        self.assertEqual(len(response), 40)
+        self.assertEqual(len(response), 200)
         request = self.get_get_request(
             'api/v1/account/some:bad:course/'
             'participation/')
@@ -70,7 +70,7 @@ class TestAccountAssignmentView(AnalyticsAPITestCase):
             request,
             version=1,
             sis_account_id="uwcourse:seattle:arts-&-sciences:phil:phil")
-        self.assertEqual(len(response), 112)
+        self.assertEqual(len(response), 100)
         request = self.get_get_request(
             'api/v1/account/some:bad:course/'
             'assignment/')
@@ -96,7 +96,7 @@ class TestTermParticipationView(AnalyticsAPITestCase):
             request,
             version=1,
             sis_term_id="2013-spring")
-        self.assertEqual(len(response), 40)
+        self.assertEqual(len(response), 200)
         request = self.get_get_request(
             '/api/v1/term/2010-summer/'
             'participation/')
@@ -122,7 +122,7 @@ class TestTermAssignmentView(AnalyticsAPITestCase):
             request,
             version=1,
             sis_term_id="2013-spring")
-        self.assertEqual(len(response), 112)
+        self.assertEqual(len(response), 100)
         request = self.get_get_request(
             '/api/v1/term/2010-summer/'
             'assignment/')
@@ -146,13 +146,13 @@ class TestUserView(AnalyticsAPITestCase):
         response = view_inst.get(
             request,
             version=1)
-        self.assertEqual(len(response), 20)
+        self.assertEqual(len(response), 21)
         request = self.get_get_request('/api/v1/user/')
         request.GET = {"has_analytics": "false"}
         response = view_inst.get(
             request,
             version=1)
-        self.assertEqual(len(response), 0)
+        self.assertEqual(len(response), 1)
         request = self.get_get_request('/api/v1/user/')
         request.GET = {"has_analytics": "true"}
         response = view_inst.get(
@@ -169,21 +169,22 @@ class TestUserParticipationView(AnalyticsAPITestCase):
             MagicMock(side_effect=self.mock_paginate)
         view_inst.get_paginated_response = \
             MagicMock(side_effect=self.mock_get_paginated_response)
-
         request = self.get_get_request(
             '/api/v1/user/896C60D888F54DDFBB54E91D12401BF2/participation/')
+
+        # all terms
         response = view_inst.get(
             request,
             version=1,
             sis_user_id="896C60D888F54DDFBB54E91D12401BF2")
-        self.assertEqual(len(response), 2)
+        self.assertEqual(len(response), 10)
         # term filter
         request.GET = {"sis_term_id": "2013-spring"}
         response = view_inst.get(
             request,
             version=1,
             sis_user_id="896C60D888F54DDFBB54E91D12401BF2")
-        self.assertEqual(len(response), 2)
+        self.assertEqual(len(response), 10)
         request.GET = {"sis_term_id": "2021-summer"}
         response = view_inst.get(
             request,
@@ -196,26 +197,36 @@ class TestUserParticipationView(AnalyticsAPITestCase):
             request,
             version=1,
             sis_user_id="896C60D888F54DDFBB54E91D12401BF2")
-        self.assertEqual(len(response), 1)
+        self.assertEqual(len(response), 0)
         request.GET = {"week": 2}
         response = view_inst.get(
             request,
             version=1,
             sis_user_id="896C60D888F54DDFBB54E91D12401BF2")
-        self.assertEqual(len(response), 1)
-        request.GET = {"week": 3}
-        response = view_inst.get(
-            request,
-            version=1,
-            sis_user_id="896C60D888F54DDFBB54E91D12401BF2")
         self.assertEqual(len(response), 0)
+        weeks_with_partic = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+        for week in weeks_with_partic:
+            request.GET = {"week": week}
+            response = view_inst.get(
+                request,
+                version=1,
+                sis_user_id="896C60D888F54DDFBB54E91D12401BF2")
+            self.assertEqual(len(response), 1)
         # term and week filter
         request.GET = {"sis_term_id": "2013-spring", "week": 2}
         response = view_inst.get(
             request,
             version=1,
             sis_user_id="896C60D888F54DDFBB54E91D12401BF2")
-        self.assertEqual(len(response), 1)
+        self.assertEqual(len(response), 0)
+        weeks_with_partic = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+        for week in weeks_with_partic:
+            request.GET = {"sis_term_id": "2013-spring", "week": week}
+            response = view_inst.get(
+                request,
+                version=1,
+                sis_user_id="896C60D888F54DDFBB54E91D12401BF2")
+            self.assertEqual(len(response), 1)
         # bad endpoint
         request = self.get_get_request(
             '/api/v1/user/0000000000000-BAD-00000000000000/participation/')
@@ -261,7 +272,7 @@ class TestUserAssignmentView(AnalyticsAPITestCase):
             request,
             version=1,
             sis_user_id="896C60D888F54DDFBB54E91D12401BF2")
-        self.assertEqual(len(response), 5)
+        self.assertEqual(len(response), 0)
         request.GET = {"week": 2}
         response = view_inst.get(
             request,
@@ -273,14 +284,14 @@ class TestUserAssignmentView(AnalyticsAPITestCase):
             request,
             version=1,
             sis_user_id="896C60D888F54DDFBB54E91D12401BF2")
-        self.assertEqual(len(response), 0)
+        self.assertEqual(len(response), 1)
         # term and week filter
         request.GET = {"sis_term_id": "2013-spring", "week": 1}
         response = view_inst.get(
             request,
             version=1,
             sis_user_id="896C60D888F54DDFBB54E91D12401BF2")
-        self.assertEqual(len(response), 5)
+        self.assertEqual(len(response), 0)
         # bad endpoint
         request = self.get_get_request(
             '/api/v1/user/0000000000000-BAD-00000000000000/assignment/')

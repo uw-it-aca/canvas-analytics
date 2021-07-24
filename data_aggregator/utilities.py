@@ -70,6 +70,22 @@ def get_relative_week(relative_date, cmp_dt=None, tz_name="UTC"):
         return week
 
 
+def get_rad_weekday(date):
+    """
+    Returns numeric representation of a weekday according to RAD's data load
+    schedule.
+
+    :param date: date to return weekday for
+    :type value: datetime.date
+    """
+    isoday = date.isoweekday()
+    if isoday == 7:
+        # Sunday
+        return 0
+    else:
+        return isoday
+
+
 def get_term_number(quarter_name):
     """
     Returns quarter info for the specified code.
@@ -91,10 +107,20 @@ def get_term_number(quarter_name):
 
 
 def get_view_name(sis_term_id, week, label):
+    """
+    Returns DB view name for the given sis_term_id, week, and view label.
+
+    :param sis_term_id:
+    :type str: sis-term-id to create view for
+    :param week:
+    :type int: week number to create view for
+    :param label: label for view.
+        Choose from (assignments, participations, or rad)
+    :type str:
+    """
+    if label not in ["assignments", "participations", "rad"]:
+        raise ValueError(f"Unknown DB view label {label}. "
+                         f"Choose from (assignments, participations, or rad).")
     sis_term_id = sis_term_id.replace("-", "_")
     view_name = f"{sis_term_id}_week_{week}_{label}"
     return view_name
-
-
-def chunk_list(seq, size):
-    return (seq[pos:pos + size] for pos in range(0, len(seq), size))
