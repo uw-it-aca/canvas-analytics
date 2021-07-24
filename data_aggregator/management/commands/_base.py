@@ -102,7 +102,7 @@ class CreateJobCommand(BaseCommand):
         # when processing the command
         if include_week or include_term:
             # use current term and week of term as the default
-            term = Term.objects.get_current_term()
+            term, _ = Term.objects.get_or_create_term_from_sis_term_id()
             default_sis_term_id = term.sis_term_id
             default_week = get_relative_week(term.first_day_quarter,
                                              tz_name="US/Pacific")
