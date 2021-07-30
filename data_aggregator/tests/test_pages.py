@@ -47,7 +47,6 @@ class TestJobAdminView(BaseViewTestCase):
         self.assertIn("terms", context)
         self.assertIn("jobtypes", context)
         self.assertIn("job_ranges", context)
-        self.assertIn("debug", context)
 
 
 class TestJobAdminDetailView(BaseViewTestCase):
