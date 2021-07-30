@@ -9,7 +9,6 @@ from django.conf import settings
 from data_aggregator.models import AnalyticTypes, Assignment, Participation, \
     Term, JobType, Job
 from data_aggregator.utilities import get_sortable_term_id
-from data_aggregator.views.forms import GCSMetadataForm
 from django.db import models
 from django.db.models.functions import Cast
 
@@ -84,7 +83,6 @@ class MetadataFileAdminView(PageView):
         context['terms'] = \
             sorted(terms,
                    key=lambda term: get_sortable_term_id(term[0]))
-        context['gcs_metadata_form'] = GCSMetadataForm().as_p()
         return context
 
 
