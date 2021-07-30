@@ -106,6 +106,16 @@ def get_term_number(quarter_name):
                          f"WINTER, SPRING, SUMMER, and AUTUMN.")
 
 
+def get_sortable_term_id(sis_term_id):
+    """
+    Convert a sis-term-id into a sortable string
+    """
+    parts = sis_term_id.split("-")
+    year = parts[0]
+    quarter = parts[1]
+    return "-".join([str(year), str(get_term_number(quarter))])
+
+
 def get_view_name(sis_term_id, week, label):
     """
     Returns DB view name for the given sis_term_id, week, and view label.

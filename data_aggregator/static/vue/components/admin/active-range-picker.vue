@@ -65,19 +65,6 @@ export default {
       return ranges;
     },
   },
-  created: function() {
-    // default to current week
-    if (!this.activeDateRange.startDate && !this.activeDateRange.endDate) {
-      let today = moment().utc();
-      let firstDayWeek = today.clone().startOf('isoWeek').toDate();
-      let lastDayWeek = today.clone().endOf('isoWeek').toDate();
-      let defaultRange = {
-        startDate: firstDayWeek,
-        endDate: lastDayWeek
-      };
-      this.activeDateRange = defaultRange;
-    }
-  },
   methods: {
     dateFormat (classes, date) {
       classes['contains-jobs'] = this.doesDateHaveActiveJobs(date);

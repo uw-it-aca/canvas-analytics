@@ -8,6 +8,8 @@ from django.utils.decorators import method_decorator
 from django.conf import settings
 from data_aggregator.models import AnalyticTypes, Assignment, Participation, \
     Term, JobType, Job
+from data_aggregator.utilities import get_sortable_term_id
+from data_aggregator.views.forms import GCSMetadataForm
 from django.db import models
 from django.db.models.functions import Cast
 
@@ -23,6 +25,7 @@ class PageView(TemplateView):
 
 
 class JobAdminView(PageView):
+
     template_name = "admin/jobs.html"
 
     def get_context_data(self, **kwargs):
@@ -33,10 +36,11 @@ class JobAdminView(PageView):
             target_day_end=Cast('target_date_end', models.DateField()),
         ).values('target_day_start', 'target_day_end').distinct()
         context = {}
-        context['terms'] = list(terms)
+        context['terms'] = \
+            sorted(terms,
+                   key=lambda term: get_sortable_term_id(term['sis_term_id']))
         context['jobtypes'] = [jt["type"] for jt in jobtypes]
         context['job_ranges'] = list(job_ranges)
-        context['debug'] = settings.DEBUG
         return context
 
 
@@ -68,5 +72,22 @@ class JobAdminDetailView(DetailView):
         return context
 
 
+class MetadataFileAdminView(PageView):
+
+    template_name = "admin/metadata.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['netid'] = get_user(self.request)
+        context['ga_key'] = getattr(settings, "GA_KEY", None)
+        terms = Term.objects.all().values_list('sis_term_id')
+        context['terms'] = \
+            sorted(terms,
+                   key=lambda term: get_sortable_term_id(term[0]))
+        context['gcs_metadata_form'] = GCSMetadataForm().as_p()
+        return context
+
+
 class APIDocumentationView(PageView):
+
     template_name = "api/analytics.html"

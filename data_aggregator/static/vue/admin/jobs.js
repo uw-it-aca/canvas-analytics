@@ -1,4 +1,4 @@
-import {Vue} from '../base.js';
+import {Vue} from './admin_base.js';
 import Vuex from 'vuex';
 import axios from 'axios';
 
@@ -54,10 +54,7 @@ const store = new Vuex.Store({
     sortDesc: false,
     jobType: [],
     jobStatus: [],
-    activeDateRange: {
-      startDate: null,
-      endDate: null,
-    },
+    activeDateRange: utilities.getDefaultActiveDateRange(),
   },
   mutations: {
     setRefreshTime(state, value) {
@@ -140,7 +137,7 @@ new Vue({
       hash = hash?JSON.parse(
         '{"' + hash.replace(/&/g, '","').replace(/=/g,'":"') + '"}',
         function(key, value) { 
-          return key ==="" ? value:decodeURIComponent(value);
+          return key === "" ? value:decodeURIComponent(value);
         }): {};
     } catch (e) {
       hash = {}; // invalid hash query string
@@ -210,7 +207,7 @@ new Vue({
     }),
     selectedJobs: function() {
       return this.jobs.filter(
-          job => (job.selected == true)
+        job => (job.selected == true)
       );
     },
     selectionChangeTriggers: function() {
