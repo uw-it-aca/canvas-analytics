@@ -24,7 +24,8 @@ class BaseMetadataView(RESTDispatch):
         upload_type = upload_type.split(".")[0]
         return sis_term_id, upload_type
 
-    def get_full_file_path(self, upload_type, file_name):
+    def get_full_file_path(self, file_name):
+        _, upload_type = self.parse_file_name(file_name)
         if upload_type == "eop-advisers":
             return f"application_metadata/eop_advisers/{file_name}"
         elif upload_type == "iss-advisers":
@@ -33,6 +34,9 @@ class BaseMetadataView(RESTDispatch):
             return f"application_metadata/predicted_probabilites/{file_name}"
         elif upload_type == "netid-name-stunum-categories":
             return f"application_metadata/student_categories/{file_name}"
+        else:
+            raise ValueError(f"Unable to determine upload type from filename: "
+                             f"{file_name}")
 
 
 class MetadataFileListView(BaseMetadataView):
@@ -81,7 +85,7 @@ class MetadataFileUploadView(BaseMetadataView):
             dao = BaseDAO()
             new_file_name = request.POST["newFileName"]
             _, upload_type = self.parse_file_name(new_file_name)
-            url_key = self.get_full_file_path(upload_type, new_file_name)
+            url_key = self.get_full_file_path(new_file_name)
             content = request.FILES['upload']
             dao.upload_to_gcs_bucket(url_key, content)
             return self.json_response(content={"uploaded": True})
@@ -102,7 +106,7 @@ class MetadataFileDeleteView(BaseMetadataView):
             data = json.loads(request.body.decode('utf-8'))
             file_name = data["file_name"]
             _, upload_type = self.parse_file_name(file_name)
-            url_key = self.get_full_file_path(upload_type, file_name)
+            url_key = self.get_full_file_path(file_name)
             dao.delete_from_gcs_bucket(url_key)
             return self.json_response(content={"deleted": True})
         except Exception as e:
