@@ -8,7 +8,7 @@ from data_aggregator.models import Term
 from data_aggregator.views.api import RESTDispatch
 from django.conf import settings
 from django.utils.decorators import method_decorator
-from typing import OrderedDict
+from collections import OrderedDict
 from uw_saml.decorators import group_required
 
 
