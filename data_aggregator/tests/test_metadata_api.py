@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from data_aggregator.tests.view_utils import BaseViewTestCase
-from data_aggregator.views.api.metadata import BaseMetadataView, \
+from data_aggregator.views.api.metadata import BaseMetadataView, MetadataFileDeleteView, \
     MetadataFileListView, MetadataFileUploadView
 from mock import MagicMock, patch
 from collections import OrderedDict
@@ -142,7 +142,7 @@ class TestMetadataFileDeleteView(BaseViewTestCase):
     @patch('data_aggregator.views.api.metadata.BaseDAO.'
            'delete_from_gcs_bucket')
     def test_post(self, mock_delete_from_gcs_bucket):
-        view_inst = MetadataFileUploadView()
+        view_inst = MetadataFileDeleteView()
         request = self.get_post_request(
             'api/internal/metadata/delete/',
             data={"file_name": "2021-autumn-pred-proba.csv"})
