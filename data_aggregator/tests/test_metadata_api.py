@@ -89,7 +89,7 @@ class TestMetadataFileListView(BaseViewTestCase):
                   'pred-proba': {
                       'file_name': '2021-summer-pred-proba.csv'},
                   'netid-name-stunum-categories': {
-                      'file_name': '2021-summer-netid-name-stunum-categories.csv'} # noqa
+                      'file_name': '2021-summer-netid-name-stunum-categories.csv'}  # noqa
                   }),
                 ('2021-autumn',
                  {'eop-advisers': {
@@ -99,6 +99,6 @@ class TestMetadataFileListView(BaseViewTestCase):
                   'pred-proba': {
                       'file_name': '2021-autumn-pred-proba.csv'},
                   'netid-name-stunum-categories': {
-                      'file_name': '2021-autumn-netid-name-stunum-categories.csv'} # noqa
+                      'file_name': '2021-autumn-netid-name-stunum-categories.csv'}  # noqa
                   })
             ]))
