@@ -3,7 +3,7 @@
 
 from data_aggregator.tests.view_utils import BaseViewTestCase
 from data_aggregator.views.api.metadata import BaseMetadataView, \
-    MetadataFileListView
+    MetadataFileListView, MetadataFileUploadView
 from mock import MagicMock, patch
 from collections import OrderedDict
 
@@ -102,3 +102,58 @@ class TestMetadataFileListView(BaseViewTestCase):
                       'file_name': '2021-autumn-netid-name-stunum-categories.csv'}  # noqa
                   })
             ]))
+
+    def test_post(self):
+        view_inst = MetadataFileListView()
+        request = self.get_post_request('api/internal/metadata/')
+        with patch('data_aggregator.views.api.metadata.MetadataFileListView.'
+                   'get_metadata_files_dict') as mock_get_metadata_files_dict:
+            view_inst.post(request, version=1,)
+            mock_get_metadata_files_dict.assert_called_once()
+
+
+class TestMetadataFileUploadView(BaseViewTestCase):
+
+    @patch('data_aggregator.views.api.metadata.BaseDAO.'
+           'upload_to_gcs_bucket')
+    def test_post(self, mock_upload_to_gcs_bucket):
+        view_inst = MetadataFileUploadView()
+        request = self.get_post_request(
+            'api/internal/metadata/upload/',
+            data={"newFileName": "2021-autumn-pred-proba.csv"})
+        request.POST._mutable = True
+        request.POST["newFileName"] = "2021-autumn-pred-proba.csv"
+        request.POST._mutable = False
+        mock_content = MagicMock()
+        request.FILES['upload'] = mock_content
+        response = view_inst.post(request, version=1)
+        mock_upload_to_gcs_bucket.assert_called_once_with(
+            'application_metadata/predicted_probabilites/'
+            '2021-autumn-pred-proba.csv',
+            mock_content)
+        self.assertEqual(response.status_code,
+                         200)
+        self.assertEqual(response.content,
+                         b'{"uploaded": true}')
+
+
+class TestMetadataFileDeleteView(BaseViewTestCase):
+
+    @patch('data_aggregator.views.api.metadata.BaseDAO.'
+           'delete_from_gcs_bucket')
+    def test_post(self, mock_delete_from_gcs_bucket):
+        view_inst = MetadataFileUploadView()
+        request = self.get_post_request(
+            'api/internal/metadata/delete/',
+            data={"file_name": "2021-autumn-pred-proba.csv"})
+        request.POST._mutable = True
+        request.POST["file_name"] = "2021-autumn-pred-proba.csv"
+        request.POST._mutable = False
+        response = view_inst.post(request, version=1)
+        mock_delete_from_gcs_bucket.assert_called_once_with(
+            'application_metadata/predicted_probabilites/'
+            '2021-autumn-pred-proba.csv')
+        self.assertEqual(response.status_code,
+                         200)
+        self.assertEqual(response.content,
+                         b'{"deleted": true}')

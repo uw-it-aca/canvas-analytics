@@ -84,7 +84,6 @@ class MetadataFileUploadView(BaseMetadataView):
         try:
             dao = BaseDAO()
             new_file_name = request.POST["newFileName"]
-            _, upload_type = self.parse_file_name(new_file_name)
             url_key = self.get_full_file_path(new_file_name)
             content = request.FILES['upload']
             dao.upload_to_gcs_bucket(url_key, content)
