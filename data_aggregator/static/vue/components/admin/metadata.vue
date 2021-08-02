@@ -57,7 +57,7 @@
               <b-th>Term</b-th>
               <b-th>EOP Advisers</b-th>
               <b-th>ISS Advisers</b-th>
-              <b-th>Predicted Probabilites</b-th>
+              <b-th>Predicted Probabilities</b-th>
               <b-th>Student Categories</b-th>
             </b-tr>
           </b-thead>
