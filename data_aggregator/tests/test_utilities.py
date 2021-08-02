@@ -188,6 +188,16 @@ class TestUtilities(TestCase):
         with self.assertRaises(ValueError):
             utilities.get_view_name("2021-summer", 4, "bad")
 
+    def test_get_sortable_term_id(self):
+        self.assertEqual(utilities.get_sortable_term_id("2021-winter"),
+                         "2021-1")
+        self.assertEqual(utilities.get_sortable_term_id("2021-spring"),
+                         "2021-2")
+        self.assertEqual(utilities.get_sortable_term_id("2021-summer"),
+                         "2021-3")
+        self.assertEqual(utilities.get_sortable_term_id("2021-autumn"),
+                         "2021-4")
+
 
 if __name__ == "__main__":
     unittest.main()

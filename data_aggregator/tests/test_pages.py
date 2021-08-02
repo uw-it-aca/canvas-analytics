@@ -5,7 +5,7 @@
 import unittest
 from data_aggregator.models import AnalyticTypes
 from data_aggregator.views.pages import PageView, JobAdminView, \
-    JobAdminDetailView
+    JobAdminDetailView, MetadataFileAdminView
 from data_aggregator.tests.view_utils import BaseViewTestCase
 from mock import MagicMock, patch
 
@@ -47,7 +47,6 @@ class TestJobAdminView(BaseViewTestCase):
         self.assertIn("terms", context)
         self.assertIn("jobtypes", context)
         self.assertIn("job_ranges", context)
-        self.assertIn("debug", context)
 
 
 class TestJobAdminDetailView(BaseViewTestCase):
@@ -98,6 +97,27 @@ class TestJobAdminDetailView(BaseViewTestCase):
         self.assertIn("netid", context)
         self.assertIn("ga_key", context)
         self.assertIn("related_objects", context)
+
+
+class TestMetadataFileAdminView(BaseViewTestCase):
+
+    def get_view(self):
+        request = self.get_get_request('')
+        metadata_view = MetadataFileAdminView()
+        metadata_view.request = request
+        metadata_view.request.session = MagicMock()
+        return metadata_view
+
+    def test_template(self):
+        self.assertEqual(MetadataFileAdminView.template_name,
+                         "admin/metadata.html")
+
+    def test_get_context_data(self):
+        metadata_view = self.get_view()
+        context = metadata_view.get_context_data()
+        self.assertIn("netid", context)
+        self.assertIn("ga_key", context)
+        self.assertIn("terms", context)
 
 
 if __name__ == "__main__":

@@ -42,6 +42,17 @@ const utilities = {
         });
         return groupedByProperty;
     },
+    getDefaultActiveDateRange: function() {
+        // default to current week
+        let today = moment().utc();
+        let firstDayWeek = today.clone().startOf('isoWeek').toDate();
+        let lastDayWeek = today.clone().endOf('isoWeek').toDate();
+        let defaultRange = {
+            startDate: firstDayWeek,
+            endDate: lastDayWeek
+        };
+        return defaultRange;
+    },
     formatDuration: function(period) {
         let parts = [];
         const duration = moment.duration(period);
