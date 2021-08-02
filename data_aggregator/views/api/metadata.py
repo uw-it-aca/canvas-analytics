@@ -46,7 +46,7 @@ class MetadataFileListView(BaseMetadataView):
     /api/internal/metadata/
     '''
 
-    def get_metadata_files(self):
+    def get_metadata_files_dict(self):
         dao = BaseDAO()
         files = dao.get_filenames_from_gcs_bucket(
             'application_metadata/'
@@ -69,7 +69,7 @@ class MetadataFileListView(BaseMetadataView):
         return metadata_files
 
     def post(self, request, *args, **kwargs):
-        metadata_files = self.get_metadata_files()
+        metadata_files = self.get_metadata_files_dict()
         return self.json_response(content={"metadata_files": metadata_files})
 
 
