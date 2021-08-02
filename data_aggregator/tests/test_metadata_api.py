@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from data_aggregator.tests.view_utils import BaseViewTestCase
-from data_aggregator.views.api.metadata import BaseMetadataView, MetadataFileDeleteView, \
-    MetadataFileListView, MetadataFileUploadView
+from data_aggregator.views.api.metadata import BaseMetadataView, \
+    MetadataFileDeleteView, MetadataFileListView, MetadataFileUploadView
 from mock import MagicMock, patch
 from collections import OrderedDict
 
