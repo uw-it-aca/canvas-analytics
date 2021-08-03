@@ -8,61 +8,61 @@
 /* Structure */
 
 #vue_root {
-    position: relative;
+  position: relative;
 }
 
 .vue_body_content {
-    padding: 0px 30px 30px 30px;
-    position: relative;
+  padding: 15px 30px 30px 30px;
+  position: relative;
 }
 
 .da-content-container {
-    background-color: map-get($theme-colors, "app-bkgnd");
-    overflow: hidden;
+  background-color: map-get($theme-colors, "app-bkgnd");
+  overflow: hidden;
 }
 
 /* override styles */
 
 .da-action-link {
-    font-weight: bold;
-    white-space: nowrap;
+  font-weight: bold;
+  white-space: nowrap;
 }
 
 .da-vis-hidden {
-    visibility: hidden;
+  visibility: hidden;
 }
 
 /* Top banner styles */
 .da-app-banner {
-    background-color: map-get($theme-colors, "uw-purple");
-    background-image: url('/static/img/uw-logo-white.png');
-    background-position: left 1rem center;
-    background-repeat: no-repeat;
-    background-size: 60px;
+  background-color: map-get($theme-colors, "uw-purple");
+  background-image: url('/static/img/uw-logo-white.png'), linear-gradient(#694FA1, #4D3493, map-get($theme-colors, "uw-purple"));
+  background-position: left 1rem center, left;
+  background-repeat: no-repeat, repeat;
+  background-size: 60px;
+  color: map-get($theme-colors, "white-text");
+  min-height: 100px;
+  padding: 0.5rem 0;
+
+  a {
+    color: map-get($theme-colors, "uw-metallic");
+  }
+
+  a:focus,
+  a:hover {
     color: map-get($theme-colors, "white-text");
-    min-height: 100px;
-    padding: 0.5rem 0;
-
-    a {
-        color: map-get($theme-colors, "uw-metallic");
-    }
-
-    a:focus,
-    a:hover {
-        color: map-get($theme-colors, "white-text");
-        text-decoration: underline;
-    }
+    text-decoration: underline;
+  }
 }
 
 .da-app-title {
-    font-size: 2rem;
-    margin-bottom: 0;
-    padding-left: 85px;
-    padding-top: 25px;
+  font-size: 2rem;
+  margin-bottom: 0;
+  padding-left: 85px;
+  padding-top: 25px;
 }
 
 .da-login-info {
-    text-align: right;
+  text-align: right;
 }
 
 /* branding styles */
@@ -74,49 +74,50 @@
 /* footer styles */
 
 .da-footer {
-    background-color: map-get($theme-colors, "uw-purple");
-    border-top: 3px solid map-get($theme-colors, "banner-border");
-    color: map-get($theme-colors, "white-text");
-    font-size: 0.75rem;
-    min-height: 100px;
-    min-width: 100%;
-    padding: 1.5rem 0;
-    text-align: center;
+  background-color: map-get($theme-colors, "uw-purple");
+  background-image: linear-gradient(#694FA1, #4D3493, map-get($theme-colors, "uw-purple"));
+  border-top: 3px solid map-get($theme-colors, "banner-border");
+  color: map-get($theme-colors, "white-text");
+  font-size: 0.75rem;
+  min-height: 100px;
+  min-width: 100%;
+  padding: 1.5rem 0;
+  text-align: center;
 
-    a {
-        color: map-get($theme-colors, "white-text");
-        text-decoration: underline;
-    }
+  a {
+      color: map-get($theme-colors, "white-text") !important;
+      text-decoration: underline !important;
+  }
 
-    a:hover,
-    a:focus {
-        color: map-get($theme-colors, "uw-metallic");
-    }
+  a:hover,
+  a:focus {
+      color: map-get($theme-colors, "uw-metallic");
+  }
 }
 
 .da-footer-wordmark {
-    background: url('/static/img/uw-sprite.svg') no-repeat 0 -434px transparent;
-    display: inline-block;
-    margin-bottom: 1rem;
-    min-height: 16px;
-    overflow: hidden;
-    text-indent: -9999px;
-    width: 335px;
+  background: url('/static/img/uw-sprite.svg') no-repeat 0 -434px transparent;
+  display: inline-block;
+  margin-bottom: 1rem;
+  min-height: 16px;
+  overflow: hidden;
+  text-indent: -9999px;
+  width: 335px;
 }
 
 .da-footer-links {
-    font-size: 0.8725rem;
-    padding: 0.5rem 0;
+  font-size: 0.8725rem;
+  padding: 0.5rem 0;
 }
 
 .da-logout-link {
-    font-size: 0.75rem;
+  font-size: 0.75rem;
 }
 
 /* job statuses */
 .pending {
-    color: #818182;
-    background-color: map-get($theme-colors, "pending-bg");
+  color: #818182;
+  background-color: map-get($theme-colors, "pending-bg");
 }
 
 .claimed {
@@ -142,4 +143,131 @@
 .expired {
   color: #721c24;
   background-color: map-get($theme-colors, "expired-bg");
+}
+
+/* time widget */
+.time-widget {
+  background: #694FA1;
+  background-image: linear-gradient(#694FA1, #4D3493, map-get($theme-colors, "uw-purple"));
+  color: map-get($theme-colors, "text-white");
+}
+
+/* navbar */
+.nav-menu {
+  display: table;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  line-height: 1;
+  border-bottom: 1px solid map-get($theme-colors, "grey-border");
+}
+
+.nav-item {
+  font-weight: 400;
+  display: table-cell;
+  margin: 0;
+  border-right: 1px solid map-get($theme-colors, "grey-border");
+  background: #fff;
+  line-height: 20px;
+}
+
+.nav-item:hover {
+  .nav-link {
+    color: map-get($theme-colors, "uw-gold")  !important;
+  }
+}
+
+.nav-link {
+  color: map-get($theme-colors, "uw-purple")  !important;
+}
+
+/* breadcrumbs */
+.admin-breadcrumb {
+  color: map-get($theme-colors, "uw-purple") !important;
+  border: 1px solid map-get($theme-colors, "grey-border");
+  border-left-width: 0;
+  border-right-width: 0;
+  border-top-width: 0;
+  margin-bottom: 0;
+  border-radius: 0;
+  font-size: 0.8725rem;
+  font-weight: 300;
+  background-image: linear-gradient(to bottom, map-get($theme-colors, "grey-border") 0%, #fff 20%);
+  background-repeat: repeat-x;
+  padding: 10px 15px;
+}
+
+/* headings */
+h3 {
+  color: map-get($theme-colors, "uw-purple");
+}
+
+/* tables */
+
+.custom-thead {
+  color: map-get($theme-colors, "white-text");
+  background-color: map-get($theme-colors, "uw-purple");
+  background-image: linear-gradient(#694FA1, #4D3493, map-get($theme-colors, "uw-purple"));
+  border: 0px !important;
+}
+
+/* buttons */
+
+.btn-primary {
+  color: map-get($theme-colors, "text-white");
+  background-color: map-get($theme-colors, "uw-purple");
+  border-color: map-get($theme-colors, "uw-purple");
+  background-image: linear-gradient(#694FA1, #4D3493, map-get($theme-colors, "uw-purple"));
+}
+
+.btn-primary:hover:not(:disabled) {
+  color: map-get($theme-colors, "uw-purple");
+  background-color: map-get($theme-colors, "uw-gold");
+  border-color: map-get($theme-colors, "uw-gold");
+  background-image: none;
+  background-image: linear-gradient(#fff2d4, #decfab, map-get($theme-colors, "uw-gold"));
+}
+
+/* anchors */
+
+a {
+  color: map-get($theme-colors, "uw-purple") !important;
+}
+
+a:hover {
+  color: map-get($theme-colors, "uw-gold")  !important;
+}
+
+/* pagination */
+.page-link {
+  position: relative;
+  display: block;
+  padding: 0.5rem 0.75rem;
+  margin-left: -1px;
+  line-height: 1.25;
+  color: map-get($theme-colors, "uw-purple");
+  background-color: #fff;
+  border: 1px solid map-get($theme-colors, "grey-border");
+}
+
+.page-link:hover {
+  color: map-get($theme-colors, "uw-gold");
+  background-color: #fff;
+}
+
+.page-item.active .page-link {
+  z-index: 3;
+  color: map-get($theme-colors, "text-white");
+  background-color: map-get($theme-colors, "uw-purple");
+  border-color: map-get($theme-colors, "uw-purple");
+}
+
+/* icons */
+.delete-icon {
+  cursor: pointer;
+}
+
+.delete-icon:hover {
+  cursor: pointer;
+  color: map-get($theme-colors, "uw-gold") !important;
 }

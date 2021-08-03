@@ -24,7 +24,9 @@
     </b-row>
     <b-row role="main">
       <div id="vue_root" hidden>
-        <b-breadcrumb>
+        {% block navbar %}
+        {% endblock navbar %}
+        <b-breadcrumb class="admin-breadcrumb">
           {% block breadcrumbs %}
           {% endblock breadcrumbs %}
         </b-breadcrumb>

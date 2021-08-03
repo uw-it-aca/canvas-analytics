@@ -68,6 +68,24 @@ class BaseDAO():
     def get_gcs_num_retries(self):
         return getattr(settings, "GCS_NUM_RETRIES", 3)
 
+    def get_filenames_from_gcs_bucket(self, url_path, ending="csv"):
+        """
+        Lists files a given url_key path from the configured GCS bucket.
+
+        :param url_path: Path of the content in the GCS bucket
+        :type url_path: str
+        """
+        gcs_client = self.get_gcs_client()
+        gcs_bucket_name = self.get_gcs_bucket_name()
+        bucket = gcs_client.get_bucket(gcs_bucket_name)
+        files = []
+        for blob in gcs_client.list_blobs(bucket, prefix=url_path):
+            if blob.name.endswith(ending):
+                files.append(blob.name)
+        logging.debug(f"Found the following GCS bucket files: "
+                      f"{','.join(files)}")
+        return files
+
     def download_from_gcs_bucket(self, url_key):
         """
         Downloads file a given url_key path from the configured GCS bucket.
@@ -136,6 +154,21 @@ class BaseDAO():
                 str(content),
                 num_retries=self.get_gcs_num_retries(),
                 timeout=self.get_gcs_timeout())
+
+    def delete_from_gcs_bucket(self, url_key):
+        """
+        Delete a file from the GCS bucket
+
+        :param url_key: Path of the content to delete
+        :type url_key: str
+        """
+        gcs_client = self.get_gcs_client()
+        gcs_bucket_name = self.get_gcs_bucket_name()
+        bucket = gcs_client.get_bucket(gcs_bucket_name)
+        blob = bucket.get_blob(
+            url_key,
+            timeout=self.get_gcs_timeout())
+        blob.delete()
 
     @retry(DataFailureException, tries=5, delay=2, backoff=2,
            status_codes=[0, 403, 408, 500])

@@ -11,6 +11,7 @@ module.exports = {
     entry: {
         admin_jobs: './data_aggregator/static/vue/admin/jobs.js',
         admin_job_detail: './data_aggregator/static/vue/admin/job_detail.js',
+        admin_metadata: './data_aggregator/static/vue/admin/metadata.js',
         api_analytics: './data_aggregator/static/vue/api/analytics.js',
     },
     output: {

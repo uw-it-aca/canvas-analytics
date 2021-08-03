@@ -23,6 +23,7 @@ class TestBaseDAO(TestCase):
         self.mock_gcs_blob.upload_from_string = MagicMock(return_value=True)
         self.mock_gcs_blob.download_as_string = \
             MagicMock(return_value=b"test-return-value")
+        self.mock_gcs_blob.delete = MagicMock(return_value=True)
         # mock gcs bucket
         self.mock_gcs_bucket = MagicMock()
         self.mock_gcs_bucket.get_blob = \
@@ -154,6 +155,29 @@ class TestBaseDAO(TestCase):
             mock_file,
             num_retries=base_dao.get_gcs_num_retries.return_value,
             timeout=base_dao.get_gcs_timeout.return_value)
+
+    def test_get_filenames_from_gcs_bucket(self):
+        base_dao = self.get_test_base_dao()
+        mock_blob1 = MagicMock()
+        mock_blob1.name = \
+            "application_metadata/eop_advisers/2021-summer-eop-advisers.csv"
+        mock_blob2 = MagicMock()
+        mock_blob2.name = \
+            "application_metadata/eop_advisers/2021-autumn-eop-advisers.csv"
+        self.mock_gcs_client.list_blobs = \
+            MagicMock(return_value=[mock_blob1, mock_blob2])
+        path = 'application_metadata/'
+        files_list = \
+            base_dao.get_filenames_from_gcs_bucket(path)
+        self.mock_gcs_client.list_blobs.assert_called_once_with(
+            self.mock_gcs_bucket, prefix=path
+        )
+        self.assertEqual(files_list, [mock_blob1.name, mock_blob2.name])
+
+    def test_delete_from_gcs_bucket(self):
+        base_dao = self.get_test_base_dao()
+        base_dao.delete_from_gcs_bucket("/some/file/path")
+        self.mock_gcs_blob.delete.assert_called_once()
 
     @patch('data_aggregator.dao.get_term_after')
     @patch('data_aggregator.dao.get_term_by_year_and_quarter')

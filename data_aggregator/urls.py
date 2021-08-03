@@ -19,9 +19,11 @@ Including another URLconf
 from django.urls import re_path, include
 from django.views.generic import RedirectView
 from data_aggregator.views.pages import APIDocumentationView, JobAdminView, \
-    JobAdminDetailView
+    JobAdminDetailView, MetadataFileAdminView
 from data_aggregator.views.api.jobs import JobView, JobRestartView, \
     JobChartDataView
+from data_aggregator.views.api.metadata import MetadataFileListView, \
+    MetadataFileUploadView, MetadataFileDeleteView
 from data_aggregator.views.api.analytics import AccountAssignmentView, \
     AccountParticipationView, TermAssignmentView, TermParticipationView, \
     UserView, UserAssignmentView, UserParticipationView
@@ -34,8 +36,15 @@ urlpatterns = [
             RedirectView.as_view(pattern_name='admin_jobs', permanent=False)),
     re_path(r'admin/jobs/$', JobAdminView.as_view(), name="admin_jobs"),
     re_path(r'admin/jobs/(?P<pk>[-@:\d]+)/$', JobAdminDetailView.as_view()),
+    re_path(r'admin/metadata/$', MetadataFileAdminView.as_view(),
+            name="metadata"),
+    re_path(r'api/internal/metadata/$', MetadataFileListView.as_view()),
+    re_path(r'api/internal/metadata/upload/$',
+            MetadataFileUploadView.as_view()),
+    re_path(r'api/internal/metadata/delete/$',
+            MetadataFileDeleteView.as_view()),
     re_path(r'api/internal/jobs/$', JobView.as_view()),
-    re_path(r'api/internal/jobs-chart-data/', JobChartDataView.as_view()),
+    re_path(r'api/internal/jobs-chart-data/$', JobChartDataView.as_view()),
     re_path(r'api/internal/jobs/restart/$', JobRestartView.as_view()),
     re_path(r'api/$', APIDocumentationView.as_view(), name="api_analytics"),
     re_path(r'api/(?P<version>v[1])/$', APIDocumentationView.as_view()),

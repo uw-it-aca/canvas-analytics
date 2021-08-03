@@ -1,4 +1,4 @@
-import {Vue} from '../base.js';
+import {Vue} from './admin_base.js';
 import Vuex from 'vuex';
 
 // custom components
@@ -10,7 +10,6 @@ Vue.component('job-related-data', JobRelatedData);
 
 // stores
 import admin_store from '../vuex/store/admin_store.js';
-
 
 const store = new Vuex.Store({
   state: {
