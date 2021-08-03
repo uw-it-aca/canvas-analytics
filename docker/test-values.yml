@@ -53,25 +53,24 @@ gcsCredentials:
   mounted: true
   secretName: test-analytics.apps.canvas.uw.edu-gcs-credentials
 cronjob:
-  enabled: true
+  enabled: false
   jobs:
     #
     # Friday
-    #      11:00pm        11:15pm        11:30pm        11:45pm        (PDT)
-    # -------|--------------|--------------|--------------|--------------...
-    #    add-terms  add-updt-courses add-updt-users   add-assign-view
+    #      11:00pm        11:15pm        11:30pm        11:45pm            11:50pm    (PDT)
+    # -------|--------------|--------------|--------------|------------------|----------...
+    #    add-terms  add-updt-courses add-updt-users   add-assign-view     add-rad-view
     #                                                 add-partic-view
-    #                                                 add-rad-view
     #
     # Saturday
-    #      12:00am                        2:00pm                      (PDT)
-    # -------|-----------------------------|----------------------------...
+    #      12:00am                        2:00pm                                      (PDT)
+    # -------|-----------------------------|--------------------------------------------...
     #   add-assign-jobs               add-crt-rad-data (create_jobs)
     #   add-partic-jobs
     #
     # Sunday
-    #      3:00am                                                     (PDT)
-    # -------|----------------------------------------------------------...
+    #      3:00am                                                                     (PDT)
+    # -------|--------------------------------------------------------------------------...
     #   create_rad_data_file (run_jobs)
     #
     # run jobs for loading term, course, and user metadata
@@ -97,7 +96,7 @@ cronjob:
       command: ["/scripts/management_command.sh"]
       args: ["create_and_run_jobs", "create_participation_db_view"]
     - name: add-rad-view
-      schedule: "45 6 * * 6" # At 11:45pm PDT on Friday
+      schedule: "50 6 * * 6" # At 11:50pm PDT on Friday
       command: ["/scripts/management_command.sh"]
       args: ["create_and_run_jobs", "create_rad_db_view"]
     # adds analytics jobs for cronjob daemons to run
@@ -120,7 +119,7 @@ cronjob:
       command: ["/scripts/management_command.sh"]
       args: ["run_jobs", "create_rad_data_file"]
 daemon:
-  enabled: true
+  enabled: false
   daemons:
     # polling for active analytics jobs every minute
     - name: run-assign-jobs
