@@ -66,4 +66,8 @@ class JobThread(threading.Thread):
     def run(self):
         super().run()
         # explicity close db connection to avoid idle connections
-        connection.close()
+        try:
+            connection.close()
+        except Exception:
+            # in case connection was already closed
+            pass
