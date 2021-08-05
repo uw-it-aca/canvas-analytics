@@ -53,6 +53,27 @@ const utilities = {
         };
         return defaultRange;
     },
+    getTermNumer: function(quarterName) {
+        let quarterDefinitions = {
+            "WINTER": 1,
+            "SPRING": 2,
+            "SUMMER": 3,
+            "AUTUMN": 4,
+        };
+        let quarter = quarterName.toUpperCase();
+        try {
+            return quarterDefinitions[quarter];
+        } catch(err) {
+            throw new Error("Quarter name " + quarter  + " not found. " +
+                            "Options are WINTER, SPRING, SUMMER, and AUTUMN."); 
+        }
+    },
+    getSortableTermId: function(sisTermId) {
+        const parts =  sisTermId.split("-");
+        let year = parts[0];
+        let quarter = parts[1];
+        return year + "-" + this.getTermNumer(quarter);
+    },
     formatDuration: function(period) {
         let parts = [];
         const duration = moment.duration(period);

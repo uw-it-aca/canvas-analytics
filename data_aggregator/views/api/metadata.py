@@ -104,7 +104,6 @@ class MetadataFileDeleteView(BaseMetadataView):
             dao = BaseDAO()
             data = json.loads(request.body.decode('utf-8'))
             file_name = data["file_name"]
-            _, upload_type = self.parse_file_name(file_name)
             url_key = self.get_full_file_path(file_name)
             dao.delete_from_gcs_bucket(url_key)
             return self.json_response(content={"deleted": True})

@@ -62,33 +62,33 @@
             </b-tr>
           </b-thead>
           <b-tbody>
-            <b-tr v-for="(item, term_id) in metadataFiles" :key="term_id">
-              <b-th>{{ term_id }}</b-th>
+            <b-tr v-for="item in sortedMetadataFiles" :key="item[0]">
+              <b-th>{{ item[0] }}</b-th>
               <b-td>
-                <span v-if="item['eop-advisers']">
-                  <b-icon @click="deleteUploadedFile(item['eop-advisers'].file_name)" icon="x-circle-fill" scale="1" class="delete-icon" variant="danger"></b-icon>
-                  {{ item['eop-advisers'].file_name }}
+                <span v-if="item[1]['eop-advisers']">
+                  <b-icon @click="deleteUploadedFile(item[1]['eop-advisers'].file_name)" icon="x-circle-fill" scale="1" class="delete-icon" variant="danger"></b-icon>
+                  {{ item[1]['eop-advisers'].file_name }}
                 </span>
                 <span v-else class="text-secondary">N/A</span>
               </b-td>
               <b-td>
-                <span v-if="item['iss-advisers']">
-                  <b-icon @click="deleteUploadedFile(item['iss-advisers'].file_name)" icon="x-circle-fill" scale="1" class="delete-icon" variant="danger"></b-icon>
-                  {{ item['iss-advisers'].file_name }}
+                <span v-if="item[1]['iss-advisers']">
+                  <b-icon @click="deleteUploadedFile(item[1]['iss-advisers'].file_name)" icon="x-circle-fill" scale="1" class="delete-icon" variant="danger"></b-icon>
+                  {{ item[1]['iss-advisers'].file_name }}
                 </span>
                 <span v-else class="text-secondary">N/A</span>
               </b-td>
               <b-td>
-                <span v-if="item['pred-proba']">
-                  <b-icon @click="deleteUploadedFile(item['pred-proba'].file_name)" icon="x-circle-fill" scale="1" class="delete-icon" variant="danger"></b-icon>
-                  {{ item['pred-proba'].file_name }}
+                <span v-if="item[1]['pred-proba']">
+                  <b-icon @click="deleteUploadedFile(item[1]['pred-proba'].file_name)" icon="x-circle-fill" scale="1" class="delete-icon" variant="danger"></b-icon>
+                  {{ item[1]['pred-proba'].file_name }}
                 </span>
                 <span v-else class="text-secondary">N/A</span>
               </b-td>
               <b-td>
-                <span v-if="item['netid-name-stunum-categories']">
-                  <b-icon @click="deleteUploadedFile(item['netid-name-stunum-categories'].file_name)" icon="x-circle-fill" scale="1" class="delete-icon" variant="danger"></b-icon>
-                  {{ item['netid-name-stunum-categories'].file_name }}
+                <span v-if="item[1]['netid-name-stunum-categories']">
+                  <b-icon @click="deleteUploadedFile(item[1]['netid-name-stunum-categories'].file_name)" icon="x-circle-fill" scale="1" class="delete-icon" variant="danger"></b-icon>
+                  {{ item[1]['netid-name-stunum-categories'].file_name }}
                 </span>
                 <span v-else class="text-secondary">N/A</span>
               </b-td>
@@ -101,6 +101,9 @@
 </template>
 
 <script>
+
+import utilities from "../../../js/utilities.js";
+
 import { mapState, mapMutations } from "vuex";
 import dataMixin from "../../mixins/data_mixin";
 
@@ -120,7 +123,7 @@ export default {
       uploadTypes: [
         { text: "EOP Advisers", value: "eop-advisers" },
         { text: "ISS Advisers", value: "iss-advisers" },
-        { text: "Predicted Probabilites", value: "pred-proba" },
+        { text: "Predicted Probabilities", value: "pred-proba" },
         { text: "Student Categories", value: "netid-name-stunum-categories" },
       ],
     };
@@ -131,6 +134,17 @@ export default {
       metadataFiles: (state) => state.metadataFiles,
       terms: (state) => state.terms,
     }),
+    sortedMetadataFiles: function() {
+      let filesDict = this.metadataFiles;
+      let filesArray = Object.keys(filesDict).map(function(key) {
+        return [key, filesDict[key]];
+      });
+      return filesArray.sort(function(first, second) {
+        let sortTerm1 = utilities.getSortableTermId(first[0]);
+        let sortTerm2 = utilities.getSortableTermId(second[0]);
+        return sortTerm1.localeCompare(sortTerm2);
+      });
+    }
   },
   methods: {
     ...mapMutations([]),
