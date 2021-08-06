@@ -193,8 +193,6 @@ externalSecrets:
           property: edw_user
         - name: edw_password
           property: edw_password
-        - name: edw_server
-          property: edw_server
 
     - name: analytics.apps.canvas.uw.edu-canvas-secrets
       externalKey: axdd/kv/data/canvas/shared/secrets
@@ -285,7 +283,3 @@ environmentVariablesSecrets:
     name: EDW_PASSWORD
     secretName: analytics.apps.canvas.uw.edu-edw-credentials
     secretKey: edw_password
-  edwUser:
-    name: EDW_SERVER
-    secretName: analytics.apps.canvas.uw.edu-edw-credentials
-    secretKey: edw_server

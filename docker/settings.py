@@ -27,9 +27,9 @@ else:
         RAD_METADATA_BUCKET_NAME = 'canvas-analytics'
         IDP_BUCKET_NAME = 'uw-idp-data-files'
 
+    EDW_SERVER = "edwpub.s.uw.edu"
     EDW_USER = os.getenv('EDW_USER', '')
     EDW_PASSWORD = os.getenv('EDW_PASSWORD', '')
-    EDW_SERVER = os.getenv('EDW_SERVER', '')
 
     GCS_REPLACE = False  # replace contents if already exists
     GCS_TIMEOUT = 10  # request timeout in seconds
