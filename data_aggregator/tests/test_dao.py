@@ -860,14 +860,17 @@ class TestLoadRadDAO(TestCase):
         lrd.get_s3_client = MagicMock()
         return lrd
 
-    def _get_mock_student_categories_df(self):
+    @patch('data_aggregator.dao.EdwDAO')
+    def _get_mock_student_categories_df(self, mock_edw_dao_cls):
         lrd = self._get_test_load_rad_dao()
+        edw = mock_edw_dao_cls()
         mock_student_cat_file = \
             os.path.join(
                 os.path.dirname(__file__),
                 'test_data/2013-spring-netid-name-stunum-categories.csv')
-        mock_student_cat = open(mock_student_cat_file).read()
-        lrd.download_from_gcs_bucket = MagicMock(return_value=mock_student_cat)
+        mock_student_file = open(mock_student_cat_file)
+        edw.get_student_categories_df = \
+            MagicMock(return_value=pd.read_csv(mock_student_file, sep=","))
         mock_student_categories_df = \
             lrd.get_student_categories_df(sis_term_id="2013-spring")
         return mock_student_categories_df
