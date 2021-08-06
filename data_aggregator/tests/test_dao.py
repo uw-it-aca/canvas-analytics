@@ -8,7 +8,7 @@ import numpy as np
 from io import StringIO
 from django.test import TestCase
 from data_aggregator.dao import AnalyticTypes, AnalyticsDAO, CanvasDAO, \
-    JobDAO, LoadRadDAO, BaseDAO, TaskDAO
+    EdwDAO, JobDAO, LoadRadDAO, BaseDAO, TaskDAO
 from data_aggregator.models import JobType, TaskTypes
 from mock import call, patch, MagicMock
 from restclients_core.exceptions import DataFailureException
@@ -1064,6 +1064,35 @@ class TestLoadRadDAO(TestCase):
         lrd.upload_to_gcs_bucket.assert_called_once_with(
             "rad_data/2021-summer-week-5-rad-data.csv",
             mock_file_obj)
+
+
+class TestEdwDAO(TestCase):
+
+    def _get_test_edw_dao(self):
+        edw = EdwDAO()
+        edw.get_connection = MagicMock()
+        return edw
+
+    @patch('data_aggregator.dao.pd.read_sql')
+    def _get_mock_student_categories_df(self, mock_read_sql):
+        edw = self._get_test_edw_dao()
+        mock_student_cat_file = \
+            os.path.join(
+                os.path.dirname(__file__),
+                'test_data/2013-spring-netid-name-stunum-categories.csv')
+        mock_student_file = open(mock_student_cat_file)
+        mock_read_sql.return_value = pd.read_csv(mock_student_file, sep=",")
+        mock_student_categories_df = \
+            edw.get_student_categories_df(sis_term_id="2013-spring")
+        return mock_student_categories_df
+
+    def test_get_student_categories_df(self):
+        mock_student_categories_df = self._get_mock_student_categories_df()
+        self.assertEqual(
+            mock_student_categories_df.columns.values.tolist(),
+            ["system_key", "uw_netid", "student_no", "student_name_lowc",
+             "eop", "incoming_freshman", "international",
+             "stem", "premajor", "isso", "campus_code", "summer"])
 
 
 if __name__ == "__main__":

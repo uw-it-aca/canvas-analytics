@@ -35,6 +35,7 @@ setup(
         'google-api-core~=1.26',
         'pandas~=1.1',
         'urllib3~=1.25',
+        'pymssql==2.2.2',
     ],
     license='Apache License, Version 2.0',
     description='Collects data about UW Canvas usage',

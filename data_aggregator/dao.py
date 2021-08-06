@@ -3,12 +3,14 @@
 
 import logging
 import os
+import pymssql
 from csv import DictReader
 from django.conf import settings
 from django.db import transaction, connection
 from data_aggregator.models import Assignment, Course, Participation, \
     TaskTypes, User, RadDbView, Term, Week, AnalyticTypes, Job
-from data_aggregator.utilities import get_view_name, set_gcs_base_path
+from data_aggregator.utilities import get_view_name, set_gcs_base_path, \
+    get_term_number
 from data_aggregator.report_builder import ReportBuilder
 from restclients_core.exceptions import DataFailureException
 from restclients_core.util.retry import retry
@@ -1113,13 +1115,8 @@ class LoadRadDAO(BaseDAO):
         term, _ = Term.objects.get_or_create_term_from_sis_term_id(
             sis_term_id=sis_term_id)
         users_df = self.get_users_df()
-        url_key = (f"application_metadata/student_categories/"
-                   f"{term.sis_term_id}-netid-name-stunum-categories.csv")
-        content = self.download_from_gcs_bucket(url_key)
-
-        sdb_df = pd.read_csv(StringIO(content))
-        sdb_df.drop_duplicates(inplace=True)
-
+        edw_dao = EdwDAO()
+        sdb_df = edw_dao.get_student_categories_df(sis_term_id=sis_term_id)
         sdb_df = sdb_df.merge(users_df, how='left', on='uw_netid')
         sdb_df.fillna(value={'canvas_user_id': -99}, inplace=True)
         return sdb_df
@@ -1308,3 +1305,102 @@ class LoadRadDAO(BaseDAO):
                      f"{week.week}-rad-data.csv")
         file_obj = rcd.to_csv(sep=",", index=False, encoding="UTF-8")
         self.upload_to_gcs_bucket(file_name, file_obj)
+
+
+class EdwDAO(BaseDAO):
+
+    def get_connection(self, database):
+        password = getattr(settings, "EDW_PASSWORD")
+        user = getattr(settings, "EDW_USER")
+        server = getattr(settings, "EDW_SERVER")
+        conn = pymssql.connect(server, user, password, database)
+        logging.debug(f"Connected to {server}.{database} with user {user}")
+        return conn
+
+    def get_student_categories_df(self, sis_term_id=None):
+        year = None
+        quarter_num = None
+        if sis_term_id is not None:
+            parts = sis_term_id.split("-")
+            year = parts[0]
+            quarter_num = str(get_term_number(parts[1]))
+        if year is None:
+            year = datetime.now(timezone.utc).year
+        if quarter_num is None:
+            curr_term, _ = Term.objects.get_or_create_term_from_sis_term_id()
+            quarter_num = curr_term.term_number
+        yrq = "".join([str(year), str(quarter_num)])
+        conn = self.get_connection("UWSDBDataStore")
+        stu_cat_df = pd.read_sql(
+            f"""
+            WITH enrolled_cte AS (
+                SELECT 
+                    enr.AcademicYrQtr,
+                    enr.SystemKey,
+                    enr.StudentNumber,
+                    enr.StudentName,
+                    enr.CampusCode,
+                    enr.CampusDesc,
+                    enr.NewContinuingReturningCode,
+                    enr.ClassCode,
+                    stu1.uw_netid,
+                    international_student = CASE WHEN enr.ResidentCode IN (5,6) THEN 1 ELSE 0 END,
+                    enr.ResidentDesc,
+                    eop = CASE WHEN enr.SpecialProgramCode IN ('1', '2', '13', '14', '16', '17', '31', '32', '33') OR
+                                    stu1.spcl_program IN ('1', '2', '13', '14', '16', '17', '31', '32', '33') THEN 1
+                            ELSE 0
+                            END,
+                    isso = CASE WHEN enr.Major1 = 'ISS O' THEN 1 ELSE 0 END,
+                    incoming_freshman = CASE WHEN enr.ClassCode <= 1 AND enr.NewContinuingReturningCode = 1 THEN 1 ELSE 0 END
+                FROM EDWPresentation.sec.EnrolledStudent AS enr
+                LEFT JOIN UWSDBDataStore.sec.student_1 AS stu1 ON enr.SystemKey = stu1.system_key
+                WHERE AcademicYrQtr = {yrq} AND ClassCode IN ('0', '1', '2', '3', '4') AND RegisteredInQuarter = 'Y'
+            ),
+            major_calcs as (
+                SELECT 
+                    m.system_key,
+                    stem = max( case when c.FederalStemInd = 'Y' THEN 1 ELSE 0 END ),
+                    premajor = max( case when s.major_premaj = 1 OR major_premaj_ext = 1 THEN 1 ELSE 0 END)
+                FROM UWSDBDataStore.sec.student_1_college_major AS m
+                LEFT JOIN UWSDBDataStore.sec.sr_major_code AS s ON m.major_abbr = s.major_abbr AND
+                                                                    m.branch = s.major_branch AND 
+                                                                    m.pathway = s.major_pathway
+                LEFT JOIN EDWPresentation.sec.dimCIPCurrent AS c ON s.major_cip_code = c.CIPCode
+                WHERE m.system_key IN (SELECT e.SystemKey FROM enrolled_cte AS e)
+                GROUP BY system_key
+            ),
+            summer_regis AS (
+                SELECT DISTINCT 
+                    system_key,
+                    AcademicYrQtr = (regis_yr * 10) + regis_qtr,
+                    summer_term = COALESCE(NULLIF(summer_term, ''), 'Full')
+                FROM UWSDBDataStore.sec.registration_courses
+                WHERE (regis_yr * 10) + regis_qtr = {yrq} AND request_status IN ('A', 'C', 'R')
+            ),
+            agg_summer AS ( 
+                SELECT
+                    system_key,
+                    summer = string_agg(summer_term, '-') WITHIN group (ORDER BY summer_term)
+                FROM summer_regis GROUP BY system_key
+            )
+            SELECT DISTINCT
+                SystemKey AS system_key,
+                uw_netid,
+                StudentNumber AS student_no,
+                StudentName AS student_name_lowc,
+                eop,
+                incoming_freshman,
+                international_student AS international,
+                m.stem,
+                m.premajor,
+                isso,
+                CampusCode AS campus_code,
+                s.summer
+            FROM enrolled_cte AS e 
+            LEFT JOIN major_calcs AS m ON e.SystemKey = m.system_key 
+            LEFT JOIN agg_summer as s ON e.SystemKey = s.system_key
+            ORDER BY SystemKey
+            """,  # noqa
+            conn
+        )
+        return stu_cat_df
