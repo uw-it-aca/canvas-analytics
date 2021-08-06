@@ -175,6 +175,16 @@ externalSecrets:
         - name: aws_access_key
           property: aws_access_key
 
+    - name: test-analytics.apps.canvas.uw.edu-edw-credentials
+      externalKey: axdd/kv/data/canvas/analytics/shared/edw-credentials
+      data:
+        - name: edw_user
+          property: edw_user
+        - name: edw_password
+          property: edw_password
+        - name: edw_server
+          property: edw_server
+
     - name: test-analytics.apps.canvas.uw.edu-canvas-secrets
       externalKey: axdd/kv/data/canvas/shared/secrets
       data:
@@ -256,3 +266,15 @@ environmentVariablesSecrets:
     name: AWS_ACCESS_KEY
     secretName: test-analytics.apps.canvas.uw.edu-idp-aws-credentials
     secretKey: aws_access_key
+  edwUser:
+    name: EDW_USER
+    secretName: test-analytics.apps.canvas.uw.edu-edw-credentials
+    secretKey: edw_user
+  edwPassword:
+    name: EDW_PASSWORD
+    secretName: test-analytics.apps.canvas.uw.edu-edw-credentials
+    secretKey: edw_password
+  edwUser:
+    name: EDW_SERVER
+    secretName: test-analytics.apps.canvas.uw.edu-edw-credentials
+    secretKey: edw_server
