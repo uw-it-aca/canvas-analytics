@@ -3,6 +3,8 @@
 
 import logging
 import os
+
+from data_aggregator import utilities
 import pymssql
 from csv import DictReader
 from django.conf import settings
@@ -465,6 +467,10 @@ class JobDAO(BaseDAO):
         elif job_type == TaskTypes.build_subaccount_activity_report:
             ReportBuilder().build_subaccount_activity_report(
                 subaccount_id, sis_term_id=sis_term_id, week_num=week_num)
+        elif job_type == TaskTypes.create_student_categories_data_file:
+            EdwDAO().create_student_categories_data_file(
+                sis_term_id=sis_term_id
+            )
         else:
             raise ValueError(f"Unknown job type {job_type}")
 
@@ -1115,8 +1121,10 @@ class LoadRadDAO(BaseDAO):
         term, _ = Term.objects.get_or_create_term_from_sis_term_id(
             sis_term_id=sis_term_id)
         users_df = self.get_users_df()
-        edw_dao = EdwDAO()
-        sdb_df = edw_dao.get_student_categories_df(sis_term_id=sis_term_id)
+        url_key = utilities.get_full_metadata_file_path(
+            f"{term.sis_term_id}-netid-name-stunum-categories.csv")
+        content = self.download_from_gcs_bucket(url_key)
+        sdb_df = pd.read_csv(StringIO(content))
         sdb_df = sdb_df.merge(users_df, how='left', on='uw_netid')
         sdb_df.fillna(value={'canvas_user_id': -99}, inplace=True)
         return sdb_df
@@ -1317,7 +1325,17 @@ class EdwDAO(BaseDAO):
         logging.debug(f"Connected to {server}.{database} with user {user}")
         return conn
 
-    def get_student_categories_df(self, sis_term_id=None):
+    def create_student_categories_data_file(self, sis_term_id=None):
+        term, _ = Term.objects.get_or_create_term_from_sis_term_id(
+            sis_term_id=sis_term_id)
+        stu_cat_df = self.query_for_student_categories_df(
+            sis_term_id=sis_term_id)
+        file_name = utilities.get_full_metadata_file_path(
+            f"{term.sis_term_id}-netid-name-stunum-categories.csv")
+        file_obj = stu_cat_df.to_csv(sep=",", index=False, encoding="UTF-8")
+        self.upload_to_gcs_bucket(file_name, file_obj)
+
+    def query_for_student_categories_df(self, sis_term_id=None):
         year = None
         quarter_num = None
         if sis_term_id is not None:

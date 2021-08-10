@@ -673,6 +673,13 @@ class TestJobDAO(TestCase):
                  "uwcourse",
                  sis_term_id="2021-summer",
                  week_num=4)
+        job.type.type = TaskTypes.create_student_categories_data_file
+        with patch("data_aggregator.dao.EdwDAO."
+                   "create_student_categories_data_file") \
+                as mock_create_student_categories_data_file:
+            JobDAO().run_task_job(job)
+            mock_create_student_categories_data_file.assert_called_once_with(
+                 sis_term_id="2021-summer")
         job.type.type = "unknown-job-type"
         with self.assertRaises(ValueError):
             JobDAO().run_task_job(job)
@@ -860,17 +867,14 @@ class TestLoadRadDAO(TestCase):
         lrd.get_s3_client = MagicMock()
         return lrd
 
-    @patch('data_aggregator.dao.EdwDAO')
-    def _get_mock_student_categories_df(self, mock_edw_dao_cls):
+    def _get_mock_student_categories_df(self):
         lrd = self._get_test_load_rad_dao()
-        edw = mock_edw_dao_cls()
         mock_student_cat_file = \
             os.path.join(
                 os.path.dirname(__file__),
                 'test_data/2013-spring-netid-name-stunum-categories.csv')
-        mock_student_file = open(mock_student_cat_file)
-        edw.get_student_categories_df = \
-            MagicMock(return_value=pd.read_csv(mock_student_file, sep=","))
+        mock_student_cat = open(mock_student_cat_file).read()
+        lrd.download_from_gcs_bucket = MagicMock(return_value=mock_student_cat)
         mock_student_categories_df = \
             lrd.get_student_categories_df(sis_term_id="2013-spring")
         return mock_student_categories_df
@@ -1086,10 +1090,10 @@ class TestEdwDAO(TestCase):
         mock_student_file = open(mock_student_cat_file)
         mock_read_sql.return_value = pd.read_csv(mock_student_file, sep=",")
         mock_student_categories_df = \
-            edw.get_student_categories_df(sis_term_id="2013-spring")
+            edw.query_for_student_categories_df(sis_term_id="2013-spring")
         return mock_student_categories_df
 
-    def test_get_student_categories_df(self):
+    def test_query_for_student_categories_df(self):
         mock_student_categories_df = self._get_mock_student_categories_df()
         self.assertEqual(
             mock_student_categories_df.columns.values.tolist(),

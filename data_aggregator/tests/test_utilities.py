@@ -198,6 +198,42 @@ class TestUtilities(TestCase):
         self.assertEqual(utilities.get_sortable_term_id("2021-autumn"),
                          "2021-4")
 
+    def test_parse_file_name(self):
+        file_name = "2021-summer-eop-advisers.csv"
+        self.assertEqual(utilities.parse_metadata_file_name(file_name),
+                         ("2021-summer", None, "eop-advisers"))
+        file_name = "2021-spring-iss-advisers.csv"
+        self.assertEqual(utilities.parse_metadata_file_name(file_name),
+                         ("2021-spring", None, "iss-advisers"))
+        file_name = "2021-winter-pred-proba.csv"
+        self.assertEqual(utilities.parse_metadata_file_name(file_name),
+                         ("2021-winter", None, "pred-proba"))
+        file_name = "2021-autumn-netid-name-stunum-categories.csv"
+        self.assertEqual(utilities.parse_metadata_file_name(file_name),
+                         ("2021-autumn", None, "netid-name-stunum-categories"))
+        # test file with path
+        file_name = ("application_metadata/student_categories/"
+                     "2021-autumn-week-3-netid-name-stunum-categories.csv")
+        self.assertEqual(utilities.parse_metadata_file_name(file_name),
+                         ("2021-autumn", 3, "netid-name-stunum-categories"))
+
+    def test_get_full_file_path(self):
+        self.assertEqual(
+            utilities.get_full_metadata_file_path("2021-summer-eop-advisers.csv"),
+            "application_metadata/eop_advisers/2021-summer-eop-advisers.csv")
+        self.assertEqual(
+            utilities.get_full_metadata_file_path("2021-spring-iss-advisers.csv"),
+            "application_metadata/iss_advisers/2021-spring-iss-advisers.csv")
+        self.assertEqual(
+            utilities.get_full_metadata_file_path("2021-winter-pred-proba.csv"),
+            "application_metadata/predicted_probabilites/"
+            "2021-winter-pred-proba.csv")
+        self.assertEqual(
+            utilities.get_full_metadata_file_path(
+                "2021-autumn-netid-name-stunum-categories.csv"),
+            "application_metadata/student_categories/"
+            "2021-autumn-netid-name-stunum-categories.csv")
+
 
 if __name__ == "__main__":
     unittest.main()

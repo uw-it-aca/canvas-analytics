@@ -134,3 +134,51 @@ def get_view_name(sis_term_id, week, label):
     sis_term_id = sis_term_id.replace("-", "_")
     view_name = f"{sis_term_id}_week_{week}_{label}"
     return view_name
+
+
+def parse_metadata_file_name(file_name):
+    """
+    Breaks metadata file name into sis-term-id, week, and file type parts.
+    Assumes the following naming convention:
+
+    <sis-term-id>-<week-num>-<file-type>.csv
+    or
+    <sis-term-id>-<file-type>.csv
+
+    For example:
+
+    >>> parse_metadata_file_name(
+            "2021-summer-week-2-netid-name-stunum-categories.csv")
+    "2021-summer", 2, "netid-name-stunum-categories"
+
+    >>> parse_metadata_file_name("2021-summer-pred-proba.csv")
+    "2021-summer", None, "pred-proba"
+    """
+    file_name = file_name.split("/")[-1]
+    parts = file_name.split("-")
+    sis_term_id = "-".join(parts[:2])
+    week = None
+    upload_type  = None
+    if parts[2] == "week":
+        week = int(parts[3])
+        upload_type = "-".join(parts[4:])
+    else:
+        week = None
+        upload_type = "-".join(parts[2:])
+    upload_type = upload_type.split(".")[0]
+    return sis_term_id, week, upload_type
+
+
+def get_full_metadata_file_path(file_name):
+    _, _, upload_type = parse_metadata_file_name(file_name)
+    if upload_type == "eop-advisers":
+        return f"application_metadata/eop_advisers/{file_name}"
+    elif upload_type == "iss-advisers":
+        return f"application_metadata/iss_advisers/{file_name}"
+    elif upload_type == "pred-proba":
+        return f"application_metadata/predicted_probabilites/{file_name}"
+    elif upload_type == "netid-name-stunum-categories":
+        return f"application_metadata/student_categories/{file_name}"
+    else:
+        raise ValueError(f"Unable to determine upload type from filename: "
+                            f"{file_name}")

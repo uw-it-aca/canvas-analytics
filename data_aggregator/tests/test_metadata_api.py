@@ -8,47 +8,6 @@ from mock import MagicMock, patch
 from collections import OrderedDict
 
 
-class TestBaseMetadataView(BaseViewTestCase):
-
-    def test_parse_file_name(self):
-        bmv = BaseMetadataView()
-        file_name = "2021-summer-eop-advisers.csv"
-        self.assertEqual(bmv.parse_file_name(file_name),
-                         ("2021-summer", "eop-advisers"))
-        file_name = "2021-spring-iss-advisers.csv"
-        self.assertEqual(bmv.parse_file_name(file_name),
-                         ("2021-spring", "iss-advisers"))
-        file_name = "2021-winter-pred-proba.csv"
-        self.assertEqual(bmv.parse_file_name(file_name),
-                         ("2021-winter", "pred-proba"))
-        file_name = "2021-autumn-netid-name-stunum-categories.csv"
-        self.assertEqual(bmv.parse_file_name(file_name),
-                         ("2021-autumn", "netid-name-stunum-categories"))
-        # test file with path
-        file_name = ("application_metadata/student_categories/"
-                     "2021-autumn-netid-name-stunum-categories.csv")
-        self.assertEqual(bmv.parse_file_name(file_name),
-                         ("2021-autumn", "netid-name-stunum-categories"))
-
-    def test_get_full_file_path(self):
-        bmv = BaseMetadataView()
-        self.assertEqual(
-            bmv.get_full_file_path("2021-summer-eop-advisers.csv"),
-            "application_metadata/eop_advisers/2021-summer-eop-advisers.csv")
-        self.assertEqual(
-            bmv.get_full_file_path("2021-spring-iss-advisers.csv"),
-            "application_metadata/iss_advisers/2021-spring-iss-advisers.csv")
-        self.assertEqual(
-            bmv.get_full_file_path("2021-winter-pred-proba.csv"),
-            "application_metadata/predicted_probabilites/"
-            "2021-winter-pred-proba.csv")
-        self.assertEqual(
-            bmv.get_full_file_path(
-                "2021-autumn-netid-name-stunum-categories.csv"),
-            "application_metadata/student_categories/"
-            "2021-autumn-netid-name-stunum-categories.csv")
-
-
 class TestMetadataFileListView(BaseViewTestCase):
 
     @patch('data_aggregator.views.api.metadata.BaseDAO.'
@@ -89,7 +48,7 @@ class TestMetadataFileListView(BaseViewTestCase):
                   'pred-proba': {
                       'file_name': '2021-summer-pred-proba.csv'},
                   'netid-name-stunum-categories': {
-                      'file_name': '2021-summer-netid-name-stunum-categories.csv'}  # noqa
+                      'file_name': '2021-summer-week-1-netid-name-stunum-categories.csv'}  # noqa
                   }),
                 ('2021-autumn',
                  {'eop-advisers': {
@@ -99,7 +58,7 @@ class TestMetadataFileListView(BaseViewTestCase):
                   'pred-proba': {
                       'file_name': '2021-autumn-pred-proba.csv'},
                   'netid-name-stunum-categories': {
-                      'file_name': '2021-autumn-netid-name-stunum-categories.csv'}  # noqa
+                      'file_name': '2021-autumn-week-1-netid-name-stunum-categories.csv'}  # noqa
                   })
             ]))
 
