@@ -5,8 +5,6 @@ import os
 import logging
 from datetime import datetime, date, timedelta
 from django.db import models, IntegrityError
-from django.db.models.fields import IntegerField
-from django.db.models.fields.related import ForeignKey
 from django.utils import timezone
 from data_aggregator.exceptions import TermNotStarted
 from data_aggregator import utilities

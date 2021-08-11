@@ -714,7 +714,7 @@ class TaskDAO(BaseDAO):
                                                       regid=sws_adviser.regid)
                     adviser.regid = sws_adviser.regid
                     adviser.uwnetid = sws_adviser.uwnetid
-                    adviser.full_name = sws_adviser.full_name                    
+                    adviser.full_name = sws_adviser.full_name
                     adviser.pronouns = sws_adviser.pronouns
                     adviser.email_address = sws_adviser.email_address
                     adviser.phone_number = sws_adviser.phone_number

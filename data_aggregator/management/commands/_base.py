@@ -9,7 +9,7 @@ from data_aggregator.management.commands._mixins import RunJobMixin
 from data_aggregator.models import AnalyticTypes, Job, JobType, TaskTypes, \
     Term
 from data_aggregator.utilities import datestring_to_datetime, get_relative_week
-from data_aggregator.dao import JobDAO, TaskDAO
+from data_aggregator.dao import JobDAO
 from data_aggregator.threads import ThreadPool
 
 
