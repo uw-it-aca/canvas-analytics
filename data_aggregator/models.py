@@ -190,6 +190,23 @@ class User(models.Model):
     status = models.TextField(null=True)
 
 
+class Adviser(models.Model):
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    is_active = models.NullBooleanField()
+    is_dept_adviser = models.NullBooleanField()
+    full_name = models.TextField(null=True)
+    pronouns = models.TextField(null=True)
+    email_address = models.TextField(null=True)
+    phone_number = models.TextField(null=True)
+    uwnetid = models.TextField(null=True)
+    regid = models.TextField(null=True)
+    program = models.TextField(null=True)
+    booking_url = models.TextField(null=True)
+    metadata = models.TextField(null=True)
+    timestamp = models.DateTimeField(null=True)
+
+
 class JobManager(models.Manager):
 
     def get_active_jobs(self, jobtype):
@@ -252,6 +269,7 @@ class TaskTypes():
     create_terms = "create_terms"
     create_or_update_courses = "create_or_update_courses"
     create_or_update_users = "create_or_update_users"
+    create_or_update_advisers = "create_or_update_advisers"
     create_assignment_db_view = "create_assignment_db_view"
     create_participation_db_view = "create_participation_db_view"
     create_rad_db_view = "create_rad_db_view"
