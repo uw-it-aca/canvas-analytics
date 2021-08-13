@@ -9,7 +9,7 @@ from io import StringIO
 from django.test import TestCase
 from data_aggregator.dao import AnalyticTypes, AnalyticsDAO, CanvasDAO, \
     JobDAO, LoadRadDAO, BaseDAO, TaskDAO
-from data_aggregator.models import JobType, TaskTypes
+from data_aggregator.models import AdviserTypes, JobType, TaskTypes
 from mock import call, patch, MagicMock
 from restclients_core.exceptions import DataFailureException
 
@@ -937,6 +937,7 @@ class TestLoadRadDAO(TestCase):
             MagicMock(return_value=mock_eop_advisers)
         mock_eop_advisers_df = \
             lrd.get_eop_advisers_df(sis_term_id="2013-spring")
+        mock_eop_advisers_df["adviser_type"] = AdviserTypes.eop
         return mock_eop_advisers_df
 
     def _get_mock_iss_advisers_df(self):
@@ -949,6 +950,7 @@ class TestLoadRadDAO(TestCase):
             MagicMock(return_value=mock_iss_advisers)
         mock_iss_advisers_df = \
             lrd.get_iss_advisers_df(sis_term_id="2013-spring")
+        mock_iss_advisers_df["adviser_type"] = AdviserTypes.iss
         return mock_iss_advisers_df
 
     def _get_mock_idp_df(self):
@@ -1026,13 +1028,13 @@ class TestLoadRadDAO(TestCase):
         mock_eop_advisers_df = self._get_mock_eop_advisers_df()
         self.assertEqual(
             mock_eop_advisers_df.columns.values.tolist(),
-            ["student_no", "adviser_name", "staff_id"])
+            ["student_no", "adviser_name", "staff_id", "adviser_type"])
 
     def test_get_iss_advisers_df(self):
         mock_iss_advisers_df = self._get_mock_iss_advisers_df()
         self.assertEqual(
             mock_iss_advisers_df.columns.values.tolist(),
-            ["student_no", "adviser_name", "staff_id"])
+            ["student_no", "adviser_name", "staff_id", "adviser_type"])
 
     def test_get_last_idp_file(self):
         lrd = self._get_test_load_rad_dao()
@@ -1076,9 +1078,9 @@ class TestLoadRadDAO(TestCase):
         self.assertEqual(mock_rad_df.columns.values.tolist(),
                          ["uw_netid", "student_no", "student_name_lowc",
                           "activity", "assignments", "grades", "pred",
-                          "adviser_name", "staff_id", "sign_in", "stem",
-                          "incoming_freshman", "premajor", "eop",
-                          "international", "isso", "campus_code",
+                          "adviser_name", "adviser_type", "staff_id",
+                          "sign_in", "stem", "incoming_freshman", "premajor",
+                          "eop", "international", "isso", "campus_code",
                           "summer"])
 
     @patch('data_aggregator.dao.Week')

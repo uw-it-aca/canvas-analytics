@@ -7,7 +7,8 @@ from csv import DictReader
 from django.conf import settings
 from django.db import transaction, connection
 from data_aggregator.models import Adviser, Assignment, Course, \
-    Participation, TaskTypes, User, RadDbView, Term, Week, AnalyticTypes, Job
+    Participation, TaskTypes, User, RadDbView, Term, Week, AnalyticTypes, \
+    Job, AdviserTypes
 from data_aggregator.utilities import get_view_name, set_gcs_base_path
 from data_aggregator.report_builder import ReportBuilder
 from restclients_core.exceptions import DataFailureException
@@ -1201,6 +1202,7 @@ class LoadRadDAO(BaseDAO):
         # strip any whitespace
         eop_df['adviser_name'] = eop_df['adviser_name'].str.strip()
         eop_df['staff_id'] = eop_df['staff_id'].str.strip()
+        eop_df['adviser_type'] = AdviserTypes.eop
         return eop_df
 
     def get_iss_advisers_df(self, sis_term_id=None):
@@ -1224,6 +1226,7 @@ class LoadRadDAO(BaseDAO):
         # strip any whitespace
         iss_df['adviser_name'] = iss_df['adviser_name'].str.strip()
         iss_df['staff_id'] = iss_df['staff_id'].str.strip()
+        iss_df['adviser_type'] = AdviserTypes.iss
         return iss_df
 
     def get_rad_dbview_df(self, sis_term_id=None, week_num=None):
@@ -1316,7 +1319,7 @@ class LoadRadDAO(BaseDAO):
               .merge(combined_advisers_df, how='left', on='student_no'))
         joined_canvas_df = joined_canvas_df[
             ['uw_netid', 'student_no', 'student_name_lowc', 'activity',
-             'assignments', 'grades', 'pred', 'adviser_name',
+             'assignments', 'grades', 'pred', 'adviser_name', 'adviser_type',
              'staff_id', 'sign_in', 'stem', 'incoming_freshman', 'premajor',
              'eop', 'international', 'isso', 'campus_code',
              'summer']]

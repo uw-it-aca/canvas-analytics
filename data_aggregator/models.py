@@ -190,6 +190,12 @@ class User(models.Model):
     status = models.TextField(null=True)
 
 
+class AdviserTypes():
+
+    eop = "eop"
+    iss = "iss"
+
+
 class Adviser(models.Model):
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
