@@ -190,11 +190,17 @@ class User(models.Model):
     status = models.TextField(null=True)
 
 
+class AdviserTypes():
+
+    eop = "eop"
+    iss = "iss"
+
+
 class Adviser(models.Model):
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    is_active = models.NullBooleanField()
-    is_dept_adviser = models.NullBooleanField()
+    user = models.ForeignKey(User, on_delete=models.PROTECT)
+    is_active = models.BooleanField(null=True)
+    is_dept_adviser = models.BooleanField(null=True)
     full_name = models.TextField(null=True)
     pronouns = models.TextField(null=True)
     email_address = models.TextField(null=True)
@@ -269,7 +275,7 @@ class TaskTypes():
     create_terms = "create_terms"
     create_or_update_courses = "create_or_update_courses"
     create_or_update_users = "create_or_update_users"
-    create_or_update_advisers = "create_or_update_advisers"
+    reload_advisers = "reload_advisers"
     create_assignment_db_view = "create_assignment_db_view"
     create_participation_db_view = "create_participation_db_view"
     create_rad_db_view = "create_rad_db_view"

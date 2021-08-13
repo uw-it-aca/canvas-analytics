@@ -7,7 +7,8 @@ from csv import DictReader
 from django.conf import settings
 from django.db import transaction, connection
 from data_aggregator.models import Adviser, Assignment, Course, \
-    Participation, TaskTypes, User, RadDbView, Term, Week, AnalyticTypes, Job
+    Participation, TaskTypes, User, RadDbView, Term, Week, AnalyticTypes, \
+    Job, AdviserTypes
 from data_aggregator.utilities import get_view_name, set_gcs_base_path
 from data_aggregator.report_builder import ReportBuilder
 from restclients_core.exceptions import DataFailureException
@@ -449,8 +450,8 @@ class JobDAO(BaseDAO):
             TaskDAO().create_or_update_courses(sis_term_id=sis_term_id)
         elif job_type == TaskTypes.create_or_update_users:
             TaskDAO().create_or_update_users(sis_term_id=sis_term_id)
-        elif job_type == TaskTypes.create_or_update_advisers:
-            TaskDAO().create_or_update_advisers()
+        elif job_type == TaskTypes.reload_advisers:
+            TaskDAO().reload_advisers()
         elif job_type == TaskTypes.create_assignment_db_view:
             TaskDAO().create_assignment_db_view(sis_term_id=sis_term_id,
                                                 week_num=week_num)
@@ -700,36 +701,36 @@ class TaskDAO(BaseDAO):
         logging.info(f'Updated {update_count} courses.')
         return course_count
 
-    def create_or_update_advisers(self):
+    def reload_advisers(self):
         """
         Create and or updates advisers for all users in the database
         """
         users = User.objects.filter(status='active')
-        for user in users:
-            try:
-                sws_advisers = get_advisers_by_regid(user.sis_user_id)
-                for sws_adviser in sws_advisers:
-                    adviser, _ = \
-                        Adviser.objects.get_or_create(user=user,
-                                                      regid=sws_adviser.regid)
-                    adviser.regid = sws_adviser.regid
-                    adviser.uwnetid = sws_adviser.uwnetid
-                    adviser.full_name = sws_adviser.full_name
-                    adviser.pronouns = sws_adviser.pronouns
-                    adviser.email_address = sws_adviser.email_address
-                    adviser.phone_number = sws_adviser.phone_number
-                    adviser.program = sws_adviser.program
-                    adviser.booking_url = sws_adviser.booking_url
-                    adviser.metadata = sws_adviser.metadata
-                    adviser.is_active = sws_adviser.is_active
-                    adviser.is_dept_adviser = sws_adviser.is_dept_adviser
-                    adviser.timestamp = sws_adviser.timestamp
-                    adviser.user = user
-                    adviser.save()
-            except DataFailureException:
-                logging.debug(f"No adviser found for user with login_id "
-                              f"{user.login_id}.")
-                pass
+        with transaction.atomic():
+            Adviser.objects.all().delete()
+            for user in users:
+                try:
+                    sws_advisers = get_advisers_by_regid(user.sis_user_id)
+                    for sws_adviser in sws_advisers:
+                        adviser = Adviser()
+                        adviser.regid = sws_adviser.regid
+                        adviser.uwnetid = sws_adviser.uwnetid
+                        adviser.full_name = sws_adviser.full_name
+                        adviser.pronouns = sws_adviser.pronouns
+                        adviser.email_address = sws_adviser.email_address
+                        adviser.phone_number = sws_adviser.phone_number
+                        adviser.program = sws_adviser.program
+                        adviser.booking_url = sws_adviser.booking_url
+                        adviser.metadata = sws_adviser.metadata
+                        adviser.is_active = sws_adviser.is_active
+                        adviser.is_dept_adviser = sws_adviser.is_dept_adviser
+                        adviser.timestamp = sws_adviser.timestamp
+                        adviser.user = user
+                        adviser.save()
+                except DataFailureException:
+                    logging.debug(f"No adviser found for user with login_id "
+                                  f"{user.login_id}.")
+                    pass
 
     def create_or_update_users(self, sis_term_id=None):
         """
@@ -1201,6 +1202,7 @@ class LoadRadDAO(BaseDAO):
         # strip any whitespace
         eop_df['adviser_name'] = eop_df['adviser_name'].str.strip()
         eop_df['staff_id'] = eop_df['staff_id'].str.strip()
+        eop_df['adviser_type'] = AdviserTypes.eop
         return eop_df
 
     def get_iss_advisers_df(self, sis_term_id=None):
@@ -1224,6 +1226,7 @@ class LoadRadDAO(BaseDAO):
         # strip any whitespace
         iss_df['adviser_name'] = iss_df['adviser_name'].str.strip()
         iss_df['staff_id'] = iss_df['staff_id'].str.strip()
+        iss_df['adviser_type'] = AdviserTypes.iss
         return iss_df
 
     def get_rad_dbview_df(self, sis_term_id=None, week_num=None):
@@ -1234,7 +1237,7 @@ class LoadRadDAO(BaseDAO):
         :param sis_term_id: sis term id to create data frame for. (default is
             the current term)
         :type sis_term_id: str
-        :param week_num: week number to create data frame for . (default is
+        :param week_num: week number to create data frame for. (default is
             the current week of term)
         :type week_num: int
         """
@@ -1316,7 +1319,7 @@ class LoadRadDAO(BaseDAO):
               .merge(combined_advisers_df, how='left', on='student_no'))
         joined_canvas_df = joined_canvas_df[
             ['uw_netid', 'student_no', 'student_name_lowc', 'activity',
-             'assignments', 'grades', 'pred', 'adviser_name',
+             'assignments', 'grades', 'pred', 'adviser_name', 'adviser_type',
              'staff_id', 'sign_in', 'stem', 'incoming_freshman', 'premajor',
              'eop', 'international', 'isso', 'campus_code',
              'summer']]
