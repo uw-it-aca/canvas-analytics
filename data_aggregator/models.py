@@ -190,6 +190,7 @@ class User(models.Model):
     status = models.TextField(null=True)
 
 
+
 class AdviserTypes():
 
     eop = "eop"
