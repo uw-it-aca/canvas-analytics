@@ -635,11 +635,11 @@ class TestJobDAO(TestCase):
             JobDAO().run_task_job(job)
             mock_create_or_update_users.assert_called_once_with(
                 sis_term_id="2021-summer")
-        job.type.type = TaskTypes.create_or_update_advisers
-        with patch("data_aggregator.dao.TaskDAO.create_or_update_advisers") \
-                as mock_create_or_update_advisers:
+        job.type.type = TaskTypes.reload_advisers
+        with patch("data_aggregator.dao.TaskDAO.reload_advisers") \
+                as mock_reload_advisers:
             JobDAO().run_task_job(job)
-            mock_create_or_update_advisers.assert_called_once_with()
+            mock_reload_advisers.assert_called_once_with()
         job.type.type = TaskTypes.create_assignment_db_view
         with patch("data_aggregator.dao.TaskDAO.create_assignment_db_view") \
                 as mock_create_assignment_db_view:
@@ -818,7 +818,7 @@ class TestTaskDAO(TestCase):
     @patch('data_aggregator.dao.get_advisers_by_regid')
     @patch('data_aggregator.dao.Adviser.objects')
     @patch('data_aggregator.dao.User.objects')
-    def test_create_or_update_advisers(self, mock_user_manager,
+    def test_reload_advisers(self, mock_user_manager,
                                        mock_adviser_manager,
                                        mock_get_advisers_by_regid):
         # setup
@@ -834,7 +834,7 @@ class TestTaskDAO(TestCase):
         mock_adviser1.regid = "11111"
         mock_adviser_manager.get_or_create.return_value = (mock_adviser1, None)
         # method call
-        td.create_or_update_advisers()
+        td.reload_advisers()
         # assertions
         mock_user_manager.filter.assert_called_once_with(
             status='active'
