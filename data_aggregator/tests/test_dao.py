@@ -9,8 +9,8 @@ from io import StringIO
 from django.test import TestCase
 from data_aggregator.dao import AnalyticTypes, AnalyticsDAO, CanvasDAO, \
     JobDAO, LoadRadDAO, BaseDAO, TaskDAO
-from data_aggregator.models import AdviserTypes, JobType, TaskTypes
-from mock import call, patch, MagicMock
+from data_aggregator.models import AdviserTypes, JobType, TaskTypes, User
+from mock import call, patch, create_autospec, MagicMock
 from restclients_core.exceptions import DataFailureException
 
 
@@ -816,42 +816,31 @@ class TestTaskDAO(TestCase):
             )
 
     @patch('data_aggregator.dao.get_advisers_by_regid')
-    @patch('data_aggregator.dao.Adviser.objects')
     @patch('data_aggregator.dao.User.objects')
-    def test_reload_advisers(self, mock_user_manager, mock_adviser_manager,
+    def test_reload_advisers(self, mock_user_manager,
                              mock_get_advisers_by_regid):
         # setup
         td = self.get_test_task_dao()
-        mock_user1 = MagicMock()
+        mock_user1 = create_autospec(User, _state=MagicMock())
         mock_user1.sis_user_id = "12345"
-        mock_user2 = MagicMock()
+        mock_user2 = create_autospec(User, _state=MagicMock())
         mock_user2.sis_user_id = "23456"
         mock_user_manager.filter.return_value = [mock_user1, mock_user2]
         mock_sws_adviser1 = MagicMock()
         mock_get_advisers_by_regid.return_value = [mock_sws_adviser1]
-        mock_adviser1 = MagicMock()
-        mock_adviser1.regid = "11111"
-        mock_adviser_manager.get_or_create.return_value = (mock_adviser1, None)
-        # method call
-        td.reload_advisers()
-        # assertions
-        mock_user_manager.filter.assert_called_once_with(
-            status='active'
-        )
-        call_args_list = mock_get_advisers_by_regid.call_args_list
-        assert (call_args_list[0] ==
-                call(mock_user1.sis_user_id))
-        assert (call_args_list[1] ==
-                call(mock_user2.sis_user_id))
-        call_args_list = mock_adviser_manager.get_or_create.call_args_list
-        assert (call_args_list[0] ==
-                call(user=mock_user1,
-                     regid=mock_adviser1.regid))
-        assert (call_args_list[1] ==
-                call(user=mock_user2,
-                     regid=mock_adviser1.regid))
-        mock_adviser1.save.assert_called()
-        self.assertEqual(mock_adviser1.save.call_count, 2)
+        with patch('data_aggregator.dao.Adviser') as mock_adviser_class:
+            # method call
+            td.reload_advisers()
+            # assertions
+            mock_user_manager.filter.assert_called_once_with(
+                status='active'
+            )
+            call_args_list = mock_get_advisers_by_regid.call_args_list
+            assert (call_args_list[0] ==
+                    call(mock_user1.sis_user_id))
+            assert (call_args_list[1] ==
+                    call(mock_user2.sis_user_id))
+            self.assertEqual(mock_adviser_class().save.call_count, 2)
 
     def test_create_or_update_users(self):
         td = self.get_test_task_dao()
