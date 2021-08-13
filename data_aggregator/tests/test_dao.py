@@ -818,9 +818,8 @@ class TestTaskDAO(TestCase):
     @patch('data_aggregator.dao.get_advisers_by_regid')
     @patch('data_aggregator.dao.Adviser.objects')
     @patch('data_aggregator.dao.User.objects')
-    def test_reload_advisers(self, mock_user_manager,
-                                       mock_adviser_manager,
-                                       mock_get_advisers_by_regid):
+    def test_reload_advisers(self, mock_user_manager, mock_adviser_manager,
+                             mock_get_advisers_by_regid):
         # setup
         td = self.get_test_task_dao()
         mock_user1 = MagicMock()

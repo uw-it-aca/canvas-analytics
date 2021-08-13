@@ -729,7 +729,7 @@ class TaskDAO(BaseDAO):
                         adviser.save()
                 except DataFailureException:
                     logging.debug(f"No adviser found for user with login_id "
-                                f"{user.login_id}.")
+                                  f"{user.login_id}.")
                     pass
 
     def create_or_update_users(self, sis_term_id=None):
