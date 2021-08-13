@@ -22,7 +22,7 @@ setup(
     include_package_data=True,
     install_requires = [
         'Django~=3.2',
-        'UW-RestClients-SWS~=2.3',
+        'UW-RestClients-SWS==2.3.14',
         'UW-RestClients-PWS~=2.1',
         'UW-RestClients-Canvas~=1.1',
         'UW-Django-SAML2~=1.5',
