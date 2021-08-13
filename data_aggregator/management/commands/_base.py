@@ -159,7 +159,6 @@ class CreateJobCommand(BaseCommand):
 
         subparsers = self._add_subparser(
             subparsers, TaskTypes.create_terms,
-            include_term=False,
             command_help_message=(
                 "Creates current term and all future terms."
             ))
@@ -178,6 +177,7 @@ class CreateJobCommand(BaseCommand):
 
         subparsers = self._add_subparser(
             subparsers, TaskTypes.reload_advisers,
+            include_term=False,
             command_help_message=(
                 "Loads or updates list of advisers for all students in the db."
             ))
