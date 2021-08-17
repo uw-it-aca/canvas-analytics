@@ -24,6 +24,7 @@ class RunJobCommand(BaseCommand, RunJobMixin):
                                 TaskTypes.create_terms,
                                 TaskTypes.create_or_update_users,
                                 TaskTypes.create_or_update_courses,
+                                TaskTypes.reload_advisers,
                                 TaskTypes.create_assignment_db_view,
                                 TaskTypes.create_participation_db_view,
                                 TaskTypes.create_rad_db_view,
@@ -172,6 +173,13 @@ class CreateJobCommand(BaseCommand):
             subparsers, TaskTypes.create_or_update_users,
             command_help_message=(
                 "Loads or updates list of students for the current term."
+            ))
+
+        subparsers = self._add_subparser(
+            subparsers, TaskTypes.reload_advisers,
+            include_term=False,
+            command_help_message=(
+                "Loads or updates list of advisers for all students in the db."
             ))
 
         subparsers = self._add_subparser(
