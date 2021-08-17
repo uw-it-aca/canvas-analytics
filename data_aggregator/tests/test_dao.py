@@ -9,9 +9,6 @@ from io import StringIO
 from django.test import TestCase
 from data_aggregator.dao import AnalyticTypes, AnalyticsDAO, CanvasDAO, \
     EdwDAO, JobDAO, LoadRadDAO, BaseDAO, TaskDAO
-from data_aggregator.models import JobType, TaskTypes
-from mock import call, patch, MagicMock
-    
 from data_aggregator.models import AdviserTypes, JobType, TaskTypes, User
 from mock import call, patch, create_autospec, MagicMock
 from restclients_core.exceptions import DataFailureException

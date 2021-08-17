@@ -7,8 +7,8 @@ import pymssql
 from csv import DictReader
 from django.conf import settings
 from django.db import transaction, connection
-from data_aggregator.models import Assignment, Course, Participation, \
-    TaskTypes, User, RadDbView, Term, Week, AnalyticTypes, Job
+from data_aggregator.models import Adviser, AdviserTypes, Assignment, Course, \
+    Participation, TaskTypes, User, RadDbView, Term, Week, AnalyticTypes, Job
 from data_aggregator.utilities import get_view_name, set_gcs_base_path, \
     get_term_number
 from data_aggregator.report_builder import ReportBuilder
