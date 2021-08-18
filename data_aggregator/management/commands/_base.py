@@ -158,55 +158,99 @@ class CreateJobCommand(BaseCommand):
         subparsers.required = True
 
         subparsers = self._add_subparser(
-            subparsers, TaskTypes.create_terms,
+            subparsers,
+            TaskTypes.create_terms,
             command_help_message=(
                 "Creates current term and all future terms."
             ))
 
         subparsers = self._add_subparser(
-            subparsers, TaskTypes.create_or_update_courses,
+            subparsers,
+            TaskTypes.create_or_update_courses,
             command_help_message=(
                 "Loads or updates list of courses for the current term."
             ))
 
         subparsers = self._add_subparser(
-            subparsers, TaskTypes.create_or_update_users,
+            subparsers,
+            TaskTypes.create_or_update_users,
             command_help_message=(
                 "Loads or updates list of students for the current term."
             ))
 
         subparsers = self._add_subparser(
-            subparsers, TaskTypes.reload_advisers,
+            subparsers,
+            TaskTypes.reload_advisers,
             include_term=False,
             command_help_message=(
                 "Loads or updates list of advisers for all students in the db."
             ))
 
         subparsers = self._add_subparser(
-            subparsers, TaskTypes.create_participation_db_view,
-            include_week=True)
-
-        subparsers = self._add_subparser(
-            subparsers, TaskTypes.create_assignment_db_view, include_week=True)
-
-        subparsers = self._add_subparser(
-            subparsers, TaskTypes.create_rad_db_view, include_week=True)
-
-        subparsers = self._add_subparser(
-            subparsers, TaskTypes.create_rad_data_file, include_week=True)
-
-        subparsers = self._add_subparser(
-            subparsers, TaskTypes.build_subaccount_activity_report,
+            subparsers,
+            TaskTypes.create_participation_db_view,
             include_week=True,
-            include_account=True)
+            command_help_message=(
+                "Creates participation database view for given term and week."
+            ))
 
         subparsers = self._add_subparser(
-            subparsers, AnalyticTypes.assignment,
-            include_week=True, include_course=True)
+            subparsers,
+            TaskTypes.create_assignment_db_view,
+            include_week=True,
+            command_help_message=(
+                "Creates assignment database view for given term and week."
+            ))
 
         subparsers = self._add_subparser(
-            subparsers, AnalyticTypes.participation,
-            include_week=True, include_course=True)
+            subparsers,
+            TaskTypes.create_rad_db_view,
+            include_week=True,
+            command_help_message=(
+                "Creates RAD database view for given term and week."
+            ))
+
+        subparsers = self._add_subparser(
+            subparsers,
+            TaskTypes.create_rad_data_file,
+            include_week=True,
+            command_help_message=(
+                "Creates RAD metadata data file in GCS bucket."
+            ))
+
+        subparsers = self._add_subparser(
+            subparsers,
+            TaskTypes.create_student_categories_data_file,
+            command_help_message=(
+                "Creates student categories RAD metadata file in GCS bucket."
+            ))
+
+        subparsers = self._add_subparser(
+            subparsers,
+            TaskTypes.build_subaccount_activity_report,
+            include_week=True,
+            include_account=True,
+            command_help_message=(
+                "Creates participation database view for given term and week."
+            ))
+
+        subparsers = self._add_subparser(
+            subparsers,
+            AnalyticTypes.assignment,
+            include_week=True,
+            include_course=True,
+            command_help_message=(
+                "Run active assignment jobs."
+            ))
+
+        subparsers = self._add_subparser(
+            subparsers,
+            AnalyticTypes.participation,
+            include_week=True,
+            include_course=True,
+            command_help_message=(
+                "Run active participation jobs."
+            ))
 
     def get_job_context(self, options):
         context = {}

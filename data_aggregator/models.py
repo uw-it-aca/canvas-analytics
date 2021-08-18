@@ -275,6 +275,7 @@ class TaskTypes():
     create_terms = "create_terms"
     create_or_update_courses = "create_or_update_courses"
     create_or_update_users = "create_or_update_users"
+    create_student_categories_data_file = "create_student_categories_data_file"
     reload_advisers = "reload_advisers"
     create_assignment_db_view = "create_assignment_db_view"
     create_participation_db_view = "create_participation_db_view"

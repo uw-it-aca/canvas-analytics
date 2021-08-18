@@ -451,6 +451,9 @@ class JobDAO(BaseDAO):
             TaskDAO().create_or_update_courses(sis_term_id=sis_term_id)
         elif job_type == TaskTypes.create_or_update_users:
             TaskDAO().create_or_update_users(sis_term_id=sis_term_id)
+        elif job_type == TaskTypes.create_student_categories_data_file:
+            EdwDAO().create_student_categories_data_file(
+                sis_term_id=sis_term_id)
         elif job_type == TaskTypes.reload_advisers:
             TaskDAO().reload_advisers()
         elif job_type == TaskTypes.create_assignment_db_view:
@@ -1146,11 +1149,13 @@ class LoadRadDAO(BaseDAO):
             the current term)
         :type sis_term_id: str
         """
+        users_df = self.get_users_df()
         term, _ = Term.objects.get_or_create_term_from_sis_term_id(
             sis_term_id=sis_term_id)
-        users_df = self.get_users_df()
-        edw_dao = EdwDAO()
-        sdb_df = edw_dao.get_student_categories_df(sis_term_id=sis_term_id)
+        url_key = (f"application_metadata/student_categories/"
+                   f"{term.sis_term_id}-netid-name-stunum-categories.csv")
+        content = self.download_from_gcs_bucket(url_key)
+        sdb_df = pd.read_csv(StringIO(content))
         sdb_df = sdb_df.merge(users_df, how='left', on='uw_netid')
         sdb_df.fillna(value={'canvas_user_id': -99}, inplace=True)
         return sdb_df
@@ -1353,6 +1358,16 @@ class EdwDAO(BaseDAO):
         logging.debug(f"Connected to {server}.{database} with user {user}")
         return conn
 
+    def create_student_categories_data_file(self, sis_term_id=None):
+        term, _ = Term.objects.get_or_create_term_from_sis_term_id(
+            sis_term_id=sis_term_id)
+        stu_cat_df = self.get_student_categories_df(
+            sis_term_id=sis_term_id)
+        url_key = (f"application_metadata/student_categories/"
+                   f"{term.sis_term_id}-netid-name-stunum-categories.csv")
+        file_obj = stu_cat_df.to_csv(sep=",", index=False, encoding="UTF-8")
+        self.upload_to_gcs_bucket(url_key, file_obj)
+
     def get_student_categories_df(self, sis_term_id=None):
         year = None
         quarter_num = None
@@ -1439,4 +1454,5 @@ class EdwDAO(BaseDAO):
             """,  # noqa
             conn
         )
+        stu_cat_df["uw_netid"] = stu_cat_df["uw_netid"].str.strip()
         return stu_cat_df
