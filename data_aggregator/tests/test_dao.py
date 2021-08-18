@@ -1127,6 +1127,50 @@ class TestEdwDAO(TestCase):
             edw.get_student_categories_df(sis_term_id="2013-spring")
         return mock_student_categories_df
 
+    @patch('data_aggregator.dao.pymssql.connect')
+    @patch('data_aggregator.dao.settings')
+    def test_get_connection(self, mock_settings, mock_pymssql_connect):
+        mock_database = MagicMock()
+        mock_settings.EDW_PASSWORD = MagicMock()
+        mock_settings.EDW_USER = MagicMock()
+        mock_settings.EDW_SERVER = MagicMock()
+        edw = EdwDAO()
+        conn = edw.get_connection(mock_database)
+        mock_pymssql_connect.assert_called_once_with(
+            mock_settings.EDW_SERVER,
+            mock_settings.EDW_USER,
+            mock_settings.EDW_PASSWORD,
+            mock_database)
+        self.assertEqual(conn, mock_pymssql_connect.return_value)
+
+    @patch('data_aggregator.dao.Term')
+    def test_create_student_categories_data_file(self, mock_term_cls):
+        # setup
+        mock_sis_term_id = "2021-summer"
+        mock_term = MagicMock()
+        mock_term_cls.objects.get_or_create_term_from_sis_term_id = \
+            MagicMock(return_value=(mock_term, False))
+        mock_term.sis_term_id = mock_sis_term_id
+        mock_url_key = (
+            f"application_metadata/student_categories/"
+            f"{mock_term.sis_term_id}-netid-name-stunum-categories.csv")
+        edw = self._get_test_edw_dao()
+        edw.upload_to_gcs_bucket = MagicMock()
+        mock_stu_cat_df = MagicMock()
+        edw.get_student_categories_df = MagicMock(return_value=mock_stu_cat_df)
+        mock_stu_cat_df.to_csv = MagicMock(return_value=MagicMock())
+        # method call
+        edw.create_student_categories_data_file(sis_term_id=mock_sis_term_id)
+        # assertions
+        mock_term_cls.objects.get_or_create_term_from_sis_term_id \
+            .assert_called_once_with(sis_term_id=mock_sis_term_id)
+        edw.get_student_categories_df.assert_called_once_with(
+            sis_term_id=mock_sis_term_id)
+        mock_stu_cat_df.to_csv.assert_called_once_with(
+            sep=",", index=False, encoding="UTF-8")
+        edw.upload_to_gcs_bucket.assert_called_once_with(
+            mock_url_key, mock_stu_cat_df.to_csv.return_value)
+
     def test_get_student_categories_df(self):
         mock_student_categories_df = self._get_mock_student_categories_df()
         self.assertEqual(
