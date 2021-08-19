@@ -899,7 +899,7 @@ class TestLoadRadDAO(TestCase):
         lrd.get_s3_client = MagicMock()
         return lrd
 
-    def _get_mock_student_categories_df(self):
+    def _get_mock_student_categories_df(self, sis_term_id=None):
         lrd = self._get_test_load_rad_dao()
         mock_student_cat_file = \
             os.path.join(
@@ -908,7 +908,7 @@ class TestLoadRadDAO(TestCase):
         mock_student_cat = open(mock_student_cat_file).read()
         lrd.download_from_gcs_bucket = MagicMock(return_value=mock_student_cat)
         mock_student_categories_df = \
-            lrd.get_student_categories_df(sis_term_id="2013-spring")
+            lrd.get_student_categories_df(sis_term_id=sis_term_id)
         return mock_student_categories_df
 
     def _get_mock_pred_proba_df(self):
@@ -1005,13 +1005,21 @@ class TestLoadRadDAO(TestCase):
              "activity", "grades"])
 
     def test_get_student_categories_df(self):
+        columns = ["system_key", "uw_netid", "student_no", "student_name_lowc",
+                   "eop", "incoming_freshman", "international", "stem",
+                   "premajor", "isso", "campus_code", "summer",
+                   "canvas_user_id"]
+        # test with defined sis_term_id
+        mock_student_categories_df = self._get_mock_student_categories_df(
+            sis_term_id="2021-summer")
+        self.assertEqual(
+            mock_student_categories_df.columns.values.tolist(),
+            columns)
+        # test with undefined sis_term_id
         mock_student_categories_df = self._get_mock_student_categories_df()
         self.assertEqual(
             mock_student_categories_df.columns.values.tolist(),
-            ["system_key", "uw_netid", "student_no", "student_name_lowc",
-             "eop", "incoming_freshman", "international",
-             "stem", "premajor", "isso", "campus_code", "summer",
-             "canvas_user_id"])
+            columns)
 
     def test_get_pred_proba_scores_df(self):
         mock_pred_proba_df = self._get_mock_pred_proba_df()
