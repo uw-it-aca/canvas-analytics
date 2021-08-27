@@ -17,15 +17,24 @@ class TestTermManager(TestCase):
     def setUp(self):
         self.mock_get_current_term = \
             self.create_patch('data_aggregator.models.get_current_term')
+        self.mock_get_previous_term = \
+            self.create_patch('data_aggregator.models.get_previous_term')
         self.mock_get_term_by_year_and_quarter = self.create_patch(
             'data_aggregator.models.get_term_by_year_and_quarter')
         self.mock_get_or_create_from_sws_term = self.create_patch(
             'data_aggregator.models.TermManager.get_or_create_from_sws_term')
+        self.mock_get_term_for_sis_term_id = self.create_patch(
+            'data_aggregator.models.TermManager.get_term_for_sis_term_id')
+        self.mock_get_term_for_date = self.create_patch(
+            'data_aggregator.models.TermManager.get_term_for_date')
 
     def restart_all(self):
         self.mock_get_current_term.reset_mock()
+        self.mock_get_previous_term.reset_mock()
         self.mock_get_or_create_from_sws_term.reset_mock()
         self.mock_get_term_by_year_and_quarter.reset_mock()
+        self.mock_get_term_for_sis_term_id.reset_mock()
+        self.mock_get_term_for_date.reset_mock()
 
     def create_patch(self, name):
         patcher = patch(name)
@@ -36,37 +45,85 @@ class TestTermManager(TestCase):
 
         # assert call sequence when NO sis_term_id is supplied and there is
         # no existing term for the current date does NOT EXIST
-        Term.objects.get_term_for_date = MagicMock(return_value=None)
+        self.mock_get_term_for_date.return_value = None
+        mock_sws_term = MagicMock()
+        mock_sws_term.is_grading_period_past.return_value = False
+        self.mock_get_current_term.return_value = mock_sws_term
         Term.objects.get_or_create_term_from_sis_term_id()
-        self.assertTrue(Term.objects.get_term_for_date.called)
-        self.assertTrue(self.mock_get_current_term.called)
+        self.assertFalse(self.mock_get_term_for_sis_term_id.called)
         self.assertFalse(self.mock_get_term_by_year_and_quarter.called)
-        self.assertTrue(self.mock_get_or_create_from_sws_term.called)
+        self.mock_get_term_for_date.assert_called_once()
+        self.mock_get_current_term.assert_called_once()
+        mock_sws_term.is_grading_period_past.assert_called_once()
+        self.assertFalse(self.mock_get_previous_term.called)
+        self.mock_get_or_create_from_sws_term.assert_called_once()
 
         self.restart_all()
 
         # assert call sequence when NO sis_term_id is supplied and
         # an existing term for the current date EXISTS
-        mock_existing_term = MagicMock()
-        Term.objects.get_term_for_date = \
-            MagicMock(return_value=mock_existing_term)
+        mock_sws_term = MagicMock()
+        self.mock_get_term_for_date.return_value = mock_sws_term
         term, created = Term.objects.get_or_create_term_from_sis_term_id()
-        self.assertTrue(Term.objects.get_term_for_date.called)
+        self.assertFalse(self.mock_get_term_for_sis_term_id.called)
+        self.assertFalse(self.mock_get_term_by_year_and_quarter.called)
+        self.mock_get_term_for_date.assert_called_once()
         self.assertFalse(self.mock_get_current_term.called)
         self.assertFalse(self.mock_get_term_by_year_and_quarter.called)
         self.assertFalse(self.mock_get_or_create_from_sws_term.called)
-        self.assertEqual((term, created), (mock_existing_term, False))
+        self.assertEqual((term, created), (mock_sws_term, False))
 
         self.restart_all()
 
-        # assert call sequence when sis_term_id is supplied
-        Term.objects.get_term_for_date = MagicMock(return_value=None)
+        # assert call sequence when sis_term_id IS SUPPLIED but NOT present
+        # in the database
+        self.mock_get_term_for_sis_term_id.return_value = None  # not in db
+        self.mock_get_term_for_date.return_value = None
         Term.objects.get_or_create_term_from_sis_term_id(
                                                     sis_term_id="2021-spring")
-        self.assertFalse(Term.objects.get_term_for_date.called)
+        self.mock_get_term_for_sis_term_id.assert_called_once()
+        self.mock_get_term_by_year_and_quarter.assert_called_once()
+        self.mock_get_or_create_from_sws_term.assert_called_once()
+        self.assertFalse(self.mock_get_term_for_date.called)
         self.assertFalse(self.mock_get_current_term.called)
-        self.assertTrue(self.mock_get_term_by_year_and_quarter.called)
-        self.assertTrue(self.mock_get_or_create_from_sws_term.called)
+        self.assertFalse(self.mock_get_previous_term.called)
+
+        self.restart_all()
+
+        # assert call sequence when sis_term_id IS SUPPLIED and IS present
+        # in the database
+        self.mock_get_term_for_date.return_value = None
+        self.mock_get_term_for_sis_term_id.return_value = MagicMock()  # in db
+        Term.objects.get_or_create_term_from_sis_term_id(
+                                                    sis_term_id="2021-spring")
+        self.mock_get_term_for_sis_term_id.assert_called_once()
+        self.assertFalse(self.mock_get_term_by_year_and_quarter.called)
+        self.assertFalse(self.mock_get_term_for_date.called)
+        self.assertFalse(self.mock_get_current_term.called)
+        self.assertFalse(self.mock_get_previous_term.called)
+        self.assertFalse(self.mock_get_or_create_from_sws_term.called)
+
+        self.restart_all()
+
+        # assert call sequence when sis_term_id IS NOT SUPPLIED and NOT present
+        # in the database and current date is NOT IN A TERM
+        self.mock_get_term_for_date.return_value = None
+        mock_sws_term = MagicMock()
+        mock_prev_sws_term = MagicMock()
+        mock_sws_term.is_grading_period_past = MagicMock(return_value=True)
+        self.mock_get_previous_term.return_value = mock_prev_sws_term
+        self.mock_get_current_term.return_value = mock_sws_term
+        self.mock_get_or_create_from_sws_term.return_value = \
+            (mock_prev_sws_term, False)
+        term, created = Term.objects.get_or_create_term_from_sis_term_id()
+        self.assertFalse(self.mock_get_term_for_sis_term_id.called)
+        self.assertFalse(self.mock_get_term_by_year_and_quarter.called)
+        self.mock_get_term_for_date.assert_called_once()
+        self.mock_get_current_term.assert_called_once()
+        mock_sws_term.is_grading_period_past.assert_called_once()
+        self.mock_get_previous_term.assert_called_once()
+        self.mock_get_or_create_from_sws_term.assert_called_once()
+        self.assertEqual((term, created), (mock_prev_sws_term, False))
 
 
 class TestWeekManager(TestCase):
