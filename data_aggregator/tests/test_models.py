@@ -15,10 +15,8 @@ from mock import MagicMock, patch
 class TestTermManager(TestCase):
 
     def setUp(self):
-        self.mock_get_current_term = \
-            self.create_patch('data_aggregator.models.get_current_term')
-        self.mock_get_previous_term = \
-            self.create_patch('data_aggregator.models.get_previous_term')
+        self.mock_get_term_by_date = \
+            self.create_patch('data_aggregator.models.get_term_by_date')
         self.mock_get_term_by_year_and_quarter = self.create_patch(
             'data_aggregator.models.get_term_by_year_and_quarter')
         self.mock_get_or_create_from_sws_term = self.create_patch(
@@ -29,8 +27,7 @@ class TestTermManager(TestCase):
             'data_aggregator.models.TermManager.get_term_for_date')
 
     def restart_all(self):
-        self.mock_get_current_term.reset_mock()
-        self.mock_get_previous_term.reset_mock()
+        self.mock_get_term_by_date.reset_mock()
         self.mock_get_or_create_from_sws_term.reset_mock()
         self.mock_get_term_by_year_and_quarter.reset_mock()
         self.mock_get_term_for_sis_term_id.reset_mock()
@@ -47,15 +44,12 @@ class TestTermManager(TestCase):
         # no existing term for the current date does NOT EXIST
         self.mock_get_term_for_date.return_value = None
         mock_sws_term = MagicMock()
-        mock_sws_term.is_future.return_value = False
-        self.mock_get_current_term.return_value = mock_sws_term
+        self.mock_get_term_by_date.return_value = mock_sws_term
         Term.objects.get_or_create_term_from_sis_term_id()
         self.assertFalse(self.mock_get_term_for_sis_term_id.called)
         self.assertFalse(self.mock_get_term_by_year_and_quarter.called)
         self.mock_get_term_for_date.assert_called_once()
-        self.mock_get_current_term.assert_called_once()
-        mock_sws_term.is_future.assert_called_once()
-        self.assertFalse(self.mock_get_previous_term.called)
+        self.mock_get_term_by_date.assert_called_once()
         self.mock_get_or_create_from_sws_term.assert_called_once()
 
         self.restart_all()
@@ -68,7 +62,7 @@ class TestTermManager(TestCase):
         self.assertFalse(self.mock_get_term_for_sis_term_id.called)
         self.assertFalse(self.mock_get_term_by_year_and_quarter.called)
         self.mock_get_term_for_date.assert_called_once()
-        self.assertFalse(self.mock_get_current_term.called)
+        self.assertFalse(self.mock_get_term_by_date.called)
         self.assertFalse(self.mock_get_term_by_year_and_quarter.called)
         self.assertFalse(self.mock_get_or_create_from_sws_term.called)
         self.assertEqual((term, created), (mock_sws_term, False))
@@ -85,8 +79,7 @@ class TestTermManager(TestCase):
         self.mock_get_term_by_year_and_quarter.assert_called_once()
         self.mock_get_or_create_from_sws_term.assert_called_once()
         self.assertFalse(self.mock_get_term_for_date.called)
-        self.assertFalse(self.mock_get_current_term.called)
-        self.assertFalse(self.mock_get_previous_term.called)
+        self.assertFalse(self.mock_get_term_by_date.called)
 
         self.restart_all()
 
@@ -99,8 +92,7 @@ class TestTermManager(TestCase):
         self.mock_get_term_for_sis_term_id.assert_called_once()
         self.assertFalse(self.mock_get_term_by_year_and_quarter.called)
         self.assertFalse(self.mock_get_term_for_date.called)
-        self.assertFalse(self.mock_get_current_term.called)
-        self.assertFalse(self.mock_get_previous_term.called)
+        self.assertFalse(self.mock_get_term_by_date.called)
         self.assertFalse(self.mock_get_or_create_from_sws_term.called)
 
         self.restart_all()
@@ -109,21 +101,16 @@ class TestTermManager(TestCase):
         # in the database and current date is NOT IN A TERM
         self.mock_get_term_for_date.return_value = None
         mock_sws_term = MagicMock()
-        mock_prev_sws_term = MagicMock()
-        mock_sws_term.is_future = MagicMock(return_value=True)
-        self.mock_get_previous_term.return_value = mock_prev_sws_term
-        self.mock_get_current_term.return_value = mock_sws_term
+        self.mock_get_term_by_date.return_value = mock_sws_term
         self.mock_get_or_create_from_sws_term.return_value = \
-            (mock_prev_sws_term, False)
+            (mock_sws_term, False)
         term, created = Term.objects.get_or_create_term_from_sis_term_id()
         self.assertFalse(self.mock_get_term_for_sis_term_id.called)
         self.assertFalse(self.mock_get_term_by_year_and_quarter.called)
         self.mock_get_term_for_date.assert_called_once()
-        self.mock_get_current_term.assert_called_once()
-        mock_sws_term.is_future.assert_called_once()
-        self.mock_get_previous_term.assert_called_once()
+        self.mock_get_term_by_date.assert_called_once()
         self.mock_get_or_create_from_sws_term.assert_called_once()
-        self.assertEqual((term, created), (mock_prev_sws_term, False))
+        self.assertEqual((term, created), (mock_sws_term, False))
 
 
 class TestWeekManager(TestCase):
