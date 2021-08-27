@@ -47,14 +47,14 @@ class TestTermManager(TestCase):
         # no existing term for the current date does NOT EXIST
         self.mock_get_term_for_date.return_value = None
         mock_sws_term = MagicMock()
-        mock_sws_term.is_grading_period_past.return_value = False
+        mock_sws_term.is_future.return_value = False
         self.mock_get_current_term.return_value = mock_sws_term
         Term.objects.get_or_create_term_from_sis_term_id()
         self.assertFalse(self.mock_get_term_for_sis_term_id.called)
         self.assertFalse(self.mock_get_term_by_year_and_quarter.called)
         self.mock_get_term_for_date.assert_called_once()
         self.mock_get_current_term.assert_called_once()
-        mock_sws_term.is_grading_period_past.assert_called_once()
+        mock_sws_term.is_future.assert_called_once()
         self.assertFalse(self.mock_get_previous_term.called)
         self.mock_get_or_create_from_sws_term.assert_called_once()
 
@@ -110,7 +110,7 @@ class TestTermManager(TestCase):
         self.mock_get_term_for_date.return_value = None
         mock_sws_term = MagicMock()
         mock_prev_sws_term = MagicMock()
-        mock_sws_term.is_grading_period_past = MagicMock(return_value=True)
+        mock_sws_term.is_future = MagicMock(return_value=True)
         self.mock_get_previous_term.return_value = mock_prev_sws_term
         self.mock_get_current_term.return_value = mock_sws_term
         self.mock_get_or_create_from_sws_term.return_value = \
@@ -120,7 +120,7 @@ class TestTermManager(TestCase):
         self.assertFalse(self.mock_get_term_by_year_and_quarter.called)
         self.mock_get_term_for_date.assert_called_once()
         self.mock_get_current_term.assert_called_once()
-        mock_sws_term.is_grading_period_past.assert_called_once()
+        mock_sws_term.is_future.assert_called_once()
         self.mock_get_previous_term.assert_called_once()
         self.mock_get_or_create_from_sws_term.assert_called_once()
         self.assertEqual((term, created), (mock_prev_sws_term, False))

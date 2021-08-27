@@ -68,7 +68,7 @@ class TermManager(models.Manager):
             else:
                 # lookup sws term object for current term
                 sws_term = get_current_term()
-                if sws_term.is_grading_period_past():
+                if sws_term.is_future():
                     sws_term = get_previous_term()
                 return self.get_or_create_from_sws_term(sws_term)
 
