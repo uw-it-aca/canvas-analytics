@@ -8,8 +8,7 @@ from django.db import models, IntegrityError
 from django.utils import timezone
 from data_aggregator.exceptions import TermNotStarted
 from data_aggregator import utilities
-from uw_sws.term import get_current_term, get_previous_term, \
-    get_term_by_year_and_quarter
+from uw_sws.term import get_term_by_date, get_term_by_year_and_quarter
 from uw_sws import SWS_TIMEZONE
 
 
@@ -67,9 +66,7 @@ class TermManager(models.Manager):
                 return term, False
             else:
                 # lookup sws term object for current term
-                sws_term = get_current_term()
-                if sws_term.is_future():
-                    sws_term = get_previous_term()
+                sws_term = get_term_by_date(curr_date.date())
                 return self.get_or_create_from_sws_term(sws_term)
 
     def get_or_create_from_sws_term(self, sws_term):
