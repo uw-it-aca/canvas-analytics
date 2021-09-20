@@ -85,7 +85,7 @@ class TestUtilities(TestCase):
                             first_day_quarter,
                             cmp_dt=curr_date,
                             tz_name=tz_name)
-        self.assertEqual(week, 12)
+        self.assertEqual(week, 15)
 
     def test_datestring_to_datetime(self):
         # bad input string
