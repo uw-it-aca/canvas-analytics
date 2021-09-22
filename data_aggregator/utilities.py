@@ -64,8 +64,6 @@ def get_relative_week(relative_date, cmp_dt=None, tz_name="UTC"):
 
     if week < 0:
         return 0
-    elif week > getattr(settings, "MAX_WEEK_OF_TERM", 15):
-        return getattr(settings, "MAX_WEEK_OF_TERM", 15)
     else:
         return week
 
