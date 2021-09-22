@@ -8,15 +8,22 @@ from django.db import models, IntegrityError
 from django.utils import timezone
 from data_aggregator.exceptions import TermNotStarted
 from data_aggregator import utilities
-from uw_sws.term import get_current_term, get_term_by_year_and_quarter
+from uw_sws.term import get_term_by_date, get_term_by_year_and_quarter
 from uw_sws import SWS_TIMEZONE
 
 
 class TermManager(models.Manager):
 
-    def get_current_term(self):
-        curr_date = timezone.now()
-        return self.get_term_for_date(curr_date)
+    def get_term_for_sis_term_id(self, sis_term_id):
+        """
+        Return term for supplied sis_term_id
+
+        :param sis_term_id: sis_term_id to return term for
+        :type sis_term_id: str
+        """
+        term = (Term.objects
+                .filter(sis_term_id=sis_term_id)).first()
+        return term
 
     def get_term_for_date(self, date):
         """
@@ -39,21 +46,28 @@ class TermManager(models.Manager):
         :param sis_term_id: sis term id to return Term object for
         :type sis_term_id: str
         """
-        if sis_term_id is None:
-            # try to lookup the current term based on the date
-            term = self.get_current_term()
+        if sis_term_id:
+            # try to lookup the term in db for supplied sis_term_id
+            term = self.get_term_for_sis_term_id(sis_term_id)
             if term:
                 # return current term
                 return term, False
-
-        if sis_term_id:
-            # lookup sws term object for supplied sis term id
-            year, quarter = sis_term_id.split("-")
-            sws_term = get_term_by_year_and_quarter(int(year), quarter)
+            else:
+                # lookup sws term object for supplied sis term id
+                year, quarter = sis_term_id.split("-")
+                sws_term = get_term_by_year_and_quarter(int(year), quarter)
+                return self.get_or_create_from_sws_term(sws_term)
         else:
-            # lookup sws term object for current term
-            sws_term = get_current_term()
-        return self.get_or_create_from_sws_term(sws_term)
+            # try to lookup the current term in db
+            curr_date = timezone.now()
+            term = self.get_term_for_date(curr_date)
+            if term:
+                # return current term
+                return term, False
+            else:
+                # lookup sws term object for current term
+                sws_term = get_term_by_date(curr_date.date())
+                return self.get_or_create_from_sws_term(sws_term)
 
     def get_or_create_from_sws_term(self, sws_term):
         """
