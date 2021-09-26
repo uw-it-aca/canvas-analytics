@@ -78,14 +78,6 @@ class TestUtilities(TestCase):
                             cmp_dt=curr_date,
                             tz_name=tz_name)
         self.assertEqual(week, 3)
-        curr_date = timezone.make_aware(
-            datetime.datetime(2022, 7, 4, 0, 0, 0),
-            timezone=tz(tz_name))
-        week = utilities.get_relative_week(
-                            first_day_quarter,
-                            cmp_dt=curr_date,
-                            tz_name=tz_name)
-        self.assertEqual(week, 12)
 
     def test_datestring_to_datetime(self):
         # bad input string
