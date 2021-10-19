@@ -93,7 +93,8 @@ class CreateJobCommand(BaseCommand):
     def _add_subparser(self, subparsers, command_name,
                        command_help_message=None,
                        include_term=True, include_week=False,
-                       include_course=False, include_account=False):
+                       include_course=False, include_account=False,
+                       include_force=False):
         subparser = subparsers.add_parser(
             command_name,
             help=(command_help_message if command_help_message else
@@ -138,6 +139,11 @@ class CreateJobCommand(BaseCommand):
                 type=str,
                 default='uwcourse',
                 help='The subaccount to create a job for.')
+        if include_force:
+            subparser.add_argument(
+                '--force',
+                action='store_true',
+                help='Force action.')
         subparser.add_argument("--target_start_time",
                                type=str,
                                help=("iso8601 UTC start time for which the "
@@ -193,7 +199,8 @@ class CreateJobCommand(BaseCommand):
             subparsers, TaskTypes.create_rad_db_view, include_week=True)
 
         subparsers = self._add_subparser(
-            subparsers, TaskTypes.create_rad_data_file, include_week=True)
+            subparsers, TaskTypes.create_rad_data_file, include_week=True,
+            include_force=True)
 
         subparsers = self._add_subparser(
             subparsers, TaskTypes.build_subaccount_activity_report,
