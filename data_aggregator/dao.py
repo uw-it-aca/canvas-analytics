@@ -462,8 +462,10 @@ class JobDAO(BaseDAO):
             TaskDAO().create_rad_db_view(sis_term_id=sis_term_id,
                                          week_num=week_num)
         elif job_type == TaskTypes.create_rad_data_file:
-            LoadRadDAO().create_rad_data_file(sis_term_id=sis_term_id,
-                                              week_num=week_num)
+            LoadRadDAO().create_rad_data_file(
+                sis_term_id=sis_term_id,
+                week_num=week_num,
+                force=job.context.get("force", False))
         elif job_type == TaskTypes.build_subaccount_activity_report:
             ReportBuilder().build_subaccount_activity_report(
                 subaccount_id, sis_term_id=sis_term_id, week_num=week_num)
@@ -1325,7 +1327,8 @@ class LoadRadDAO(BaseDAO):
              'summer']]
         return joined_canvas_df
 
-    def create_rad_data_file(self, sis_term_id=None, week_num=None):
+    def create_rad_data_file(self, sis_term_id=None, week_num=None,
+                             force=False):
         """
         Creates RAD data file and uploads it to the GCS bucket
 
@@ -1340,8 +1343,23 @@ class LoadRadDAO(BaseDAO):
             sis_term_id=sis_term_id)
         week, _ = Week.objects.get_or_create_week(sis_term_id=sis_term_id,
                                                   week_num=week_num)
-        rcd = self.get_rad_df(sis_term_id=sis_term_id, week_num=week_num)
-        file_name = (f"rad_data/{term.sis_term_id}-week-"
-                     f"{week.week}-rad-data.csv")
-        file_obj = rcd.to_csv(sep=",", index=False, encoding="UTF-8")
-        self.upload_to_gcs_bucket(file_name, file_obj)
+        running_assign_jobs = Job.objects.get_running_jobs_for_term_week(
+            AnalyticTypes.assignment, term.sis_term_id, week.week)
+        running_partic_jobs = Job.objects.get_running_jobs_for_term_week(
+            AnalyticTypes.participation, term.sis_term_id, week.week)
+        if ((running_assign_jobs.count() == 0 and
+             running_partic_jobs.count() == 0) or force is True):
+            rcd = self.get_rad_df(sis_term_id=sis_term_id, week_num=week_num)
+            file_name = (f"rad_data/{term.sis_term_id}-week-"
+                         f"{week.week}-rad-data.csv")
+            file_obj = rcd.to_csv(sep=",", index=False, encoding="UTF-8")
+            self.upload_to_gcs_bucket(file_name, file_obj)
+        else:
+            error_msg = (
+                f"Skipping creating RAD file. There are "
+                f"{running_assign_jobs.count()} running assignment jobs and "
+                f"{running_partic_jobs.count()} running participation jobs "
+                f"for term {sis_term_id} and week {week_num}. Creation of "
+                f"the RAD data file could result in incomplete data.")
+            logging.critical(error_msg)
+            raise RuntimeError(error_msg)

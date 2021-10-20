@@ -668,7 +668,18 @@ class TestJobDAO(TestCase):
             JobDAO().run_task_job(job)
             mock_create_rad_data_file.assert_called_once_with(
                  sis_term_id="2021-summer",
-                 week_num=4)
+                 week_num=4,
+                 force=False)
+        # test force flag
+        with patch("data_aggregator.dao.LoadRadDAO.create_rad_data_file") \
+                as mock_create_rad_data_file:
+            job.context["force"] = True
+            JobDAO().run_task_job(job)
+            mock_create_rad_data_file.assert_called_once_with(
+                 sis_term_id="2021-summer",
+                 week_num=4,
+                 force=True)
+            del job.context["force"]
         job.type.type = TaskTypes.build_subaccount_activity_report
         with patch("data_aggregator.report_builder.ReportBuilder."
                    "build_subaccount_activity_report") \
