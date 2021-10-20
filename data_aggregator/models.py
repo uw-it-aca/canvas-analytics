@@ -5,6 +5,7 @@ import os
 import logging
 from datetime import datetime, date, timedelta
 from django.db import models, IntegrityError
+from django.db.models import Q
 from django.utils import timezone
 from data_aggregator.exceptions import TermNotStarted
 from data_aggregator import utilities
@@ -229,8 +230,13 @@ class Adviser(models.Model):
 
 class JobManager(models.Manager):
 
-    def get_active_jobs(self, jobtype):
+    def get_jobs(self, jobtype):
         jobs = (self.get_queryset()
+                .filter(type__type=jobtype))
+        return jobs
+
+    def get_active_jobs(self, jobtype):
+        jobs = (self.get_jobs(jobtype)
                 .filter(type__type=jobtype)
                 .filter(target_date_end__gte=timezone.now())
                 .filter(target_date_start__lte=timezone.now()))
@@ -241,10 +247,30 @@ class JobManager(models.Manager):
                 .filter(pid=None))
         return jobs
 
-    def get_pending_or_running_jobs(self, jobtype):
-        jobs = (self.get_active_jobs(jobtype)
+    def get_running_jobs(self, jobtype):
+        jobs = (self.get_jobs(jobtype)
+                .filter(~Q(pid=None))  # running
                 .filter(end=None)  # not completed
                 .filter(message=''))  # not failed
+        return jobs
+
+    def get_running_jobs_for_term_week(self, jobtype, sis_term_id, week):
+        jobs = self.get_running_jobs(jobtype)
+        if jobtype in (AnalyticTypes.assignment,
+                       AnalyticTypes.participation,
+                       TaskTypes.build_subaccount_activity_report,
+                       TaskTypes.create_rad_db_view,
+                       TaskTypes.create_assignment_db_view,
+                       TaskTypes.create_participation_db_view,
+                       TaskTypes.create_rad_data_file):
+            return (jobs.filter(context__sis_term_id=sis_term_id)
+                        .filter(context__week=week))
+        else:
+            raise ValueError(f"Job type '{jobtype}'' does not have a  "
+                             f"sis_term_id and week attribute.")
+
+    def get_pending_or_running_jobs(self, jobtype):
+        jobs = self.get_pending_jobs(jobtype) | self.get_running_jobs(jobtype)
         return jobs
 
     def claim_batch_of_jobs(self, jobtype, batchsize=None):
