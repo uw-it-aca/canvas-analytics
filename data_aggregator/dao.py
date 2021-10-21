@@ -1281,7 +1281,7 @@ class LoadRadDAO(BaseDAO):
                              header=None,
                              names=['uw_netid', 'sign_in'])
         # set ceiling for scores
-        idp_df[idp_df.sign_in > 100, 'sign_in'] = 100
+        idp_df['sign_in'].values[idp_df['sign_in'] > 100] = 100
         # normalize sign-in score
         idp_df['sign_in'] = np.log(idp_df['sign_in']+1)
         idp_df['sign_in'] = self._rescale_range(idp_df['sign_in'])
