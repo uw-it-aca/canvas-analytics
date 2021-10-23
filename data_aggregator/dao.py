@@ -1269,6 +1269,13 @@ class LoadRadDAO(BaseDAO):
         last_idp_file = bucket_objects['Contents'][-1]['Key']
         return last_idp_file
 
+    def _remove_outlying_idp_signins(self, idp_df):
+        """
+        Cap max number of sign ins to 100
+        """
+        idp_df['sign_in'] = idp_df['sign_in'].clip(upper=100)
+        return idp_df
+
     def get_idp_df(self):
         """
         Download latest idp file found in the s3 bucket and return pandas
@@ -1281,7 +1288,7 @@ class LoadRadDAO(BaseDAO):
                              header=None,
                              names=['uw_netid', 'sign_in'])
         # set ceiling for scores
-        idp_df['sign_in'].values[idp_df['sign_in'] > 100] = 100
+        idp_df = self._remove_outlying_idp_signins(idp_df)
         # normalize sign-in score
         idp_df['sign_in'] = np.log(idp_df['sign_in']+1)
         idp_df['sign_in'] = self._rescale_range(idp_df['sign_in'])
