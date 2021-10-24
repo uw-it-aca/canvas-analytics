@@ -978,14 +978,7 @@ class TestLoadRadDAO(TestCase):
 
     def test_remove_outlying_idp_signins(self):
         lrd = self._get_test_load_rad_dao()
-        mock_idp_file = \
-            os.path.join(os.path.dirname(__file__),
-                         'test_data/netid_logins_2013.csv')
-        mock_idp_data = open(mock_idp_file).read()
-        mock_raw_idp_data_df = \
-            pd.read_csv(StringIO(mock_idp_data),
-                        header=None,
-                        names=['uw_netid', 'sign_in'])
+        lrd, mock_raw_idp_data_df = self._get_mock_idp_data(lrd)
         # first check that the file contains the appropriate contents
         self.assertEqual(
             mock_raw_idp_data_df.columns.values.tolist(),
