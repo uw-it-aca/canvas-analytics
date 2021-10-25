@@ -952,17 +952,49 @@ class TestLoadRadDAO(TestCase):
         mock_iss_advisers_df["adviser_type"] = AdviserTypes.iss
         return mock_iss_advisers_df
 
-    def _get_mock_idp_df(self):
-        lrd = self._get_test_load_rad_dao()
+    def _get_mock_idp_data(self, lrd):
         mock_idp_file = \
             os.path.join(os.path.dirname(__file__),
                          'test_data/netid_logins_2013.csv')
         lrd.get_last_idp_file = MagicMock(return_value=mock_idp_file)
         mock_idp_data = open(mock_idp_file).read()
+        mock_raw_idp_data_df = \
+            pd.read_csv(StringIO(mock_idp_data),
+                        header=None,
+                        names=['uw_netid', 'sign_in'])
         lrd.download_from_s3_bucket = \
             MagicMock(return_value=mock_idp_data)
+        return lrd, mock_raw_idp_data_df
+
+    def _get_mock_idp_df(self):
+        lrd = self._get_test_load_rad_dao()
+        lrd, mock_raw_idp_data_df = self._get_mock_idp_data(lrd)
+        lrd._remove_outlying_idp_signins = MagicMock(
+            side_effect=lrd._remove_outlying_idp_signins)
         mock_idp_df = lrd.get_idp_df()
+        # assertions
+        lrd._remove_outlying_idp_signins.assert_called_once()
         return mock_idp_df
+
+    def test_remove_outlying_idp_signins(self):
+        lrd = self._get_test_load_rad_dao()
+        lrd, mock_raw_idp_data_df = self._get_mock_idp_data(lrd)
+        # first check that the file contains the appropriate contents
+        self.assertEqual(
+            mock_raw_idp_data_df.columns.values.tolist(),
+            ["uw_netid", "sign_in"])
+        has_val_gt_100 = False
+        for _, row in mock_raw_idp_data_df.iterrows():
+            if row['sign_in'] > 100:
+                has_val_gt_100 = True
+        self.assertEqual(has_val_gt_100, True)
+        # next assert that signin values where capped at 100
+        return_value = lrd._remove_outlying_idp_signins(mock_raw_idp_data_df)
+        self.assertEqual(
+            return_value.columns.values.tolist(),
+            ["uw_netid", "sign_in"])
+        for _, row in return_value.iterrows():
+            self.assertEqual(bool(row['sign_in'] <= 100), True)
 
     def test__zero_range(self):
         lrd = self._get_test_load_rad_dao()
