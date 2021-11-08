@@ -1153,12 +1153,10 @@ class LoadRadDAO(BaseDAO):
         url_key = (f"application_metadata/student_categories/"
                    f"{term.sis_term_id}-netid-name-stunum-categories.csv")
         content = self.download_from_gcs_bucket(url_key)
-
         sdb_df = pd.read_csv(StringIO(content))
+        sdb_df["uw_netid"] = sdb_df["uw_netid"].str.strip()
         sdb_df.drop_duplicates(inplace=True)
-
         sdb_df = sdb_df.merge(users_df, how='left', on='uw_netid')
-        sdb_df.fillna(value={'canvas_user_id': -99}, inplace=True)
         return sdb_df
 
     def get_pred_proba_scores_df(self, sis_term_id=None):
