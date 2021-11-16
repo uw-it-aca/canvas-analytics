@@ -70,9 +70,9 @@ cronjob:
     #   add-partic-jobs
     #
     # Sunday
-    #      3:00am                                                                   (PDT)
-    # -------|------------------------------------------------------------------------...
-    #   crt-rad-data (run_jobs)
+    #      6:00am                                                                     (PDT)
+    # -------|--------------------------------------------------------------------------...
+    #   create_rad_data_file (run_jobs)
     #
     # run jobs for loading term, course, and user metadata
     - name: add-terms
@@ -124,7 +124,7 @@ cronjob:
       args: ["create_jobs", "create_rad_data_file"]
     # run create rad data file job
     - name: crt-rad-data
-      schedule: "0 10 * * 0" # At 3:00am PDT on Sunday
+      schedule: "0 13 * * 0" # At 6:00am PDT on Sunday
       command: ["/scripts/management_command.sh"]
       args: ["run_jobs", "create_rad_data_file"]
 daemon:

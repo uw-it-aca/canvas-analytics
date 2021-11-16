@@ -1,13 +1,14 @@
 # Copyright 2021 UW-IT, University of Washington
 # SPDX-License-Identifier: Apache-2.0
 
+import random
 import unittest
 from django.db.utils import IntegrityError
 from django.test import TestCase
 from django.utils import timezone
 from datetime import timedelta, date
 from data_aggregator.models import Assignment, Job, Participation, Term, \
-    Week, Course, JobType, AnalyticTypes, User
+    Week, Course, JobType, AnalyticTypes, User, TaskTypes
 from data_aggregator.utilities import datestring_to_datetime
 from mock import MagicMock, patch
 
@@ -442,14 +443,76 @@ class TestJobManager(TestCase):
             active_jobs = mock_jm.get_active_jobs(AnalyticTypes.participation)
             self.assertEqual(len(active_jobs), 0)
 
-    def test_claim_batch_of_assignment_jobs(self):
+    def test_get_running_jobs_for_term_week(self):
+        # test get running assignment jobs
         with patch.object(
                 timezone, "now",
                 return_value=datestring_to_datetime("2021-04-2T12:00:00.0Z")):
+            mock_jm = self.get_mock_job_manager()
+            active_jobs = mock_jm.get_active_jobs(AnalyticTypes.assignment)
+            self.assertEqual(len(active_jobs), 2)
+            # fake starting the active jobs
+            for job in active_jobs:
+                job.pid = random.randint(1, 1000)  # fake pid
+                job.start = timezone.now()
+                job.save()
+            # assert the correct context
+            for job in active_jobs:
+                self.assertEqual(job.context["sis_term_id"], "2013-spring")
+                self.assertEqual(job.context["week"], 1)
+            running_jobs = mock_jm.get_running_jobs_for_term_week(
+                AnalyticTypes.assignment, "2013-spring", 1)
+            self.assertEqual(len(running_jobs), 2)
+            wrong_term_jobs = mock_jm.get_running_jobs_for_term_week(
+                AnalyticTypes.assignment, "2013-autumn", 1)
+            self.assertEqual(len(wrong_term_jobs), 0)
+            wrong_week_jobs = mock_jm.get_running_jobs_for_term_week(
+                AnalyticTypes.assignment, "2013-spring", 2)
+            self.assertEqual(len(wrong_week_jobs), 0)
+
+        # test get running participation jobs
+        with patch.object(
+                timezone, "now",
+                return_value=datestring_to_datetime("2021-04-2T12:00:00.0Z")):
+            mock_jm = self.get_mock_job_manager()
+            active_jobs = mock_jm.get_active_jobs(AnalyticTypes.participation)
+            self.assertEqual(len(active_jobs), 1)
+            # fake starting the active jobs
+            for job in active_jobs:
+                job.pid = random.randint(1, 1000)  # fake pid
+                job.start = timezone.now()
+                job.save()
+            # assert the correct context
+            for job in active_jobs:
+                self.assertEqual(job.context["sis_term_id"], "2013-spring")
+                self.assertEqual(job.context["week"], 1)
+            running_jobs = mock_jm.get_running_jobs_for_term_week(
+                AnalyticTypes.participation, "2013-spring", 1)
+            self.assertEqual(len(running_jobs), 1)
+            wrong_term_jobs = mock_jm.get_running_jobs_for_term_week(
+                AnalyticTypes.participation, "2013-autumn", 1)
+            self.assertEqual(len(wrong_term_jobs), 0)
+            wrong_week_jobs = mock_jm.get_running_jobs_for_term_week(
+                AnalyticTypes.participation, "2013-spring", 2)
+            self.assertEqual(len(wrong_week_jobs), 0)
+
+        # test for invalid analytics type
+        with self.assertRaises(ValueError):
+            mock_jm.get_running_jobs_for_term_week(
+                TaskTypes.create_terms, "2013-spring", 2)
+            mock_jm.get_running_jobs_for_term_week(
+                TaskTypes.create_or_update_courses, "2013-spring", 2)
+            mock_jm.get_running_jobs_for_term_week(
+                TaskTypes.create_or_update_users, "2013-spring", 2)
+
+    def test_claim_batch_of_assignment_jobs(self):
+        with patch.object(
+                timezone, "now",
+                return_value=datestring_to_datetime("2021-04-02T12:00:00.0Z")):
 
             mock_jm = self.get_mock_job_manager()
             # assert that all assignment jobs are initially unclaimed
-            for job in mock_jm.get_active_jobs(AnalyticTypes.assignment):
+            for job in mock_jm.get_jobs(AnalyticTypes.assignment):
                 self.assertNotEqual(job.status, "claimed")
             # assert that participation jobs are correctly claimed
             claimed_assignment_jobs = \
@@ -462,10 +525,10 @@ class TestJobManager(TestCase):
             self.assertEqual(mock_jm.get_pending_or_running_jobs.called,
                              False)
 
-            # assert that all assignment jobs are initially unclaimed
+            # assert that all assignment jobs are now claimed
             for job in mock_jm.get_active_jobs(AnalyticTypes.assignment):
                 self.assertEqual(job.status, "claimed")
-            # assert reclaiming assignmetn jobs
+            # assert reclaiming assignment jobs
             claimed_assignment_jobs = \
                 mock_jm.claim_batch_of_jobs(AnalyticTypes.assignment)
             self.assertEqual(len(claimed_assignment_jobs), 2)

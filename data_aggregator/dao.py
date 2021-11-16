@@ -466,8 +466,10 @@ class JobDAO(BaseDAO):
             TaskDAO().create_rad_db_view(sis_term_id=sis_term_id,
                                          week_num=week_num)
         elif job_type == TaskTypes.create_rad_data_file:
-            LoadRadDAO().create_rad_data_file(sis_term_id=sis_term_id,
-                                              week_num=week_num)
+            LoadRadDAO().create_rad_data_file(
+                sis_term_id=sis_term_id,
+                week_num=week_num,
+                force=job.context.get("force", False))
         elif job_type == TaskTypes.build_subaccount_activity_report:
             ReportBuilder().build_subaccount_activity_report(
                 subaccount_id, sis_term_id=sis_term_id, week_num=week_num)
@@ -1150,6 +1152,7 @@ class LoadRadDAO(BaseDAO):
         :type sis_term_id: str
         """
         users_df = self.get_users_df()
+        Term.objects.get_or_create_term_from_sis_term_id
         term, _ = Term.objects.get_or_create_term_from_sis_term_id(
             sis_term_id=sis_term_id)
         url_key = (f"application_metadata/student_categories/"
@@ -1268,6 +1271,13 @@ class LoadRadDAO(BaseDAO):
         last_idp_file = bucket_objects['Contents'][-1]['Key']
         return last_idp_file
 
+    def _remove_outlying_idp_signins(self, idp_df):
+        """
+        Cap max number of sign ins to 100
+        """
+        idp_df['sign_in'] = idp_df['sign_in'].clip(upper=100)
+        return idp_df
+
     def get_idp_df(self):
         """
         Download latest idp file found in the s3 bucket and return pandas
@@ -1279,6 +1289,8 @@ class LoadRadDAO(BaseDAO):
         idp_df = pd.read_csv(StringIO(content),
                              header=None,
                              names=['uw_netid', 'sign_in'])
+        # set ceiling for scores
+        idp_df = self._remove_outlying_idp_signins(idp_df)
         # normalize sign-in score
         idp_df['sign_in'] = np.log(idp_df['sign_in']+1)
         idp_df['sign_in'] = self._rescale_range(idp_df['sign_in'])
@@ -1326,7 +1338,8 @@ class LoadRadDAO(BaseDAO):
              'summer']]
         return joined_canvas_df
 
-    def create_rad_data_file(self, sis_term_id=None, week_num=None):
+    def create_rad_data_file(self, sis_term_id=None, week_num=None,
+                             force=False):
         """
         Creates RAD data file and uploads it to the GCS bucket
 
