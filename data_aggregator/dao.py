@@ -1413,9 +1413,8 @@ class EdwDAO(BaseDAO):
                     enr.ResidentDesc,
                     eop = CASE WHEN enr.SpecialProgramCode IN ('1', '2', '13', '14', '16', '17', '31', '32', '33') OR
                                     stu1.spcl_program IN ('1', '2', '13', '14', '16', '17', '31', '32', '33') THEN 1
-                            ELSE 0
-                            END,
-                    isso = CASE WHEN enr.Major1 = 'ISS O' THEN 1 ELSE 0 END,
+                               ELSE 0
+                          END,
                     incoming_freshman = CASE WHEN enr.ClassCode <= 1 AND enr.NewContinuingReturningCode = 1 THEN 1 ELSE 0 END
                 FROM EDWPresentation.sec.EnrolledStudent AS enr
                 LEFT JOIN UWSDBDataStore.sec.student_1 AS stu1 ON enr.SystemKey = stu1.system_key
@@ -1423,16 +1422,15 @@ class EdwDAO(BaseDAO):
             ),
             major_calcs as (
                 SELECT 
-                    m.system_key,
-                    stem = max( case when c.FederalStemInd = 'Y' THEN 1 ELSE 0 END ),
-                    premajor = max( case when s.major_premaj = 1 OR major_premaj_ext = 1 THEN 1 ELSE 0 END)
-                FROM UWSDBDataStore.sec.student_1_college_major AS m
-                LEFT JOIN UWSDBDataStore.sec.sr_major_code AS s ON m.major_abbr = s.major_abbr AND
-                                                                    m.branch = s.major_branch AND 
-                                                                    m.pathway = s.major_pathway
-                LEFT JOIN EDWPresentation.sec.dimCIPCurrent AS c ON s.major_cip_code = c.CIPCode
-                WHERE m.system_key IN (SELECT e.SystemKey FROM enrolled_cte AS e)
-                GROUP BY system_key
+                    cm.system_key,
+                    isso = max( CASE WHEN smc.major_abbr = 'ISS O' THEN 1 ELSE 0 END),
+                    stem = max( CASE WHEN c.FederalStemInd = 'Y' THEN 1 ELSE 0 END ),
+                    premajor = max( CASE WHEN smc.major_premaj = 1 OR major_premaj_ext = 1 THEN 1 ELSE 0 END)
+                FROM UWSDBDataStore.sec.student_1_college_major AS cm
+                LEFT JOIN UWSDBDataStore.sec.sr_major_code AS smc ON cm.major_abbr = smc.major_abbr AND smc.major_pathway = cm.pathway
+                LEFT JOIN EDWPresentation.sec.dimCIPCurrent AS c ON smc.major_cip_code = c.CIPCode
+                WHERE cm.system_key IN (SELECT e.SystemKey FROM enrolled_cte AS e)
+                GROUP BY cm.system_key
             ),
             summer_regis AS (
                 SELECT DISTINCT 
