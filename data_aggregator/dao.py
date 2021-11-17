@@ -1460,13 +1460,24 @@ class EdwDAO(BaseDAO):
                 m.premajor,
                 isso,
                 CampusCode AS campus_code,
-                s.summer
+                s.summer,
+                sport.sport_code
             FROM enrolled_cte AS e 
             LEFT JOIN major_calcs AS m ON e.SystemKey = m.system_key 
             LEFT JOIN agg_summer as s ON e.SystemKey = s.system_key
+            LEFT JOIN UWSDBDataStore.sec.student_2_sport_code as sport on e.SystemKey = sport.system_key
             ORDER BY SystemKey
             """,  # noqa
             conn
         )
         stu_cat_df["uw_netid"] = stu_cat_df["uw_netid"].str.strip()
+        # combine sport codes into single list per student
+        stu_cat_df = stu_cat_df.groupby(
+            ["system_key", "uw_netid", "student_no", "student_name_lowc",
+             "eop", "incoming_freshman", "international", "stem", "premajor",
+             "isso", "campus_code", "summer"])[
+                 'sport_code'].apply(list).reset_index()
+        stu_cat_df["sport_code"] = \
+            [[int(c) for c in codes if not pd.isna(c)]
+             for codes in stu_cat_df["sport_code"] if codes]
         return stu_cat_df

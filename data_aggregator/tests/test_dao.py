@@ -1057,7 +1057,7 @@ class TestLoadRadDAO(TestCase):
     def test_get_student_categories_df(self):
         columns = ["system_key", "uw_netid", "student_no", "student_name_lowc",
                    "eop", "incoming_freshman", "international", "stem",
-                   "premajor", "isso", "campus_code", "summer",
+                   "premajor", "isso", "campus_code", "summer", "sport_code",
                    "canvas_user_id"]
         # test with defined sis_term_id
         mock_student_categories_df = self._get_mock_student_categories_df(
@@ -1235,7 +1235,8 @@ class TestEdwDAO(TestCase):
             mock_student_categories_df.columns.values.tolist(),
             ["system_key", "uw_netid", "student_no", "student_name_lowc",
              "eop", "incoming_freshman", "international",
-             "stem", "premajor", "isso", "campus_code", "summer"])
+             "stem", "premajor", "isso", "campus_code", "summer",
+             "sport_code"])
 
 
 if __name__ == "__main__":
