@@ -1476,6 +1476,6 @@ class EdwDAO(BaseDAO):
              "isso", "campus_code", "summer"])[
                  'sport_code'].apply(list).reset_index()
         stu_cat_df["sport_code"] = \
-            [[int(c) for c in codes if not pd.isna(c)]
+            [",".join([str(int(c)) for c in codes if not pd.isna(c)])
              for codes in stu_cat_df["sport_code"] if codes]
         return stu_cat_df
