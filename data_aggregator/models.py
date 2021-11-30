@@ -213,7 +213,7 @@ class AdviserTypes():
 
 class Adviser(models.Model):
 
-    user = models.ForeignKey(User, on_delete=models.PROTECT)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     is_active = models.BooleanField(null=True)
     is_dept_adviser = models.BooleanField(null=True)
     full_name = models.TextField(null=True)

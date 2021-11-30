@@ -84,10 +84,10 @@ cronjob:
       schedule: "0 6 * * 6" # At 11:00pm PDT on Friday
       command: ["/scripts/management_command.sh"]
       args: ["create_and_run_jobs", "create_terms"]
-    - name: reload-advisers
-      schedule: "0 6 * * 6" # At 11:00pm PDT on Friday
-      command: ["/scripts/management_command.sh"]
-      args: ["create_and_run_jobs", "reload_advisers"]
+    #- name: reload-advisers
+    #  schedule: "0 6 * * 6" # At 11:00pm PDT on Friday
+    #  command: ["/scripts/management_command.sh"]
+    #  args: ["create_and_run_jobs", "reload_advisers"]
     - name: add-stucat-file
       schedule: "0 6 * * 6" # At 11:00pm PDT on Friday
       command: ["/scripts/management_command.sh"]
