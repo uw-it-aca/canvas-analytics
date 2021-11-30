@@ -3,13 +3,14 @@
 
 import logging
 import os
+import pymssql
 from csv import DictReader
 from django.conf import settings
 from django.db import transaction, connection
-from data_aggregator.models import Adviser, Assignment, Course, \
-    Participation, TaskTypes, User, RadDbView, Term, Week, AnalyticTypes, \
-    Job, AdviserTypes
-from data_aggregator.utilities import get_view_name, set_gcs_base_path
+from data_aggregator.models import Adviser, AdviserTypes, Assignment, Course, \
+    Participation, TaskTypes, User, RadDbView, Term, Week, AnalyticTypes, Job
+from data_aggregator.utilities import get_view_name, set_gcs_base_path, \
+    get_term_number
 from data_aggregator.report_builder import ReportBuilder
 from restclients_core.exceptions import DataFailureException
 from restclients_core.util.retry import retry
@@ -450,6 +451,9 @@ class JobDAO(BaseDAO):
             TaskDAO().create_or_update_courses(sis_term_id=sis_term_id)
         elif job_type == TaskTypes.create_or_update_users:
             TaskDAO().create_or_update_users(sis_term_id=sis_term_id)
+        elif job_type == TaskTypes.create_student_categories_data_file:
+            EdwDAO().create_student_categories_data_file(
+                sis_term_id=sis_term_id)
         elif job_type == TaskTypes.reload_advisers:
             TaskDAO().reload_advisers()
         elif job_type == TaskTypes.create_assignment_db_view:
@@ -1147,9 +1151,10 @@ class LoadRadDAO(BaseDAO):
             the current term)
         :type sis_term_id: str
         """
+        users_df = self.get_users_df()
+        Term.objects.get_or_create_term_from_sis_term_id
         term, _ = Term.objects.get_or_create_term_from_sis_term_id(
             sis_term_id=sis_term_id)
-        users_df = self.get_users_df()
         url_key = (f"application_metadata/student_categories/"
                    f"{term.sis_term_id}-netid-name-stunum-categories.csv")
         content = self.download_from_gcs_bucket(url_key)
@@ -1350,23 +1355,127 @@ class LoadRadDAO(BaseDAO):
             sis_term_id=sis_term_id)
         week, _ = Week.objects.get_or_create_week(sis_term_id=sis_term_id,
                                                   week_num=week_num)
-        running_assign_jobs = Job.objects.get_running_jobs_for_term_week(
-            AnalyticTypes.assignment, term.sis_term_id, week.week)
-        running_partic_jobs = Job.objects.get_running_jobs_for_term_week(
-            AnalyticTypes.participation, term.sis_term_id, week.week)
-        if ((running_assign_jobs.count() == 0 and
-             running_partic_jobs.count() == 0) or force is True):
-            rcd = self.get_rad_df(sis_term_id=sis_term_id, week_num=week_num)
-            file_name = (f"rad_data/{term.sis_term_id}-week-"
-                         f"{week.week}-rad-data.csv")
-            file_obj = rcd.to_csv(sep=",", index=False, encoding="UTF-8")
-            self.upload_to_gcs_bucket(file_name, file_obj)
-        else:
-            error_msg = (
-                f"Skipping creating RAD file. There are "
-                f"{running_assign_jobs.count()} running assignment jobs and "
-                f"{running_partic_jobs.count()} running participation jobs "
-                f"for term {sis_term_id} and week {week_num}. Creation of "
-                f"the RAD data file could result in incomplete data.")
-            logging.critical(error_msg)
-            raise RuntimeError(error_msg)
+        rcd = self.get_rad_df(sis_term_id=sis_term_id, week_num=week_num)
+        file_name = (f"rad_data/{term.sis_term_id}-week-"
+                     f"{week.week}-rad-data.csv")
+        file_obj = rcd.to_csv(sep=",", index=False, encoding="UTF-8")
+        self.upload_to_gcs_bucket(file_name, file_obj)
+
+
+class EdwDAO(BaseDAO):
+
+    def get_connection(self, database):
+        password = getattr(settings, "EDW_PASSWORD")
+        user = getattr(settings, "EDW_USER")
+        server = getattr(settings, "EDW_SERVER")
+        conn = pymssql.connect(server, user, password, database)
+        logging.debug(f"Connected to {server}.{database} with user {user}")
+        return conn
+
+    def create_student_categories_data_file(self, sis_term_id=None):
+        term, _ = Term.objects.get_or_create_term_from_sis_term_id(
+            sis_term_id=sis_term_id)
+        stu_cat_df = self.get_student_categories_df(
+            sis_term_id=sis_term_id)
+        url_key = (f"application_metadata/student_categories/"
+                   f"{term.sis_term_id}-netid-name-stunum-categories.csv")
+        file_obj = stu_cat_df.to_csv(sep=",", index=False, encoding="UTF-8")
+        self.upload_to_gcs_bucket(url_key, file_obj)
+
+    def get_student_categories_df(self, sis_term_id=None):
+        year = None
+        quarter_num = None
+        if sis_term_id is not None:
+            parts = sis_term_id.split("-")
+            year = parts[0]
+            quarter_num = str(get_term_number(parts[1]))
+        if year is None:
+            year = datetime.now(timezone.utc).year
+        if quarter_num is None:
+            curr_term, _ = Term.objects.get_or_create_term_from_sis_term_id()
+            quarter_num = curr_term.term_number
+        yrq = "".join([str(year), str(quarter_num)])
+        conn = self.get_connection("UWSDBDataStore")
+        stu_cat_df = pd.read_sql(
+            f"""
+            WITH enrolled_cte AS (
+                SELECT 
+                    enr.AcademicYrQtr,
+                    enr.SystemKey,
+                    enr.StudentNumber,
+                    enr.StudentName,
+                    enr.CampusCode,
+                    enr.CampusDesc,
+                    enr.NewContinuingReturningCode,
+                    enr.ClassCode,
+                    stu1.uw_netid,
+                    international_student = CASE WHEN enr.ResidentCode IN (5,6) THEN 1 ELSE 0 END,
+                    enr.ResidentDesc,
+                    eop = CASE WHEN enr.SpecialProgramCode IN ('1', '2', '13', '14', '16', '17', '31', '32', '33') OR
+                                    stu1.spcl_program IN ('1', '2', '13', '14', '16', '17', '31', '32', '33') THEN 1
+                               ELSE 0
+                          END,
+                    incoming_freshman = CASE WHEN enr.ClassCode <= 1 AND enr.NewContinuingReturningCode = 1 THEN 1 ELSE 0 END
+                FROM EDWPresentation.sec.EnrolledStudent AS enr
+                LEFT JOIN UWSDBDataStore.sec.student_1 AS stu1 ON enr.SystemKey = stu1.system_key
+                WHERE AcademicYrQtr = {yrq} AND ClassCode IN ('0', '1', '2', '3', '4') AND RegisteredInQuarter = 'Y'
+            ),
+            major_calcs as (
+                SELECT 
+                    cm.system_key,
+                    isso = max( CASE WHEN smc.major_abbr = 'ISS O' THEN 1 ELSE 0 END),
+                    stem = max( CASE WHEN c.FederalStemInd = 'Y' THEN 1 ELSE 0 END ),
+                    premajor = max( CASE WHEN smc.major_premaj = 1 OR major_premaj_ext = 1 THEN 1 ELSE 0 END)
+                FROM UWSDBDataStore.sec.student_1_college_major AS cm
+                LEFT JOIN UWSDBDataStore.sec.sr_major_code AS smc ON cm.major_abbr = smc.major_abbr AND smc.major_pathway = cm.pathway
+                LEFT JOIN EDWPresentation.sec.dimCIPCurrent AS c ON smc.major_cip_code = c.CIPCode
+                WHERE cm.system_key IN (SELECT e.SystemKey FROM enrolled_cte AS e)
+                GROUP BY cm.system_key
+            ),
+            summer_regis AS (
+                SELECT DISTINCT 
+                    system_key,
+                    AcademicYrQtr = (regis_yr * 10) + regis_qtr,
+                    summer_term = COALESCE(NULLIF(summer_term, ''), 'Full')
+                FROM UWSDBDataStore.sec.registration_courses
+                WHERE (regis_yr * 10) + regis_qtr = {yrq} AND request_status IN ('A', 'C', 'R')
+            ),
+            agg_summer AS ( 
+                SELECT
+                    system_key,
+                    summer = string_agg(summer_term, '-') WITHIN group (ORDER BY summer_term)
+                FROM summer_regis GROUP BY system_key
+            )
+            SELECT DISTINCT
+                SystemKey AS system_key,
+                uw_netid,
+                StudentNumber AS student_no,
+                StudentName AS student_name_lowc,
+                eop,
+                incoming_freshman,
+                international_student AS international,
+                m.stem,
+                m.premajor,
+                isso,
+                CampusCode AS campus_code,
+                s.summer,
+                sport.sport_code
+            FROM enrolled_cte AS e 
+            LEFT JOIN major_calcs AS m ON e.SystemKey = m.system_key 
+            LEFT JOIN agg_summer as s ON e.SystemKey = s.system_key
+            LEFT JOIN UWSDBDataStore.sec.student_2_sport_code as sport on e.SystemKey = sport.system_key
+            ORDER BY SystemKey
+            """,  # noqa
+            conn
+        )
+        stu_cat_df["uw_netid"] = stu_cat_df["uw_netid"].str.strip()
+        # combine sport codes into single list per student
+        stu_cat_df = stu_cat_df.groupby(
+            ["system_key", "uw_netid", "student_no", "student_name_lowc",
+             "eop", "incoming_freshman", "international", "stem", "premajor",
+             "isso", "campus_code", "summer"])[
+                 'sport_code'].apply(list).reset_index()
+        stu_cat_df["sport_code"] = \
+            [[int(c) for c in codes if not pd.isna(c)]
+             for codes in stu_cat_df["sport_code"] if codes]
+        return stu_cat_df
