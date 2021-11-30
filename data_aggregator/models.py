@@ -336,7 +336,9 @@ class JobType(models.Model):
         (TaskTypes.create_participation_db_view,
          'CreateParticipationDBViewJob'),
         (TaskTypes.create_rad_db_view, 'CreateRadDBViewJob'),
-        (TaskTypes.create_rad_data_file, 'CreateRadDataFileJob'))
+        (TaskTypes.create_rad_data_file, 'CreateRadDataFileJob'),
+        (TaskTypes.create_student_categories_data_file,
+         'CreateStudentCategoriesDataFileJob'))
     type = models.CharField(max_length=64, choices=JOB_CHOICES)
 
 
