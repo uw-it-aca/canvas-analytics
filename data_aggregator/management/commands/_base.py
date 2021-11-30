@@ -29,6 +29,7 @@ class RunJobCommand(BaseCommand, RunJobMixin):
                                 TaskTypes.create_participation_db_view,
                                 TaskTypes.create_rad_db_view,
                                 TaskTypes.create_rad_data_file,
+                                TaskTypes.create_student_categories_data_file,
                                 TaskTypes.build_subaccount_activity_report],
                             help=("Name of job to run."))
         parser.add_argument("--job_batch_size",
@@ -220,13 +221,19 @@ class CreateJobCommand(BaseCommand):
             subparsers,
             TaskTypes.create_rad_data_file,
             include_week=True,
+            include_force=True,
             command_help_message=(
-                "Creates RAD metadata data file in GCS bucket."
+                "Creates RAD data file in GCS bucket."
             ))
 
         subparsers = self._add_subparser(
-            subparsers, TaskTypes.create_rad_data_file, include_week=True,
-            include_force=True)
+            subparsers,
+            TaskTypes.create_student_categories_data_file,
+            include_week=False,
+            include_force=True,
+            command_help_message=(
+                "Creates Student Categories metadata data file in GCS bucket."
+            ))
 
         subparsers = self._add_subparser(
             subparsers,
