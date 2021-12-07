@@ -1336,7 +1336,7 @@ class LoadRadDAO(BaseDAO):
              'assignments', 'grades', 'pred', 'adviser_name', 'adviser_type',
              'staff_id', 'sign_in', 'stem', 'incoming_freshman', 'premajor',
              'eop', 'international', 'isso', 'campus_code',
-             'summer']]
+             'summer', 'class_code', 'sport_code']]
         return joined_canvas_df
 
     def create_rad_data_file(self, sis_term_id=None, week_num=None,
@@ -1418,7 +1418,7 @@ class EdwDAO(BaseDAO):
                     incoming_freshman = CASE WHEN enr.ClassCode <= 1 AND enr.NewContinuingReturningCode = 1 THEN 1 ELSE 0 END
                 FROM EDWPresentation.sec.EnrolledStudent AS enr
                 LEFT JOIN UWSDBDataStore.sec.student_1 AS stu1 ON enr.SystemKey = stu1.system_key
-                WHERE AcademicYrQtr = {yrq} AND ClassCode IN ('0', '1', '2', '3', '4') AND RegisteredInQuarter = 'Y'
+                WHERE AcademicYrQtr = {yrq} AND RegisteredInQuarter = 'Y'
             ),
             major_calcs as (
                 SELECT 
@@ -1459,11 +1459,13 @@ class EdwDAO(BaseDAO):
                 isso,
                 CampusCode AS campus_code,
                 s.summer,
+                ClassCode AS class_code,
                 sport.sport_code
             FROM enrolled_cte AS e 
             LEFT JOIN major_calcs AS m ON e.SystemKey = m.system_key 
             LEFT JOIN agg_summer as s ON e.SystemKey = s.system_key
             LEFT JOIN UWSDBDataStore.sec.student_2_sport_code as sport on e.SystemKey = sport.system_key
+            WHERE e.ClassCode IN ('0', '1', '2', '3', '4') OR sport.sport_code > 0
             ORDER BY SystemKey
             """,  # noqa
             conn
@@ -1473,7 +1475,7 @@ class EdwDAO(BaseDAO):
         stu_cat_df = stu_cat_df.groupby(
             ["system_key", "uw_netid", "student_no", "student_name_lowc",
              "eop", "incoming_freshman", "international", "stem", "premajor",
-             "isso", "campus_code", "summer"])[
+             "isso", "campus_code", "summer", "class_code"])[
                  'sport_code'].apply(list).reset_index()
         stu_cat_df["sport_code"] = \
             [",".join([str(int(c)) for c in codes if not pd.isna(c)])
