@@ -103,19 +103,19 @@ class CreateJobCommand(BaseCommand):
         )
         # we add the job name as a hidden argument so that it can be read
         # when processing the command
-        if include_week or include_term:
-            # use current term and week of term as the default
-            term, _ = Term.objects.get_or_create_term_from_sis_term_id()
-            default_sis_term_id = term.sis_term_id
-            default_week = get_relative_week(term.first_day_quarter,
-                                             tz_name="US/Pacific")
+        term, _ = Term.objects.get_or_create_term_from_sis_term_id()
         if include_term:
+            # use current term as the default
+            default_sis_term_id = term.sis_term_id
             subparser.add_argument(
                 "--sis_term_id",
                 type=str,
                 help=("Term to run job for."),
                 default=default_sis_term_id)
         if include_week:
+            # use current week of term as the default
+            default_week = get_relative_week(term.first_day_quarter,
+                                             tz_name="US/Pacific")
             subparser.add_argument(
                 "--week",
                 type=int,
@@ -230,7 +230,6 @@ class CreateJobCommand(BaseCommand):
             subparsers,
             TaskTypes.create_student_categories_data_file,
             include_week=False,
-            include_force=True,
             command_help_message=(
                 "Creates Student Categories metadata data file in GCS bucket."
             ))
