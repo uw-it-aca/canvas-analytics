@@ -11,6 +11,7 @@ from data_aggregator.models import AnalyticTypes, Job, JobType, TaskTypes, \
 from data_aggregator.utilities import datestring_to_datetime, get_relative_week
 from data_aggregator.dao import JobDAO
 from data_aggregator.threads import ThreadPool
+from restclients_core.exceptions import DataFailureException
 
 
 class RunJobCommand(BaseCommand, RunJobMixin):
@@ -91,11 +92,18 @@ class RunJobCommand(BaseCommand, RunJobMixin):
 
 class CreateJobCommand(BaseCommand):
 
+    def __init__(self, *args, **kwargs):
+        super().__init__()
+
     def _add_subparser(self, subparsers, command_name,
                        command_help_message=None,
                        include_term=True, include_week=False,
                        include_course=False, include_account=False,
-                       include_force=False):
+                       include_force=False,
+                       warnings=None):
+        if warnings is None:
+            warnings = {}
+
         subparser = subparsers.add_parser(
             command_name,
             help=(command_help_message if command_help_message else
@@ -103,12 +111,17 @@ class CreateJobCommand(BaseCommand):
         )
         # we add the job name as a hidden argument so that it can be read
         # when processing the command
-        if include_week or include_term:
-            # use current term and week of term as the default
+        try:
             term, _ = Term.objects.get_or_create_term_from_sis_term_id()
+            # use current term and week as default
             default_sis_term_id = term.sis_term_id
             default_week = get_relative_week(term.first_day_quarter,
                                              tz_name="US/Pacific")
+        except DataFailureException as e:
+            msg = f"Unable to set default term and week values. {e}"
+            warnings[msg] = msg
+            default_sis_term_id = None
+            default_week = None
         if include_term:
             subparser.add_argument(
                 "--sis_term_id",
@@ -157,110 +170,126 @@ class CreateJobCommand(BaseCommand):
                                      "is active. YYYY-mm-ddTHH:MM:SS.ss"),
                                default=None,
                                required=False)
-        return subparsers
+        return subparsers, warnings
 
     def add_arguments(self, parser):
         subparsers = parser.add_subparsers(title="job_name",
                                            dest="job_name")
         subparsers.required = True
 
-        subparsers = self._add_subparser(
+        warnings = {}
+
+        subparsers, warnings = self._add_subparser(
             subparsers,
             TaskTypes.create_terms,
             command_help_message=(
                 "Creates current term and all future terms."
-            ))
+            ),
+            warnings=warnings)
 
-        subparsers = self._add_subparser(
+        subparsers, warnings = self._add_subparser(
             subparsers,
             TaskTypes.create_or_update_courses,
             command_help_message=(
                 "Loads or updates list of courses for the current term."
-            ))
+            ),
+            warnings=warnings)
 
-        subparsers = self._add_subparser(
+        subparsers, warnings = self._add_subparser(
             subparsers,
             TaskTypes.create_or_update_users,
             command_help_message=(
                 "Loads or updates list of students for the current term."
-            ))
+            ),
+            warnings=warnings)
 
-        subparsers = self._add_subparser(
+        subparsers, warnings = self._add_subparser(
             subparsers,
             TaskTypes.reload_advisers,
             include_term=False,
             command_help_message=(
                 "Loads or updates list of advisers for all students in the db."
-            ))
+            ),
+            warnings=warnings)
 
-        subparsers = self._add_subparser(
+        subparsers, warnings = self._add_subparser(
             subparsers,
             TaskTypes.create_participation_db_view,
             include_week=True,
             command_help_message=(
                 "Creates participation database view for given term and week."
-            ))
+            ),
+            warnings=warnings)
 
-        subparsers = self._add_subparser(
+        subparsers, warnings = self._add_subparser(
             subparsers,
             TaskTypes.create_assignment_db_view,
             include_week=True,
             command_help_message=(
                 "Creates assignment database view for given term and week."
-            ))
+            ),
+            warnings=warnings)
 
-        subparsers = self._add_subparser(
+        subparsers, warnings = self._add_subparser(
             subparsers,
             TaskTypes.create_rad_db_view,
             include_week=True,
             command_help_message=(
                 "Creates RAD database view for given term and week."
-            ))
+            ),
+            warnings=warnings)
 
-        subparsers = self._add_subparser(
+        subparsers, warnings = self._add_subparser(
             subparsers,
             TaskTypes.create_rad_data_file,
             include_week=True,
             include_force=True,
             command_help_message=(
                 "Creates RAD data file in GCS bucket."
-            ))
+            ),
+            warnings=warnings)
 
-        subparsers = self._add_subparser(
+        subparsers, warnings = self._add_subparser(
             subparsers,
             TaskTypes.create_student_categories_data_file,
             include_week=False,
-            include_force=True,
             command_help_message=(
                 "Creates Student Categories metadata data file in GCS bucket."
-            ))
+            ),
+            warnings=warnings)
 
-        subparsers = self._add_subparser(
+        subparsers, warnings = self._add_subparser(
             subparsers,
             TaskTypes.build_subaccount_activity_report,
             include_week=True,
             include_account=True,
             command_help_message=(
                 "Creates participation database view for given term and week."
-            ))
+            ),
+            warnings=warnings)
 
-        subparsers = self._add_subparser(
+        subparsers, warnings = self._add_subparser(
             subparsers,
             AnalyticTypes.assignment,
             include_week=True,
             include_course=True,
             command_help_message=(
                 "Run active assignment jobs."
-            ))
+            ),
+            warnings=warnings)
 
-        subparsers = self._add_subparser(
+        subparsers, warnings = self._add_subparser(
             subparsers,
             AnalyticTypes.participation,
             include_week=True,
             include_course=True,
             command_help_message=(
                 "Run active participation jobs."
-            ))
+            ),
+            warnings=warnings)
+
+        for msg in warnings.values():
+            logging.warning(msg)
 
     def get_job_context(self, options):
         context = {}
