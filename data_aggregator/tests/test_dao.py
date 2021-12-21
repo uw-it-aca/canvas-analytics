@@ -8,7 +8,7 @@ import numpy as np
 from io import StringIO
 from django.test import TestCase
 from data_aggregator.dao import AnalyticTypes, AnalyticsDAO, CanvasDAO, \
-    JobDAO, LoadRadDAO, BaseDAO, TaskDAO
+    EdwDAO, JobDAO, LoadRadDAO, BaseDAO, TaskDAO
 from data_aggregator.models import AdviserTypes, JobType, TaskTypes, User
 from mock import call, patch, create_autospec, MagicMock
 from restclients_core.exceptions import DataFailureException
@@ -662,6 +662,13 @@ class TestJobDAO(TestCase):
             mock_create_rad_db_view.assert_called_once_with(
                  sis_term_id="2021-summer",
                  week_num=4)
+        job.type.type = TaskTypes.create_student_categories_data_file
+        with patch("data_aggregator.dao.EdwDAO."
+                   "create_student_categories_data_file") \
+                as mock_create_student_categories_data_file:
+            JobDAO().run_task_job(job)
+            mock_create_student_categories_data_file.assert_called_once_with(
+                 sis_term_id="2021-summer")
         job.type.type = TaskTypes.create_rad_data_file
         with patch("data_aggregator.dao.LoadRadDAO.create_rad_data_file") \
                 as mock_create_rad_data_file:
@@ -903,7 +910,14 @@ class TestLoadRadDAO(TestCase):
         lrd.get_s3_client = MagicMock()
         return lrd
 
-    def _get_mock_student_categories_df(self):
+    @patch('data_aggregator.dao.Term')
+    @patch('data_aggregator.dao.pd.read_sql')
+    def _get_mock_student_categories_df(self, mock_read_sql, mock_term_cls,
+                                        sis_term_id=None):
+        mock_term = MagicMock()
+        mock_term.sis_term_id = sis_term_id
+        mock_term_cls.objects.get_or_create_term_from_sis_term_id = \
+            MagicMock(return_value=(mock_term, False))
         lrd = self._get_test_load_rad_dao()
         mock_student_cat_file = \
             os.path.join(
@@ -912,7 +926,7 @@ class TestLoadRadDAO(TestCase):
         mock_student_cat = open(mock_student_cat_file).read()
         lrd.download_from_gcs_bucket = MagicMock(return_value=mock_student_cat)
         mock_student_categories_df = \
-            lrd.get_student_categories_df(sis_term_id="2013-spring")
+            lrd.get_student_categories_df(sis_term_id=sis_term_id)
         return mock_student_categories_df
 
     def _get_mock_pred_proba_df(self):
@@ -1041,13 +1055,21 @@ class TestLoadRadDAO(TestCase):
              "activity", "grades"])
 
     def test_get_student_categories_df(self):
+        columns = ["system_key", "uw_netid", "student_no", "student_name_lowc",
+                   "eop", "incoming_freshman", "international", "stem",
+                   "premajor", "isso", "campus_code", "summer", "class_code",
+                   "sport_code", "canvas_user_id"]
+        # test with defined sis_term_id
+        mock_student_categories_df = self._get_mock_student_categories_df(
+            sis_term_id="2021-summer")
+        self.assertEqual(
+            mock_student_categories_df.columns.values.tolist(),
+            columns)
+        # test with undefined sis_term_id
         mock_student_categories_df = self._get_mock_student_categories_df()
         self.assertEqual(
             mock_student_categories_df.columns.values.tolist(),
-            ["system_key", "uw_netid", "student_no", "student_name_lowc",
-             "eop", "incoming_freshman", "international",
-             "stem", "premajor", "isso", "campus_code", "summer",
-             "canvas_user_id"])
+            columns)
 
     def test_get_pred_proba_scores_df(self):
         mock_pred_proba_df = self._get_mock_pred_proba_df()
@@ -1112,7 +1134,7 @@ class TestLoadRadDAO(TestCase):
                           "adviser_name", "adviser_type", "staff_id",
                           "sign_in", "stem", "incoming_freshman", "premajor",
                           "eop", "international", "isso", "campus_code",
-                          "summer"])
+                          "summer", "class_code", "sport_code"])
 
     @patch('data_aggregator.dao.Week')
     @patch('data_aggregator.dao.Term')
@@ -1141,6 +1163,80 @@ class TestLoadRadDAO(TestCase):
         lrd.upload_to_gcs_bucket.assert_called_once_with(
             "rad_data/2021-summer-week-5-rad-data.csv",
             mock_file_obj)
+
+
+class TestEdwDAO(TestCase):
+
+    def _get_test_edw_dao(self):
+        edw = EdwDAO()
+        edw.get_connection = MagicMock()
+        return edw
+
+    @patch('data_aggregator.dao.pd.read_sql')
+    def _get_mock_student_categories_df(self, mock_read_sql):
+        edw = self._get_test_edw_dao()
+        mock_student_cat_file = \
+            os.path.join(
+                os.path.dirname(__file__),
+                'test_data/2013-spring-netid-name-stunum-categories.csv')
+        mock_student_file = open(mock_student_cat_file)
+        mock_read_sql.return_value = pd.read_csv(mock_student_file, sep=",")
+        mock_student_categories_df = \
+            edw.get_student_categories_df(sis_term_id="2013-spring")
+        return mock_student_categories_df
+
+    @patch('data_aggregator.dao.pymssql.connect')
+    @patch('data_aggregator.dao.settings')
+    def test_get_connection(self, mock_settings, mock_pymssql_connect):
+        mock_database = MagicMock()
+        mock_settings.EDW_PASSWORD = MagicMock()
+        mock_settings.EDW_USER = MagicMock()
+        mock_settings.EDW_SERVER = MagicMock()
+        edw = EdwDAO()
+        conn = edw.get_connection(mock_database)
+        mock_pymssql_connect.assert_called_once_with(
+            mock_settings.EDW_SERVER,
+            mock_settings.EDW_USER,
+            mock_settings.EDW_PASSWORD,
+            mock_database)
+        self.assertEqual(conn, mock_pymssql_connect.return_value)
+
+    @patch('data_aggregator.dao.Term')
+    def test_create_student_categories_data_file(self, mock_term_cls):
+        # setup
+        mock_sis_term_id = "2021-summer"
+        mock_term = MagicMock()
+        mock_term_cls.objects.get_or_create_term_from_sis_term_id = \
+            MagicMock(return_value=(mock_term, False))
+        mock_term.sis_term_id = mock_sis_term_id
+        mock_url_key = (
+            f"application_metadata/student_categories/"
+            f"{mock_term.sis_term_id}-netid-name-stunum-categories.csv")
+        edw = self._get_test_edw_dao()
+        edw.upload_to_gcs_bucket = MagicMock()
+        mock_stu_cat_df = MagicMock()
+        edw.get_student_categories_df = MagicMock(return_value=mock_stu_cat_df)
+        mock_stu_cat_df.to_csv = MagicMock(return_value=MagicMock())
+        # method call
+        edw.create_student_categories_data_file(sis_term_id=mock_sis_term_id)
+        # assertions
+        mock_term_cls.objects.get_or_create_term_from_sis_term_id \
+            .assert_called_once_with(sis_term_id=mock_sis_term_id)
+        edw.get_student_categories_df.assert_called_once_with(
+            sis_term_id=mock_sis_term_id)
+        mock_stu_cat_df.to_csv.assert_called_once_with(
+            sep=",", index=False, encoding="UTF-8")
+        edw.upload_to_gcs_bucket.assert_called_once_with(
+            mock_url_key, mock_stu_cat_df.to_csv.return_value)
+
+    def test_get_student_categories_df(self):
+        mock_student_categories_df = self._get_mock_student_categories_df()
+        self.assertEqual(
+            mock_student_categories_df.columns.values.tolist(),
+            ["system_key", "uw_netid", "student_no", "student_name_lowc",
+             "eop", "incoming_freshman", "international",
+             "stem", "premajor", "isso", "campus_code", "summer", "class_code",
+             "sport_code"])
 
 
 if __name__ == "__main__":

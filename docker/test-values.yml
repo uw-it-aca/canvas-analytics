@@ -57,14 +57,15 @@ cronjob:
   jobs:
     #
     # Friday
-    #      11:00pm        11:15pm        11:30pm        11:45pm            11:50pm    (PDT)
-    # -------|--------------|--------------|--------------|------------------|----------...
-    #    add-terms  add-updt-courses add-updt-users   add-assign-view     add-rad-view
-    #                                                 add-partic-view
+    #      11:00pm        11:15pm        11:30pm        11:45pm          11:50pm    (PDT)
+    # -------|--------------|--------------|--------------|----------------|----------...
+    #    add-terms  add-updt-courses add-updt-users   add-assign-view   add-rad-view
+    #    add-stucat-file                              add-partic-view
+    #    reload-advisers
     #
     # Saturday
-    #      12:00am                        2:00pm                                      (PDT)
-    # -------|-----------------------------|--------------------------------------------...
+    #      12:00am                        2:00pm                                    (PDT)
+    # -------|-----------------------------|------------------------------------------...
     #   add-assign-jobs               add-crt-rad-data (create_jobs)
     #   add-partic-jobs
     #
@@ -78,6 +79,14 @@ cronjob:
       schedule: "0 6 * * 6" # At 11:00pm PDT on Friday
       command: ["/scripts/management_command.sh"]
       args: ["create_and_run_jobs", "create_terms"]
+    #- name: reload-advisers
+    #  schedule: "0 6 * * 6" # At 11:00pm PDT on Friday
+    #  command: ["/scripts/management_command.sh"]
+    #  args: ["create_and_run_jobs", "reload_advisers"]
+    - name: add-stucat-file
+      schedule: "0 6 * * 6" # At 11:00pm PDT on Friday
+      command: ["/scripts/management_command.sh"]
+      args: ["create_and_run_jobs", "create_student_categories_data_file"]
     - name: add-updt-courses
       schedule: "15 6 * * *" # At 11:15pm PDT every night
       command: ["/scripts/management_command.sh"]
@@ -175,6 +184,14 @@ externalSecrets:
         - name: aws_access_key
           property: aws_access_key
 
+    - name: test-analytics.apps.canvas.uw.edu-edw-secrets
+      externalKey: axdd/kv/data/canvas/analytics/shared/edw-secrets
+      data:
+        - name: edw-username
+          property: edw-username
+        - name: edw-password
+          property: edw-password
+
     - name: test-analytics.apps.canvas.uw.edu-canvas-secrets
       externalKey: axdd/kv/data/canvas/shared/secrets
       data:
@@ -256,3 +273,11 @@ environmentVariablesSecrets:
     name: AWS_ACCESS_KEY
     secretName: test-analytics.apps.canvas.uw.edu-idp-aws-credentials
     secretKey: aws_access_key
+  edwUser:
+    name: EDW_USER
+    secretName: test-analytics.apps.canvas.uw.edu-edw-secrets
+    secretKey: edw-username
+  edwPassword:
+    name: EDW_PASSWORD
+    secretName: test-analytics.apps.canvas.uw.edu-edw-secrets
+    secretKey: edw-password

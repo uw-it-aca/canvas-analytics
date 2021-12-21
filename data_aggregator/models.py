@@ -213,7 +213,7 @@ class AdviserTypes():
 
 class Adviser(models.Model):
 
-    user = models.ForeignKey(User, on_delete=models.PROTECT)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     is_active = models.BooleanField(null=True)
     is_dept_adviser = models.BooleanField(null=True)
     full_name = models.TextField(null=True)
@@ -315,6 +315,7 @@ class TaskTypes():
     create_terms = "create_terms"
     create_or_update_courses = "create_or_update_courses"
     create_or_update_users = "create_or_update_users"
+    create_student_categories_data_file = "create_student_categories_data_file"
     reload_advisers = "reload_advisers"
     create_assignment_db_view = "create_assignment_db_view"
     create_participation_db_view = "create_participation_db_view"
@@ -335,7 +336,9 @@ class JobType(models.Model):
         (TaskTypes.create_participation_db_view,
          'CreateParticipationDBViewJob'),
         (TaskTypes.create_rad_db_view, 'CreateRadDBViewJob'),
-        (TaskTypes.create_rad_data_file, 'CreateRadDataFileJob'))
+        (TaskTypes.create_rad_data_file, 'CreateRadDataFileJob'),
+        (TaskTypes.create_student_categories_data_file,
+         'CreateStudentCategoriesDataFileJob'))
     type = models.CharField(max_length=64, choices=JOB_CHOICES)
 
 
