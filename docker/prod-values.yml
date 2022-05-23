@@ -147,11 +147,12 @@ daemon:
     - name: run-partic-jobs
       command: ["/scripts/management_daemon.sh"]
       args: ['--cron', '* * * * *', "run_jobs", 'participation']
+
 certs:
   mounted: true
-  certPath: /certs/apps.canvas.uw.edu-uwca.cert
-  keyPath: /certs/apps.canvas.uw.edu-uwca.key
-  secretName: analytics.apps.canvas.uw.edu-uwca-certs
+  certPath: /certs/apps.canvas.uw.edu-ic.cert
+  keyPath: /certs/apps.canvas.uw.edu-ic.key
+  secretName: analytics.apps.canvas.uw.edu-client-cert
 
 environmentVariables:
   - name: ENV
@@ -182,13 +183,13 @@ externalSecrets:
   enabled: true
   secrets:
     - name: analytics.apps.canvas.uw.edu-gcs-credentials
-      externalKey: axdd/kv/data/canvas/analytics/shared/gcs-credentials
+      externalKey: canvas/analytics/shared/gcs-credentials
       data:
         - name: credentials.json
           property: credentials.json
 
     - name: analytics.apps.canvas.uw.edu-idp-aws-credentials
-      externalKey: axdd/kv/data/canvas/analytics/shared/idp-aws-credentials
+      externalKey: canvas/analytics/shared/idp-aws-credentials
       data:
         - name: aws_access_id
           property: aws_access_id
@@ -196,7 +197,7 @@ externalSecrets:
           property: aws_access_key
 
     - name: analytics.apps.canvas.uw.edu-edw-secrets
-      externalKey: axdd/kv/data/canvas/analytics/shared/edw-secrets
+      externalKey: canvas/analytics/shared/edw-secrets
       data:
         - name: edw-username
           property: edw-username
@@ -204,19 +205,19 @@ externalSecrets:
           property: edw-password
 
     - name: analytics.apps.canvas.uw.edu-canvas-secrets
-      externalKey: axdd/kv/data/canvas/shared/secrets
+      externalKey: canvas/shared/secrets
       data:
         - name: canvas-account-id
           property: canvas-account-id
 
     - name: analytics.apps.canvas.uw.edu-secrets
-      externalKey: axdd/kv/data/canvas/analytics/prod/secrets
+      externalKey: canvas/analytics/prod/secrets
       data:
         - name: django-secret
           property: django-secret
 
     - name: analytics.apps.canvas.uw.edu-shared-secrets
-      externalKey: axdd/kv/data/canvas/analytics/shared/secrets
+      externalKey: canvas/analytics/shared/secrets
       data:
         - name: canvas-api-token
           property: canvas-api-token
@@ -224,29 +225,29 @@ externalSecrets:
           property: access-group-id
 
     - name: analytics.apps.canvas.uw.edu-sql-secrets
-      externalKey: axdd/kv/data/canvas/analytics/shared/sql-secrets
+      externalKey: canvas/analytics/shared/sql-secrets
       data:
         - name: username
           property: username
         - name: password
           property: password
 
-    - name: analytics.apps.canvas.uw.edu-uwca-certs
-      externalKey: axdd/kv/data/canvas/prod/uwca-certs
+    - name: analytics.apps.canvas.uw.edu-client-cert
+      externalKey: canvas/prod/ic-certs
       data:
-        - name: apps.canvas.uw.edu-uwca.cert
-          property: apps.canvas.uw.edu-uwca.cert
-        - name: apps.canvas.uw.edu-uwca.key
-          property: apps.canvas.uw.edu-uwca.key
+        - name: apps.canvas.uw.edu-ic.cert
+          property: apps.canvas.uw.edu-ic.cert
+        - name: apps.canvas.uw.edu-ic.key
+          property: apps.canvas.uw.edu-ic.key
 
-    - name: analytics.apps.canvas.uw.edu-ic-certs
-      externalKey: axdd/kv/data/canvas/analytics/prod/ic-certs
+    - name: analytics.apps.canvas.uw.edu-sp-cert
+      externalKey: canvas/analytics/prod/ic-certs
       data:
         - name: analytics.apps.canvas.uw.edu-ic.cert
           property: analytics.apps.canvas.uw.edu-ic.cert
 
     - name: analytics.apps.canvas.uw.edu-uw-idp-cert
-      externalKey: axdd/kv/data/idp-cert
+      externalKey: idp-cert
       data:
         - name: uw-idp-cert
           property: cert
@@ -270,7 +271,7 @@ environmentVariablesSecrets:
     secretKey: access-group-id
   samlSPCert:
     name: SP_CERT
-    secretName: analytics.apps.canvas.uw.edu-ic-certs
+    secretName: analytics.apps.canvas.uw.edu-sp-cert
     secretKey: analytics.apps.canvas.uw.edu-ic.cert
   samlIDPCert:
     name: IDP_CERT

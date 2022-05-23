@@ -28,7 +28,6 @@ setup(
         'UW-Django-SAML2~=1.5',
         'django-webpack-loader~=0.7',
         'djangorestframework~=3.12',
-        'psycopg2~=2.8',
         'uw-gcs-clients~=1.0',
         'boto3~=1.17',
         'google-cloud-storage~=1.37',
@@ -50,6 +49,6 @@ setup(
         'License :: OSI Approved :: Apache Software License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.8',
     ],
 )
