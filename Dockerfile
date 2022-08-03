@@ -1,24 +1,20 @@
-FROM gcr.io/uwit-mci-axdd/django-container:1.3.8 as app-prewebpack-container
+ARG DJANGO_CONTAINER_VERSION=1.4.1
+FROM gcr.io/uwit-mci-axdd/django-container:${DJANGO_CONTAINER_VERSION} as app-prewebpack-container
 
 USER root
 
-RUN apt-get update && apt-get install libpq-dev -y
-RUN apt-get update && apt-get install freetds-bin -y
+RUN apt-get update && apt-get install libpq-dev freetds-bin -y
 
 USER acait
 
-ADD --chown=acait:acait data_aggregator/VERSION /app/data_aggregator/
-ADD --chown=acait:acait setup.py /app/
-ADD --chown=acait:acait requirements.txt /app/
-RUN . /app/bin/activate && pip install --upgrade pip
-RUN . /app/bin/activate && pip install -r requirements.txt
-
 ADD --chown=acait:acait . /app/
-ADD --chown=acait:acait docker/ project/
+ADD --chown=acait:acait docker/ /app/project/
+
 ADD --chown=acait:acait docker/app_start.sh /scripts
 RUN chmod u+x /scripts/app_start.sh
 
-RUN . /app/bin/activate && pip install django-webpack-loader
+RUN /app/bin/pip install -r requirements.txt
+RUN /app/bin/pip install django-webpack-loader psycopg2
 
 FROM node:8.15.1-jessie AS wpack
 ADD . /app/
@@ -32,7 +28,7 @@ COPY --chown=acait:acait --from=wpack /app/data_aggregator/static/data_aggregato
 COPY --chown=acait:acait --from=wpack /app/data_aggregator/static/ /static/
 COPY --chown=acait:acait --from=wpack /app/data_aggregator/static/webpack-stats.json /app/data_aggregator/static/webpack-stats.json
 
-FROM gcr.io/uwit-mci-axdd/django-test-container:1.3.8 as app-test-container
+FROM gcr.io/uwit-mci-axdd/django-test-container:${DJANGO_CONTAINER_VERSION} as app-test-container
 
 COPY --from=app-container /app/ /app/
 COPY --from=app-container /static/ /static/
