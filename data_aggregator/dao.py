@@ -1335,8 +1335,8 @@ class LoadRadDAO(BaseDAO):
             ['uw_netid', 'student_no', 'student_name_lowc', 'activity',
              'assignments', 'grades', 'pred', 'adviser_name', 'adviser_type',
              'staff_id', 'sign_in', 'stem', 'incoming_freshman', 'premajor',
-             'eop', 'international', 'isso', 'engineering', 'campus_code',
-             'summer', 'class_code', 'sport_code']]
+             'eop', 'international', 'isso', 'engineering', 'informatics',
+             'campus_code', 'summer', 'class_code', 'sport_code']]
         return joined_canvas_df
 
     def create_rad_data_file(self, sis_term_id=None, week_num=None,
@@ -1441,7 +1441,8 @@ class EdwDAO(BaseDAO):
                     isso = max( CASE WHEN smc.major_abbr = 'ISS O' THEN 1 ELSE 0 END),
                     stem = max( CASE WHEN c.FederalStemInd = 'Y' THEN 1 ELSE 0 END ),
                     premajor = max( CASE WHEN smc.major_premaj = 1 OR major_premaj_ext = 1 THEN 1 ELSE 0 END),
-                    engineering = max( CASE WHEN smc.major_abbr IN ('A A', 'BIOEN', 'BSE', 'C SCI', 'CHEM E', 'CIV E', 'CMP E', 'E E', 'ENGRUD', 'ENV E', 'HCDE', 'IND E', 'INT EN', 'M E', 'MS E', 'PREBSE', 'STARS') THEN 1 ELSE 0 END)
+                    engineering = max( CASE WHEN smc.major_abbr IN ('A A', 'BIOEN', 'BSE', 'C SCI', 'CHEM E', 'CIV E', 'CMP E', 'E E', 'ENGRUD', 'ENV E', 'HCDE', 'IND E', 'INT EN', 'M E', 'MS E', 'PREBSE', 'STARS') THEN 1 ELSE 0 END),
+                    informatics = max( CASE WHEN smc.major_abbr = 'INFO' THEN 1 ELSE 0 END)
                 FROM UWSDBDataStore.sec.student_1_college_major AS cm
                 LEFT JOIN UWSDBDataStore.sec.sr_major_code AS smc ON cm.major_abbr = smc.major_abbr AND smc.major_pathway = cm.pathway
                 LEFT JOIN EDWPresentation.sec.dimCIPCurrent AS c ON smc.major_cip_code = c.CIPCode
@@ -1474,6 +1475,7 @@ class EdwDAO(BaseDAO):
                 m.premajor,
                 isso,
                 engineering,
+                informatics,
                 CampusCode AS campus_code,
                 s.summer,
                 ClassCode AS class_code,
@@ -1492,8 +1494,8 @@ class EdwDAO(BaseDAO):
         stu_cat_df = stu_cat_df.groupby(
             ["system_key", "uw_netid", "student_no", "student_name_lowc",
              "eop", "incoming_freshman", "international", "stem", "premajor",
-             "isso", "engineering", "campus_code", "summer", "class_code"])[
-                 'sport_code'].apply(list).reset_index()
+             "isso", "engineering", "informatics", "campus_code", "summer",
+             "class_code"])['sport_code'].apply(list).reset_index()
         stu_cat_df["sport_code"] = \
             [",".join([str(int(c)) for c in codes if not pd.isna(c)])
              for codes in stu_cat_df["sport_code"] if codes]
