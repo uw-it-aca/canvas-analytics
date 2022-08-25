@@ -1,7 +1,7 @@
-system_key,uw_netid,student_no,student_name_lowc,eop,incoming_freshman,international,stem,premajor,isso,engineering,campus_code,summer,class_code,sport_code
-20634,sanghp,2150337,"Park,Sang Park",0,0,0,0,0,0,0,0,A-Full,1,53
-20634,sanghp,2150337,"Park,Sang Park",0,0,0,0,0,0,0,0,A-Full,1,96
-46406,shoh7,9940681,"Hayashida,Sho Hayashida",0,0,0,0,0,0,0,0,A-B-Full,8,7
-56410,jacklee,1950391,"Lee,Jack",0,3,2,12,0,0,0,0,Full,2,
-58876,ciaraw,1341060,"Weems,Ciara Nicole",0,0,0,0,0,0,0,2,A-Full,3,
-69782,budiae,1234567,"Budiawan,Elvira",1,0,0,0,0,0,1,0,B,4,6
+system_key,uw_netid,student_no,student_name_lowc,eop,incoming_freshman,international,stem,premajor,isso,engineering,informatics,campus_code,summer,class_code,sport_code
+20634,sanghp,2150337,"Park,Sang Park",0,0,0,0,0,0,0,1,0,A-Full,1,53
+20634,sanghp,2150337,"Park,Sang Park",0,0,0,0,0,0,0,1,0,A-Full,1,96
+46406,shoh7,9940681,"Hayashida,Sho Hayashida",0,0,0,0,0,0,0,0,0,A-B-Full,8,7
+56410,jacklee,1950391,"Lee,Jack",0,3,2,12,0,0,0,0,0,Full,2,
+58876,ciaraw,1341060,"Weems,Ciara Nicole",0,0,0,0,0,0,0,0,2,A-Full,3,
+69782,budiae,1234567,"Budiawan,Elvira",1,0,0,0,0,0,1,0,0,B,4,6
