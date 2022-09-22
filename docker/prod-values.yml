@@ -64,22 +64,22 @@ sidecarContainers:
       - name: PROXY_ID_KEY
         valueFrom:
           secretKeyRef:
-            name: analytics.apps.canvas.uw.edu-shared-secrets
+            name: analytics.apps.canvas.uw.edu-edw-secrets
             key: proxy-id-key
       - name: PROXY_ID
         valueFrom:
           secretKeyRef:
-            name: analytics.apps.canvas.uw.edu-shared-secrets
+            name: analytics.apps.canvas.uw.edu-edw-secrets
             key: proxy-id
       - name: PROXY_HOSTNAME
         valueFrom:
           secretKeyRef:
-            name: analytics.apps.canvas.uw.edu-shared-secrets
+            name: analytics.apps.canvas.uw.edu-edw-secrets
             key: proxy-hostname
       - name: TARGET_HOSTNAME
         valueFrom:
           secretKeyRef:
-            name: analytics.apps.canvas.uw.edu-shared-secrets
+            name: analytics.apps.canvas.uw.edu-edw-secrets
             key: edw-hostname
       - name: TARGET_PORT
         value: "1433"
