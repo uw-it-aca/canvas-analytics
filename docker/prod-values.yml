@@ -259,17 +259,18 @@ externalSecrets:
     - name: analytics.apps.canvas.uw.edu-edw-secrets
       externalKey: canvas/analytics/shared/edw-secrets
       data:
+        - name: edw-hostname
+          property: edw-hostname
         - name: edw-username
           property: edw-username
         - name: edw-password
           property: edw-password
-        - name: edw-hostname
-          property: edw-hostname
+        - name: proxy-hostname
+          property: proxy-hostname
         - name: proxy-id-key
           property: proxy-id-key
         - name: proxy-id
           property: proxy-id
-        - name: proxy-hostname
 
     - name: analytics.apps.canvas.uw.edu-client-cert
       externalKey: canvas/prod/ic-certs
