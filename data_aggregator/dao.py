@@ -1382,9 +1382,9 @@ class EdwDAO(BaseDAO):
     def get_connection(self, database):
         password = getattr(settings, "EDW_PASSWORD")
         user = getattr(settings, "EDW_USER")
-        server = getattr(settings, "EDW_SERVER")
-        conn = pymssql.connect(server, user, password, database)
-        logging.debug(f"Connected to {server}.{database} with user {user}")
+        hostname = getattr(settings, "EDW_HOSTNAME")
+        conn = pymssql.connect(hostname, user, password, database)
+        logging.debug(f"Connected to {hostname}.{database} with user {user}")
         return conn
 
     def create_student_categories_data_file(self, sis_term_id=None):
