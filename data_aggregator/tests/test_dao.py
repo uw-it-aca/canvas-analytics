@@ -1193,11 +1193,11 @@ class TestEdwDAO(TestCase):
         mock_database = MagicMock()
         mock_settings.EDW_PASSWORD = MagicMock()
         mock_settings.EDW_USER = MagicMock()
-        mock_settings.EDW_SERVER = MagicMock()
+        mock_settings.EDW_HOSTNAME = MagicMock()
         edw = EdwDAO()
         conn = edw.get_connection(mock_database)
         mock_pymssql_connect.assert_called_once_with(
-            mock_settings.EDW_SERVER,
+            mock_settings.EDW_HOSTNAME,
             mock_settings.EDW_USER,
             mock_settings.EDW_PASSWORD,
             mock_database)
