@@ -219,6 +219,8 @@ externalSecrets:
     - name: test-analytics.apps.canvas.uw.edu-edw-secrets
       externalKey: canvas/analytics/shared/edw-secrets
       data:
+        - name: edw-hostname
+          property: edw-hostname
         - name: edw-username
           property: edw-username
         - name: edw-password
