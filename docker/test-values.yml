@@ -52,6 +52,38 @@ memcached:
 gcsCredentials:
   mounted: true
   secretName: test-analytics.apps.canvas.uw.edu-gcs-credentials
+sidecarContainers:
+  forwarder:
+    image: "gcr.io/uwit-mci-axdd/uw-ssh-client:4aad3bd"
+    environmentVariables:
+      - name: PROXY_ID_KEY
+        valueFrom:
+          secretKeyRef:
+            name: analytics.apps.canvas.uw.edu-edw-secrets
+            key: proxy-id-key
+      - name: PROXY_ID
+        valueFrom:
+          secretKeyRef:
+            name: analytics.apps.canvas.uw.edu-edw-secrets
+            key: proxy-id
+      - name: PROXY_HOSTNAME
+        valueFrom:
+          secretKeyRef:
+            name: analytics.apps.canvas.uw.edu-edw-secrets
+            key: proxy-hostname
+      - name: TARGET_HOSTNAME
+        valueFrom:
+          secretKeyRef:
+            name: analytics.apps.canvas.uw.edu-edw-secrets
+            key: edw-hostname
+      - name: TARGET_PORT
+        value: "1433"
+      - name: LOCAL_PORT
+        value: "1433"
+    command:
+      - "sh"
+      - "-c"
+      - 'mkdir -m 0700 ~/.ssh && echo "${PROXY_ID_KEY}" > ~/.ssh/id_ecdsa && chmod 400 ~/.ssh/id_ecdsa && ssh ${PROXY_ID}@${PROXY_HOSTNAME} -o StrictHostKeyChecking=no -N -L 127.0.0.1:${LOCAL_PORT}:${TARGET_HOSTNAME}:${TARGET_PORT}'
 cronjob:
   enabled: false
   jobs:
@@ -191,6 +223,12 @@ externalSecrets:
           property: edw-username
         - name: edw-password
           property: edw-password
+        - name: proxy-hostname
+          property: proxy-hostname
+        - name: proxy-id-key
+          property: proxy-id-key
+        - name: proxy-id
+          property: proxy-id
 
     - name: test-analytics.apps.canvas.uw.edu-canvas-secrets
       externalKey: canvas/shared/secrets
