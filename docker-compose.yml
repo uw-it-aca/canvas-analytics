@@ -7,7 +7,7 @@ services:
       PORT: 8000
       AUTH: SAML_MOCK
     restart: always
-    container_name: app-canvas-analytics
+    container_name: canvas-analytics_app
     build:
       context: .
       target: app-container
@@ -15,3 +15,13 @@ services:
       - ./data_aggregator:/app/data_aggregator
     ports:
       - "8000:8000"
+  devtools:
+    restart: always
+    container_name: analytics_devtools
+    image: node:8.16.0-jessie
+    volumes:
+      - ./package.json:/devtools/data_aggregator/package.json
+      - ./webpack.config.js:/devtools/data_aggregator/webpack.config.js
+      - ./data_aggregator:/devtools/data_aggregator/data_aggregator
+    working_dir: /devtools/data_aggregator
+    command: bash -c "yes yes | npm install; npx webpack --watch --mode=development"
