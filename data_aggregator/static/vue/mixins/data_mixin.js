@@ -82,7 +82,7 @@ const dataMixin = {
       const csrfToken = this.$store.state.csrfToken;
       const axiosConfig = {
         headers: {
-          'Content-Type': 'application/json;charset=UTF-8',
+          'Content-Type': 'multipart/form-data;charset=UTF-8',
           'Access-Control-Allow-Origin': '*',
           'X-CSRFToken': csrfToken
         }

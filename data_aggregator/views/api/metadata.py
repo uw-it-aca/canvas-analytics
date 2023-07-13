@@ -86,7 +86,7 @@ class MetadataFileUploadView(BaseMetadataView):
             dao = BaseDAO()
             new_file_name = request.POST["newFileName"]
             url_key = self.get_full_file_path(new_file_name)
-            content = request.FILES['upload']
+            content = request.FILES['upload'].file
             dao.upload_to_gcs_bucket(url_key, content)
             return self.json_response(content={"uploaded": True})
         except Exception as e:

@@ -131,7 +131,7 @@ class TestMetadataFileUploadView(BaseViewTestCase):
         mock_upload_to_gcs_bucket.assert_called_once_with(
             'application_metadata/predicted_probabilites/'
             '2021-autumn-pred-proba.csv',
-            mock_content)
+            mock_content.file)
         self.assertEqual(response.status_code,
                          200)
         self.assertEqual(response.content,
