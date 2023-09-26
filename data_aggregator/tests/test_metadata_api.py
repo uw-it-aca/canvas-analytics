@@ -1,5 +1,6 @@
-# Copyright 2022 UW-IT, University of Washington
+# Copyright 2023 UW-IT, University of Washington
 # SPDX-License-Identifier: Apache-2.0
+
 
 from data_aggregator.tests.view_utils import BaseViewTestCase
 from data_aggregator.views.api.metadata import BaseMetadataView, \
@@ -130,7 +131,7 @@ class TestMetadataFileUploadView(BaseViewTestCase):
         mock_upload_to_gcs_bucket.assert_called_once_with(
             'application_metadata/predicted_probabilites/'
             '2021-autumn-pred-proba.csv',
-            mock_content)
+            mock_content.file)
         self.assertEqual(response.status_code,
                          200)
         self.assertEqual(response.content,
