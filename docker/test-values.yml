@@ -87,7 +87,7 @@ sidecarContainers:
       - "-c"
       - 'mkdir -m 0700 ~/.ssh && echo "${PROXY_ID_KEY}" > ~/.ssh/id_ecdsa && chmod 400 ~/.ssh/id_ecdsa && ssh ${PROXY_ID}@${PROXY_HOSTNAME} -o StrictHostKeyChecking=no -N -L 127.0.0.1:${LOCAL_PORT}:${TARGET_HOSTNAME}:${TARGET_PORT}'
 cronjob:
-  enabled: true
+  enabled: false
   jobs:
     #
     # Friday
