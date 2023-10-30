@@ -21,11 +21,12 @@ setup(
     packages=['data_aggregator'],
     include_package_data=True,
     install_requires = [
-        'Django~=3.2',
-        'UW-RestClients-SWS==2.3.14',
+        'Django~=4.2',
+        'UW-RestClients-Core~=1.4',
+        'UW-RestClients-SWS~=2.4',
         'UW-RestClients-PWS~=2.1',
-        'UW-RestClients-Canvas~=1.2.4',
-        'UW-Django-SAML2~=1.5',
+        'UW-RestClients-Canvas~=1.2',
+        'UW-Django-SAML2~=1.8',
         'django-webpack-loader~=0.7',
         'djangorestframework~=3.12',
         'uw-gcs-clients~=1.0',
@@ -49,6 +50,5 @@ setup(
         'License :: OSI Approved :: Apache Software License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 3.8',
     ],
 )

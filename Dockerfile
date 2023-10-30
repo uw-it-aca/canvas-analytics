@@ -1,5 +1,6 @@
 ARG DJANGO_CONTAINER_VERSION=1.4.1
-FROM gcr.io/uwit-mci-axdd/django-container:${DJANGO_CONTAINER_VERSION} as app-prewebpack-container
+
+FROM us-docker.pkg.dev/uwit-mci-axdd/containers/django-container:${DJANGO_CONTAINER_VERSION} as app-prewebpack-container
 
 USER root
 
@@ -28,7 +29,7 @@ COPY --chown=acait:acait --from=wpack /app/data_aggregator/static/data_aggregato
 COPY --chown=acait:acait --from=wpack /app/data_aggregator/static/ /static/
 COPY --chown=acait:acait --from=wpack /app/data_aggregator/static/webpack-stats.json /app/data_aggregator/static/webpack-stats.json
 
-FROM gcr.io/uwit-mci-axdd/django-test-container:${DJANGO_CONTAINER_VERSION} as app-test-container
+FROM us-docker.pkg.dev/uwit-mci-axdd/containers/django-test-container:${DJANGO_CONTAINER_VERSION} as app-test-container
 
 COPY --from=app-container /app/ /app/
 COPY --from=app-container /static/ /static/
