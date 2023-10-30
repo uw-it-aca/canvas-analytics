@@ -49,9 +49,6 @@ database:
   secretName: analytics.apps.canvas.uw.edu-sql-secrets
 repo: canvas-analytics
 instance: prod
-image:
-  repository: gcr.io/uwit-mci-axdd/canvas-analytics
-  tag: IMAGE_TAG
 memcached:
   enabled: false
 gcsCredentials:
