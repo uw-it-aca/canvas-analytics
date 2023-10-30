@@ -14,6 +14,7 @@ if os.getenv('ENV') == 'localdev':
     RESTCLIENTS_DAO_CACHE_CLASS = None
     DATA_AGGREGATOR_THREADING_ENABLED = False
 else:
+    CSRF_TRUSTED_ORIGINS = ['https://' + os.getenv('CLUSTER_CNAME')]
     DATA_AGGREGATOR_ACCESS_GROUP = os.getenv('ACCESS_GROUP', '')
     DATA_AGGREGATOR_THREADING_ENABLED = True
     # Restclient cache configuration
