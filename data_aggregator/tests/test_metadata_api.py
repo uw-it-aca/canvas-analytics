@@ -1,4 +1,4 @@
-# Copyright 2023 UW-IT, University of Washington
+# Copyright 2024 UW-IT, University of Washington
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -131,7 +131,7 @@ class TestMetadataFileUploadView(BaseViewTestCase):
         mock_upload_to_gcs_bucket.assert_called_once_with(
             'application_metadata/predicted_probabilites/'
             '2021-autumn-pred-proba.csv',
-            mock_content.file)
+            mock_content.read())
         self.assertEqual(response.status_code,
                          200)
         self.assertEqual(response.content,

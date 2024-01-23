@@ -1,4 +1,4 @@
-# Copyright 2023 UW-IT, University of Washington
+# Copyright 2024 UW-IT, University of Washington
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -86,7 +86,7 @@ class MetadataFileUploadView(BaseMetadataView):
             dao = BaseDAO()
             new_file_name = request.POST["newFileName"]
             url_key = self.get_full_file_path(new_file_name)
-            content = request.FILES['upload'].file
+            content = request.FILES['upload'].read()
             dao.upload_to_gcs_bucket(url_key, content)
             return self.json_response(content={"uploaded": True})
         except Exception as e:
