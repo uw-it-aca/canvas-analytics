@@ -1,8 +1,10 @@
-# Copyright 2023 UW-IT, University of Washington
+# Copyright 2024 UW-IT, University of Washington
 # SPDX-License-Identifier: Apache-2.0
 
 
 import json
+import csv
+from io import StringIO
 from data_aggregator import utilities
 from data_aggregator.dao import BaseDAO
 from data_aggregator.models import Term
@@ -86,7 +88,7 @@ class MetadataFileUploadView(BaseMetadataView):
             dao = BaseDAO()
             new_file_name = request.POST["newFileName"]
             url_key = self.get_full_file_path(new_file_name)
-            content = request.FILES['upload'].file
+            content = request.FILES['upload'].file.read().decode("utf-8")
             dao.upload_to_gcs_bucket(url_key, content)
             return self.json_response(content={"uploaded": True})
         except Exception as e:
