@@ -3,6 +3,8 @@
 
 
 import json
+import csv
+from io import StringIO
 from data_aggregator import utilities
 from data_aggregator.dao import BaseDAO
 from data_aggregator.models import Term
@@ -86,7 +88,20 @@ class MetadataFileUploadView(BaseMetadataView):
             dao = BaseDAO()
             new_file_name = request.POST["newFileName"]
             url_key = self.get_full_file_path(new_file_name)
-            content = request.FILES['upload'].read().split('\r\n')
+            content = request.FILES['upload'].read().decode('utf-8').splitlines()
+            # process file from bytestring to stringIO object for the
+            # gcs blob upload_from_file method
+            reader = csv.DictReader(content)
+            output = StringIO()
+            fieldnames = ['system_key', 'yrq', 'pred0', 'pred1']
+            writer = csv.DictWriter(output,
+                                    fieldnames,
+                                    delimiter=',',
+                                    quotechar='"', )
+            writer.writeheader()
+            for row in reader:
+                writer.writerow(row)
+
             dao.upload_to_gcs_bucket(url_key, content)
             return self.json_response(content={"uploaded": True})
         except Exception as e:
