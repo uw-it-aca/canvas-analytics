@@ -88,7 +88,8 @@ class MetadataFileUploadView(BaseMetadataView):
             dao = BaseDAO()
             new_file_name = request.POST["newFileName"]
             url_key = self.get_full_file_path(new_file_name)
-            content = request.FILES['upload'].read().decode('utf-8').splitlines()
+            content = request.FILES['upload'].\
+                read().decode('utf-8').splitlines()
             # process file from bytestring to stringIO object for the
             # gcs blob upload_from_file method
             reader = csv.DictReader(content)
