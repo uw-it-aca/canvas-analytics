@@ -1420,6 +1420,7 @@ class LoadCompassDAO(BaseDAO):
             avg_norm_ap AS (
                 SELECT
                     norm_ap.user_id,
+                    norm_ap.course_id,
                     AVG(normalized_assignment_score) AS assignment_score,
                     AVG(normalized_participation_score) AS participation_score
                 FROM (
@@ -1458,7 +1459,8 @@ class LoadCompassDAO(BaseDAO):
                         normalized_assignment_score
                 ) AS norm_ap
                 GROUP BY
-                    norm_ap.user_id
+                    norm_ap.user_id,
+                    norm_ap.course_id
             ),
             avg_norm_gr AS (
                 WITH scores as (
@@ -1520,9 +1522,10 @@ class LoadCompassDAO(BaseDAO):
                     GROUP BY cp.course_id, up.user_id, normalized_user_course_percentage
                 )
                 SELECT nucp.user_id,
+                    nucp.course_id,
                     AVG(nucp.normalized_user_course_percentage) as grade
                 FROM norm_user_course_percentages nucp JOIN data_aggregator_user on nucp.user_id = data_aggregator_user.id
-                GROUP BY nucp.user_id, data_aggregator_user.login_id
+                GROUP BY nucp.user_id, nucp.course_id, data_aggregator_user.login_id
             )
             SELECT DISTINCT
                 u.canvas_user_id,
@@ -1531,13 +1534,126 @@ class LoadCompassDAO(BaseDAO):
                 {week.week} as week,
                 assignment_score,
                 participation_score,
-                grade
+                grade,
+                avg_norm_ap.course_id
             FROM avg_norm_ap
-            JOIN avg_norm_gr ON avg_norm_ap.user_id = avg_norm_gr.user_id
+            JOIN avg_norm_gr ON avg_norm_ap.user_id = avg_norm_gr.user_id AND avg_norm_ap.course_id = avg_norm_gr.course_id
             JOIN data_aggregator_user u ON avg_norm_ap.user_id = u.id
             '''  # noqa
         )
         return True
+
+    def create_compass_data_file(self, sis_term_id=None, week_num=None,
+                             force=False):
+        """
+        Creates Compass data file and uploads it to the GCS bucket
+
+        :param sis_term_id: sis term id to create data frame for. (default is
+            the current term)
+        :type sis_term_id: str
+        :param week_num: week number to create data frame for . (default is
+            the current week of term)
+        :type week_num: int
+        """
+        term, _ = Term.objects.get_or_create_term_from_sis_term_id(
+            sis_term_id=sis_term_id)
+        week, _ = Week.objects.get_or_create_week(sis_term_id=sis_term_id,
+                                                  week_num=week_num)
+        running_assign_jobs = Job.objects.get_running_jobs_for_term_week(
+            AnalyticTypes.assignment, term.sis_term_id, week.week)
+        running_partic_jobs = Job.objects.get_running_jobs_for_term_week(
+            AnalyticTypes.participation, term.sis_term_id, week.week)
+        if ((running_assign_jobs.count() == 0 and
+             running_partic_jobs.count() == 0) or force is True):
+            rcd = self.get_compass_df(sis_term_id=sis_term_id,
+                                      week_num=week_num)
+            file_name = (f"rad_data/{term.sis_term_id}-week-"
+                         f"{week.week}-rad-data.csv")
+            file_obj = rcd.to_csv(sep=",", index=False, encoding="UTF-8")
+            self.upload_to_gcs_bucket(file_name, file_obj)
+        else:
+            error_msg = (
+                f"Skipping creating RAD file. There are "
+                f"{running_assign_jobs.count()} running assignment jobs and "
+                f"{running_partic_jobs.count()} running participation jobs "
+                f"for term {sis_term_id} and week {week_num}. Creation of "
+                f"the RAD data file could result in incomplete data.")
+            logging.critical(error_msg)
+            raise RuntimeError(error_msg)
+
+    def get_compass_df(self, sis_term_id=None, week_num=None):
+        """
+        Get a pandas dataframe containing the contents of the
+        Compass data file
+
+        :param sis_term_id: sis term id to create data frame for. (default is
+            the current term)
+        :type sis_term_id: str
+        :param week_num: week number to create data frame for . (default is
+            the current week of term)
+        :type week_num: int
+        """
+        # get compass canvas data
+        rad_df = LoadRadDAO().get_compass_dbview_df(sis_term_id=sis_term_id,
+                                                week_num=week_num)
+        # get student categories
+        sdb_df = LoadRadDAO().get_student_categories_df(
+            sis_term_id=sis_term_id)
+        # get idp data
+        idp_df = LoadRadDAO().get_idp_df()
+        # get predicted probabilities
+        probs_df = LoadRadDAO().get_pred_proba_scores_df(
+            sis_term_id=sis_term_id)
+        # get eop advisers
+        eop_advisers_df = LoadRadDAO().get_eop_advisers_df(
+            sis_term_id=sis_term_id)
+        # get iss advisers
+        iss_advisers_df = LoadRadDAO().get_iss_advisers_df(
+            sis_term_id=sis_term_id)
+        # combine advisers
+        combined_advisers_df = \
+            pd.concat([eop_advisers_df, iss_advisers_df])
+        # merge to create the final dataset
+        joined_canvas_df = (
+            pd.merge(sdb_df, rad_df, how='left', on='canvas_user_id')
+              .merge(idp_df, how='left', on='uw_netid')
+              .merge(probs_df, how='left', on='system_key')
+              .merge(combined_advisers_df, how='left', on='student_no'))
+        joined_canvas_df = joined_canvas_df[
+            ['uw_netid', 'student_no', 'student_name_lowc', 'activity',
+             'assignments', 'grades', 'pred', 'adviser_name', 'adviser_type',
+             'staff_id', 'sign_in', 'stem', 'incoming_freshman', 'premajor',
+             'eop', 'international', 'isso', 'engineering', 'informatics',
+             'campus_code', 'summer', 'class_code', 'sport_code']]
+        return joined_canvas_df
+
+    def get_compass_dbview_df(self, sis_term_id=None, week_num=None):
+        """
+        Query Compass canvas data from the canvas-analytics Compass db
+        view for the current term and week and return pandas dataframe
+        with contents
+
+        :param sis_term_id: sis term id to create data frame for. (default is
+            the current term)
+        :type sis_term_id: str
+        :param week_num: week number to create data frame for. (default is
+            the current week of term)
+        :type week_num: int
+        """
+        term, _ = Term.objects.get_or_create_term_from_sis_term_id(
+            sis_term_id=sis_term_id)
+        week, _ = Week.objects.get_or_create_week(sis_term_id=sis_term_id,
+                                                  week_num=week_num)
+        view_name = get_view_name(term.sis_term_id, week.week,
+                                  "compass")
+        rad_db_model = RadDbView.setDb_table(view_name)
+        rad_canvas_qs = rad_db_model.objects.all().values()
+        rad_df = pd.DataFrame(rad_canvas_qs)
+        rad_df.rename(columns={'assignment_score': 'assignments',
+                               'grade': 'grades',
+                               'participation_score': 'activity'},
+                      inplace=True)
+        return rad_df
 
 
 class EdwDAO(BaseDAO):
