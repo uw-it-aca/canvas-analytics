@@ -123,12 +123,13 @@ def get_view_name(sis_term_id, week, label):
     :param week:
     :type int: week number to create view for
     :param label: label for view.
-        Choose from (assignments, participations, or rad)
+        Choose from (assignments, participations, compass, or rad)
     :type str:
     """
-    if label not in ["assignments", "participations", "rad"]:
+    if label not in ["assignments", "participations", "rad", "compass"]:
         raise ValueError(f"Unknown DB view label {label}. "
-                         f"Choose from (assignments, participations, or rad).")
+                         f"Choose from (assignments, participations, "
+                         f"compass or rad).")
     sis_term_id = sis_term_id.replace("-", "_")
     view_name = f"{sis_term_id}_week_{week}_{label}"
     return view_name
