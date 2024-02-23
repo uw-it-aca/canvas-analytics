@@ -19,6 +19,9 @@ lifecycle:
   enabled: true
   preStop:
     enabled: true
+autoscaling:
+  enabled: false
+replicaCount: 1
 affinity:
   podsSpanNodes: true
 readiness:
@@ -53,7 +56,7 @@ gcsCredentials:
   secretName: test-analytics.apps.canvas.uw.edu-gcs-credentials
 sidecarContainers:
   forwarder:
-    image: "gcr.io/uwit-mci-axdd/uw-ssh-client:4aad3bd"
+    image: "us-docker.pkg.dev/uwit-mci-axdd/containers/uw-ssh-client:89695b2"
     environmentVariables:
       - name: PROXY_ID_KEY
         valueFrom:
@@ -120,7 +123,7 @@ cronjob:
       args: ["create_and_run_jobs", "create_student_categories_data_file"]
       sidecarContainers:
         forwarder:
-          image: "gcr.io/uwit-mci-axdd/uw-ssh-client:4aad3bd"
+          image: "us-docker.pkg.dev/uwit-mci-axdd/containers/uw-ssh-client:89695b2"
           environmentVariables:
             - name: PROXY_ID_KEY
               valueFrom:
