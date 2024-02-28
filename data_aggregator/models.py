@@ -7,7 +7,8 @@ import logging
 from datetime import datetime, date, timedelta
 from django.db import models, IntegrityError
 from django.db.models import Q
-from django.utils import timezone
+from datetime import timezone
+from django.utils import timezone as django_timezone
 from data_aggregator.exceptions import TermNotStarted
 from data_aggregator import utilities
 from uw_sws.term import get_term_by_date, get_term_by_year_and_quarter
@@ -61,7 +62,7 @@ class TermManager(models.Manager):
                 return self.get_or_create_from_sws_term(sws_term)
         else:
             # try to lookup the current term in db
-            curr_date = timezone.now()
+            curr_date = django_timezone.now()
             term = self.get_term_for_date(curr_date)
             if term:
                 # return current term
@@ -239,8 +240,8 @@ class JobManager(models.Manager):
     def get_active_jobs(self, jobtype):
         jobs = (self.get_jobs(jobtype)
                 .filter(type__type=jobtype)
-                .filter(target_date_end__gte=timezone.now())
-                .filter(target_date_start__lte=timezone.now()))
+                .filter(target_date_end__gte=django_timezone.now())
+                .filter(target_date_start__lte=django_timezone.now()))
         return jobs
 
     def get_pending_jobs(self, jobtype):
@@ -375,11 +376,11 @@ class Job(models.Model):
 
     @staticmethod
     def get_default_target_start():
-        return timezone.now()
+        return django_timezone.now()
 
     @staticmethod
     def get_default_target_end():
-        now = timezone.now()
+        now = django_timezone.now()
         tomorrow = now + timedelta(days=1)
         return tomorrow
 
@@ -394,7 +395,7 @@ class Job(models.Model):
             return JobStatusTypes.failed
         elif (self.pid and self.start and not self.end and not self.message):
             return JobStatusTypes.running
-        elif self.target_date_end < timezone.now():
+        elif self.target_date_end < django_timezone.now():
             return JobStatusTypes.expired
         elif (not self.pid and not self.start and not self.end and
                 not self.message):
@@ -428,7 +429,7 @@ class Job(models.Model):
 
     def start_job(self, *args, **kwargs):
         if self.pid:
-            self.start = timezone.now()
+            self.start = django_timezone.now()
             self.end = None
             self.message = ''
             if kwargs.get("save", True) is True:
@@ -440,7 +441,7 @@ class Job(models.Model):
 
     def end_job(self, *args, **kwargs):
         if self.pid and self.start:
-            self.end = timezone.now()
+            self.end = django_timezone.now()
             self.message = ''
             if kwargs.get("save", True) is True:
                 super(Job, self).save(*args, **kwargs)

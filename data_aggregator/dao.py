@@ -1544,7 +1544,7 @@ class LoadCompassDAO(BaseDAO):
         return True
 
     def create_compass_data_file(self, sis_term_id=None, week_num=None,
-                             force=False):
+                                 force=False):
         """
         Creates Compass data file and uploads it to the GCS bucket
 
@@ -1553,7 +1553,8 @@ class LoadCompassDAO(BaseDAO):
         :type sis_term_id: str
         :param week_num: week number to create data frame for . (default is
             the current week of term)
-        :type week_num: int
+        :type week_num: int'
+        :param force: force creation of file even if there are running jobs
         """
         term, _ = Term.objects.get_or_create_term_from_sis_term_id(
             sis_term_id=sis_term_id)
@@ -1595,7 +1596,7 @@ class LoadCompassDAO(BaseDAO):
         """
         # get compass canvas data
         rad_df = LoadRadDAO().get_compass_dbview_df(sis_term_id=sis_term_id,
-                                                week_num=week_num)
+                                                    week_num=week_num)
         # get student categories
         sdb_df = LoadRadDAO().get_student_categories_df(
             sis_term_id=sis_term_id)
