@@ -8,8 +8,10 @@ import pymssql
 from csv import DictReader
 from django.conf import settings
 from django.db import transaction, connection
-from data_aggregator.models import Adviser, AdviserTypes, Assignment, Course, \
-    Participation, TaskTypes, User, RadDbView, Term, Week, AnalyticTypes, Job
+from data_aggregator.models import (Adviser, AdviserTypes, Assignment, Course,
+                                    Participation, TaskTypes, User,
+                                    RadDbView, Term, Week, AnalyticTypes,
+                                    Job, CompassDbView)
 from data_aggregator.utilities import get_view_name, set_gcs_base_path, \
     get_term_number
 from data_aggregator.report_builder import ReportBuilder
@@ -1567,17 +1569,17 @@ class LoadCompassDAO(BaseDAO):
              running_partic_jobs.count() == 0) or force is True):
             rcd = self.get_compass_df(sis_term_id=sis_term_id,
                                       week_num=week_num)
-            file_name = (f"rad_data/{term.sis_term_id}-week-"
-                         f"{week.week}-rad-data.csv")
+            file_name = (f"cps_data/{term.sis_term_id}-week-"
+                         f"{week.week}-cps-data.csv")
             file_obj = rcd.to_csv(sep=",", index=False, encoding="UTF-8")
             self.upload_to_gcs_bucket(file_name, file_obj)
         else:
             error_msg = (
-                f"Skipping creating RAD file. There are "
+                f"Skipping creating Compass file. There are "
                 f"{running_assign_jobs.count()} running assignment jobs and "
                 f"{running_partic_jobs.count()} running participation jobs "
                 f"for term {sis_term_id} and week {week_num}. Creation of "
-                f"the RAD data file could result in incomplete data.")
+                f"the CPS data file could result in incomplete data.")
             logging.critical(error_msg)
             raise RuntimeError(error_msg)
 
@@ -1594,7 +1596,7 @@ class LoadCompassDAO(BaseDAO):
         :type week_num: int
         """
         # get compass canvas data
-        rad_df = LoadRadDAO().get_compass_dbview_df(sis_term_id=sis_term_id,
+        cps_df = LoadCompassDAO().get_compass_dbview_df(sis_term_id=sis_term_id,
                                                 week_num=week_num)
         # get student categories
         sdb_df = LoadRadDAO().get_student_categories_df(
@@ -1615,7 +1617,7 @@ class LoadCompassDAO(BaseDAO):
             pd.concat([eop_advisers_df, iss_advisers_df])
         # merge to create the final dataset
         joined_canvas_df = (
-            pd.merge(sdb_df, rad_df, how='left', on='canvas_user_id')
+            pd.merge(sdb_df, cps_df, how='left', on='canvas_user_id')
               .merge(idp_df, how='left', on='uw_netid')
               .merge(probs_df, how='left', on='system_key')
               .merge(combined_advisers_df, how='left', on='student_no'))
@@ -1646,14 +1648,15 @@ class LoadCompassDAO(BaseDAO):
                                                   week_num=week_num)
         view_name = get_view_name(term.sis_term_id, week.week,
                                   "compass")
-        rad_db_model = RadDbView.setDb_table(view_name)
-        rad_canvas_qs = rad_db_model.objects.all().values()
-        rad_df = pd.DataFrame(rad_canvas_qs)
-        rad_df.rename(columns={'assignment_score': 'assignments',
+        cps_db_model = CompassDbView.setDb_table(view_name)
+        cps_canvas_qs = cps_db_model.objects.all().values()
+        cps_df = pd.DataFrame(cps_canvas_qs)
+        cps_df.rename(columns={'assignment_score': 'assignments',
                                'grade': 'grades',
-                               'participation_score': 'activity'},
+                               'participation_score': 'activity',
+                               'course_id': 'course'},
                       inplace=True)
-        return rad_df
+        return cps_df
 
 
 class EdwDAO(BaseDAO):
