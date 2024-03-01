@@ -823,16 +823,16 @@ class TestTaskDAO(TestCase):
             os.path.join(
                 os.path.dirname(__file__),
                 'test_data/course_provisioning_report.csv')
-        mock_course_data = \
-            open(mock_course_provisioning_file).read().split("\n")
-        self.assertEqual(len(mock_course_data), 3)
-        with patch.object(CanvasDAO,
-                          'download_course_provisioning_report',
-                          return_value=mock_course_data):
-            self.assertEqual(
-                td.create_or_update_courses(sis_term_id="2021-spring"),
-                1
-            )
+        with open(mock_course_provisioning_file, 'r') as file:
+            mock_course_data = file.read().split("\n")
+            self.assertEqual(len(mock_course_data), 3)
+            with patch.object(CanvasDAO,
+                              'download_course_provisioning_report',
+                              return_value=mock_course_data):
+                self.assertEqual(
+                    td.create_or_update_courses(sis_term_id="2021-spring"),
+                    1
+                )
 
     @patch('data_aggregator.dao.get_advisers_by_regid')
     @patch('data_aggregator.dao.User.objects')
@@ -867,9 +867,10 @@ class TestTaskDAO(TestCase):
             os.path.join(
                 os.path.dirname(__file__),
                 'test_data/user_provisioning_report.csv')
-        mock_user_data = \
-            open(mock_user_provisioning_file).read().split("\n")
-        self.assertEqual(len(mock_user_data), 21)
+
+        with open(mock_user_provisioning_file, 'r') as file:
+            mock_user_data = file.read().split("\n")
+            self.assertEqual(len(mock_user_data), 21)
         with patch.object(CanvasDAO,
                           'download_user_provisioning_report',
                           return_value=mock_user_data):
@@ -924,7 +925,8 @@ class TestLoadRadDAO(TestCase):
             os.path.join(
                 os.path.dirname(__file__),
                 'test_data/2013-spring-netid-name-stunum-categories.csv')
-        mock_student_cat = open(mock_student_cat_file).read()
+        with open(mock_student_cat_file, 'r') as file:
+            mock_student_cat = file.read()
         lrd.download_from_gcs_bucket = MagicMock(return_value=mock_student_cat)
         mock_student_categories_df = \
             lrd.get_student_categories_df(sis_term_id=sis_term_id)
@@ -935,7 +937,8 @@ class TestLoadRadDAO(TestCase):
         mock_pred_proba_file = \
             os.path.join(os.path.dirname(__file__),
                          'test_data/2013-spring-pred-proba.csv')
-        mock_pred_proba = open(mock_pred_proba_file).read()
+        with open(mock_pred_proba_file, 'r') as file:
+            mock_pred_proba = file.read()
         lrd.download_from_gcs_bucket = MagicMock(return_value=mock_pred_proba)
         mock_pred_proba_df = \
             lrd.get_pred_proba_scores_df(sis_term_id="2013-spring")
@@ -946,7 +949,8 @@ class TestLoadRadDAO(TestCase):
         mock_eop_advisers_file = \
             os.path.join(os.path.dirname(__file__),
                          'test_data/2013-spring-eop-advisers.csv')
-        mock_eop_advisers = open(mock_eop_advisers_file).read()
+        with open(mock_eop_advisers_file, 'r') as file:
+            mock_eop_advisers = file.read()
         lrd.download_from_gcs_bucket = \
             MagicMock(return_value=mock_eop_advisers)
         mock_eop_advisers_df = \
@@ -959,7 +963,8 @@ class TestLoadRadDAO(TestCase):
         mock_iss_advisers_file = \
             os.path.join(os.path.dirname(__file__),
                          'test_data/2013-spring-iss-advisers.csv')
-        mock_iss_advisers = open(mock_iss_advisers_file).read()
+        with open(mock_iss_advisers_file, 'r') as file:
+            mock_iss_advisers = file.read()
         lrd.download_from_gcs_bucket = \
             MagicMock(return_value=mock_iss_advisers)
         mock_iss_advisers_df = \
@@ -972,7 +977,8 @@ class TestLoadRadDAO(TestCase):
             os.path.join(os.path.dirname(__file__),
                          'test_data/netid_logins_2013.csv')
         lrd.get_last_idp_file = MagicMock(return_value=mock_idp_file)
-        mock_idp_data = open(mock_idp_file).read()
+        with open(mock_idp_file, 'r') as file:
+            mock_idp_data = file.read()
         mock_raw_idp_data_df = \
             pd.read_csv(StringIO(mock_idp_data),
                         header=None,
@@ -1182,8 +1188,8 @@ class TestEdwDAO(TestCase):
             os.path.join(
                 os.path.dirname(__file__),
                 'test_data/2013-spring-netid-name-stunum-categories.csv')
-        mock_student_file = open(mock_student_cat_file)
-        mock_read_sql.return_value = pd.read_csv(mock_student_file, sep=",")
+        with open(mock_student_cat_file, 'r') as file:
+            mock_read_sql.return_value = pd.read_csv(file, sep=",")
         mock_student_categories_df = \
             edw.get_student_categories_df(sis_term_id="2013-spring")
         return mock_student_categories_df

@@ -105,11 +105,13 @@ class TestBuildSubAccountActivityReport(TestCase):
         if mock_report.name == "xlist_provisioning_report":
             mock_xlist_data_file = os.path.join(os.path.dirname(__file__),
                                                 'test_data/saa_xlist_data.csv')
-            return open(mock_xlist_data_file).read().split("\n")
+            with open(mock_xlist_data_file, 'r') as file:
+                return file.read().split("\n")
         if mock_report.name == "course_provisioning_report":
             mock_course_data_file = os.path.join(
                     os.path.dirname(__file__), 'test_data/saa_course_data.csv')
-            return open(mock_course_data_file).read().split("\n")
+            with open(mock_course_data_file, 'r') as file:
+                return file.read().split("\n")
 
     def test_get_account_activities_data(self):
         activities = self.report_builder.get_account_activities_data(
