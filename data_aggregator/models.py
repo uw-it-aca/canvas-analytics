@@ -323,6 +323,8 @@ class TaskTypes():
     create_participation_db_view = "create_participation_db_view"
     create_rad_db_view = "create_rad_db_view"
     create_rad_data_file = "create_rad_data_file"
+    create_compass_db_view = "create_compass_db_view"
+    create_compass_data_file = "create_compass_data_file"
     build_subaccount_activity_report = "build_subaccount_activity_report"
 
 
@@ -339,6 +341,8 @@ class JobType(models.Model):
          'CreateParticipationDBViewJob'),
         (TaskTypes.create_rad_db_view, 'CreateRadDBViewJob'),
         (TaskTypes.create_rad_data_file, 'CreateRadDataFileJob'),
+        (TaskTypes.create_compass_db_view, 'CreateCompassDBViewJob'),
+        (TaskTypes.create_compass_data_file, 'CreateCompassDataFileJob'),
         (TaskTypes.create_student_categories_data_file,
          'CreateStudentCategoriesDataFileJob'))
     type = models.CharField(max_length=64, choices=JOB_CHOICES)

@@ -473,6 +473,14 @@ class JobDAO(BaseDAO):
                 sis_term_id=sis_term_id,
                 week_num=week_num,
                 force=job.context.get("force", False))
+        elif job_type == TaskTypes.create_compass_db_view:
+            TaskDAO().create_compass_db_view(sis_term_id=sis_term_id,
+                                             week_num=week_num)
+        elif job_type == TaskTypes.create_compass_data_file:
+            LoadCompassDAO().create_compass_data_file(
+                sis_term_id=sis_term_id,
+                week_num=week_num,
+                force=job.context.get("force", False))
         elif job_type == TaskTypes.build_subaccount_activity_report:
             ReportBuilder().build_subaccount_activity_report(
                 subaccount_id, sis_term_id=sis_term_id, week_num=week_num)
@@ -956,6 +964,170 @@ class TaskDAO(BaseDAO):
         )
         return True
 
+    def create_compass_db_view(self, sis_term_id=None, week_num=None):
+        """
+        Create compass db view for given week and sis-term-id
+
+        :param sis_term_id: sis term id to create view for. (default is
+            the current term)
+        :type sis_term_id: str
+        :param week_num: week number to create view for . (default is
+            the current week of term)
+        :type week_num: int
+        """
+
+        term, _ = Term.objects.get_or_create_term_from_sis_term_id(
+            sis_term_id=sis_term_id)
+        week, _ = Week.objects.get_or_create_week(sis_term_id=sis_term_id,
+                                                  week_num=week_num)
+
+        view_name = get_view_name(term.sis_term_id, week.week, "compass")
+        assignments_view_name = get_view_name(term.sis_term_id,
+                                              week.week,
+                                              "assignments")
+        participations_view_name = get_view_name(term.sis_term_id,
+                                                 week.week,
+                                                 "participations")
+
+        cursor = connection.cursor()
+
+        env = os.getenv("ENV")
+        if env == "localdev" or not env:
+            create_action = f'CREATE VIEW "{view_name}"'
+            cursor.execute(f'DROP VIEW IF EXISTS "{view_name}"')
+        else:
+            create_action = f'CREATE OR REPLACE VIEW "{view_name}"'
+
+        cursor.execute(
+            f'''
+            {create_action} AS
+            WITH
+            avg_norm_ap AS (
+                SELECT
+                    norm_ap.user_id,
+                    norm_ap.course_id,
+                    AVG(normalized_assignment_score) AS assignment_score,
+                    AVG(normalized_participation_score) AS participation_score
+                FROM (
+                    SELECT
+                        p1.user_id,
+                        p1.course_id,
+                        p1.week_id,
+                        CASE
+                            WHEN (p1.participations IS NULL OR raw_ap_bounds.min_raw_participation_score IS NULL OR raw_ap_bounds.max_raw_participation_score IS NULL) THEN NULL
+                            ELSE ((p1.participations - min_raw_participation_score) * 10) / NULLIF(max_raw_participation_score - min_raw_participation_score, 0) - 5
+                        END AS normalized_participation_score,
+                        CASE
+                            WHEN (p1.time_on_time IS NULL OR p1.time_late IS NULL OR raw_ap_bounds.min_raw_assignment_score IS NULL OR raw_ap_bounds.max_raw_assignment_score IS NULL) THEN NULL
+                            ELSE ((COALESCE(2 * p1.time_on_time + p1.time_late, 0) - min_raw_assignment_score) * 10) / NULLIF(max_raw_assignment_score - min_raw_assignment_score, 0) - 5
+                        END AS normalized_assignment_score
+                    FROM "{participations_view_name}" p1
+                    JOIN (
+                        SELECT
+                            course_id,
+                            MIN(p2.participations) AS min_raw_participation_score,
+                            MAX(p2.participations) AS max_raw_participation_score,
+                            MIN(2 * p2.time_on_time + p2.time_late) AS min_raw_assignment_score,
+                            MAX(2 * p2.time_on_time + p2.time_late) AS max_raw_assignment_score
+                        FROM "{participations_view_name}" p2
+                        GROUP BY
+                            course_id
+                    ) raw_ap_bounds ON p1.course_id  = raw_ap_bounds.course_id
+                    GROUP BY
+                        p1.user_id,
+                        p1.course_id,
+                        p1.week_id,
+                        participations,
+                        p1.time_on_time,
+                        p1.time_late,
+                        normalized_participation_score,
+                        normalized_assignment_score
+                ) AS norm_ap
+                GROUP BY
+                    norm_ap.user_id,
+                    norm_ap.course_id
+            ),
+            avg_norm_gr AS (
+                WITH scores as (
+                    SELECT course_id,
+                        user_id,
+                        points_possible,
+                        CASE
+                            WHEN a1.status = 'missing' AND score ISNULL THEN 0.0
+                            WHEN a1.status = 'late' AND score ISNULL THEN 0.0
+                            WHEN a1.status = 'on_time' AND score ISNULL THEN 0.0
+                            WHEN points_possible = 0 AND score ISNULL THEN 0.0
+                            ELSE score
+                        END AS new_score
+                    FROM "{assignments_view_name}" a1 JOIN data_aggregator_course dac on
+                        a1.course_id = dac.id
+                    WHERE (due_at NOTNULL AND due_at <= '{week.end_date.strftime("%Y-%m-%d")}'
+                           AND dac.status = 'active' AND a1.status <> 'floating')
+                ),
+                user_total_scores as (
+                    SELECT course_id,
+                            user_id,
+                            SUM(new_score) as total_score,
+                            SUM(points_possible) as total_points_possible
+                    FROM scores
+                    GROUP BY course_id, user_id
+                ),
+                user_percentages AS (
+                    SELECT course_id,
+                            user_id,
+                            CASE
+                                WHEN total_score = 0 AND total_points_possible = 0 THEN 0.0
+                                WHEN total_score > 0 AND total_points_possible = 0 THEN 1.0
+                                ELSE total_score / total_points_possible
+                            END AS user_course_percentage
+                    FROM user_total_scores uts
+                    GROUP BY course_id, user_id, total_score, total_points_possible
+                ),
+                course_percentages as (
+                    SELECT
+                        course_id,
+                        MIN(user_percentages.user_course_percentage) AS min_user_course_percentage,
+                        MAX(user_percentages.user_course_percentage) AS max_user_course_percentage
+                    FROM user_percentages
+                    GROUP BY course_id
+                ),
+                norm_user_course_percentages AS (
+                    SELECT
+                        cp.course_id,
+                        up.user_id,
+                        CASE
+                            WHEN up.user_course_percentage ISNULL OR cp.min_user_course_percentage ISNULL or
+                                cp.max_user_course_percentage ISNULL THEN NULL
+                            WHEN (cp.max_user_course_percentage - cp.min_user_course_percentage) = 0 THEN 0
+                            ELSE (up.user_course_percentage - cp.min_user_course_percentage) * 10 / 
+                            (cp.max_user_course_percentage - cp.min_user_course_percentage) - 5
+                        END AS normalized_user_course_percentage
+                    FROM user_percentages up
+                        LEFT JOIN course_percentages cp ON up.course_id = cp.course_id
+                    GROUP BY cp.course_id, up.user_id, normalized_user_course_percentage
+                )
+                SELECT nucp.user_id,
+                    nucp.course_id,
+                    AVG(nucp.normalized_user_course_percentage) as grade
+                FROM norm_user_course_percentages nucp JOIN data_aggregator_user on nucp.user_id = data_aggregator_user.id
+                GROUP BY nucp.user_id, nucp.course_id, data_aggregator_user.login_id
+            )
+            SELECT DISTINCT
+                u.canvas_user_id,
+                u.full_name,
+                '{term.sis_term_id}' as term,
+                {week.week} as week,
+                assignment_score,
+                participation_score,
+                grade,
+                avg_norm_ap.course_id
+            FROM avg_norm_ap
+            JOIN avg_norm_gr ON avg_norm_ap.user_id = avg_norm_gr.user_id AND avg_norm_ap.course_id = avg_norm_gr.course_id
+            JOIN data_aggregator_user u ON avg_norm_ap.user_id = u.id
+            '''  # noqa
+        )
+        return True
+
     def create_participation_db_view(self, sis_term_id=None, week_num=None):
         """
         Create participation db view for given week and sis-term-id
@@ -1381,170 +1553,6 @@ class LoadRadDAO(BaseDAO):
 
 
 class LoadCompassDAO(BaseDAO):
-    def create_compass_db_view(self, sis_term_id=None, week_num=None):
-        """
-        Create compass db view for given week and sis-term-id
-
-        :param sis_term_id: sis term id to create view for. (default is
-            the current term)
-        :type sis_term_id: str
-        :param week_num: week number to create view for . (default is
-            the current week of term)
-        :type week_num: int
-        """
-
-        term, _ = Term.objects.get_or_create_term_from_sis_term_id(
-            sis_term_id=sis_term_id)
-        week, _ = Week.objects.get_or_create_week(sis_term_id=sis_term_id,
-                                                  week_num=week_num)
-
-        view_name = get_view_name(term.sis_term_id, week.week, "compass")
-        assignments_view_name = get_view_name(term.sis_term_id,
-                                              week.week,
-                                              "assignments")
-        participations_view_name = get_view_name(term.sis_term_id,
-                                                 week.week,
-                                                 "participations")
-
-        cursor = connection.cursor()
-
-        env = os.getenv("ENV")
-        if env == "localdev" or not env:
-            create_action = f'CREATE VIEW "{view_name}"'
-            cursor.execute(f'DROP VIEW IF EXISTS "{view_name}"')
-        else:
-            create_action = f'CREATE OR REPLACE VIEW "{view_name}"'
-
-        cursor.execute(
-            f'''
-            {create_action} AS
-            WITH
-            avg_norm_ap AS (
-                SELECT
-                    norm_ap.user_id,
-                    norm_ap.course_id,
-                    AVG(normalized_assignment_score) AS assignment_score,
-                    AVG(normalized_participation_score) AS participation_score
-                FROM (
-                    SELECT
-                        p1.user_id,
-                        p1.course_id,
-                        p1.week_id,
-                        CASE
-                            WHEN (p1.participations IS NULL OR raw_ap_bounds.min_raw_participation_score IS NULL OR raw_ap_bounds.max_raw_participation_score IS NULL) THEN NULL
-                            ELSE ((p1.participations - min_raw_participation_score) * 10) / NULLIF(max_raw_participation_score - min_raw_participation_score, 0) - 5
-                        END AS normalized_participation_score,
-                        CASE
-                            WHEN (p1.time_on_time IS NULL OR p1.time_late IS NULL OR raw_ap_bounds.min_raw_assignment_score IS NULL OR raw_ap_bounds.max_raw_assignment_score IS NULL) THEN NULL
-                            ELSE ((COALESCE(2 * p1.time_on_time + p1.time_late, 0) - min_raw_assignment_score) * 10) / NULLIF(max_raw_assignment_score - min_raw_assignment_score, 0) - 5
-                        END AS normalized_assignment_score
-                    FROM "{participations_view_name}" p1
-                    JOIN (
-                        SELECT
-                            course_id,
-                            MIN(p2.participations) AS min_raw_participation_score,
-                            MAX(p2.participations) AS max_raw_participation_score,
-                            MIN(2 * p2.time_on_time + p2.time_late) AS min_raw_assignment_score,
-                            MAX(2 * p2.time_on_time + p2.time_late) AS max_raw_assignment_score
-                        FROM "{participations_view_name}" p2
-                        GROUP BY
-                            course_id
-                    ) raw_ap_bounds ON p1.course_id  = raw_ap_bounds.course_id
-                    GROUP BY
-                        p1.user_id,
-                        p1.course_id,
-                        p1.week_id,
-                        participations,
-                        p1.time_on_time,
-                        p1.time_late,
-                        normalized_participation_score,
-                        normalized_assignment_score
-                ) AS norm_ap
-                GROUP BY
-                    norm_ap.user_id,
-                    norm_ap.course_id
-            ),
-            avg_norm_gr AS (
-                WITH scores as (
-                    SELECT course_id,
-                        user_id,
-                        points_possible,
-                        CASE
-                            WHEN a1.status = 'missing' AND score ISNULL THEN 0.0
-                            WHEN a1.status = 'late' AND score ISNULL THEN 0.0
-                            WHEN a1.status = 'on_time' AND score ISNULL THEN 0.0
-                            WHEN points_possible = 0 AND score ISNULL THEN 0.0
-                            ELSE score
-                        END AS new_score
-                    FROM "{assignments_view_name}" a1 JOIN data_aggregator_course dac on
-                        a1.course_id = dac.id
-                    WHERE (due_at NOTNULL AND due_at <= '{week.end_date.strftime("%Y-%m-%d")}'
-                           AND dac.status = 'active' AND a1.status <> 'floating')
-                ),
-                user_total_scores as (
-                    SELECT course_id,
-                            user_id,
-                            SUM(new_score) as total_score,
-                            SUM(points_possible) as total_points_possible
-                    FROM scores
-                    GROUP BY course_id, user_id
-                ),
-                user_percentages AS (
-                    SELECT course_id,
-                            user_id,
-                            CASE
-                                WHEN total_score = 0 AND total_points_possible = 0 THEN 0.0
-                                WHEN total_score > 0 AND total_points_possible = 0 THEN 1.0
-                                ELSE total_score / total_points_possible
-                            END AS user_course_percentage
-                    FROM user_total_scores uts
-                    GROUP BY course_id, user_id, total_score, total_points_possible
-                ),
-                course_percentages as (
-                    SELECT
-                        course_id,
-                        MIN(user_percentages.user_course_percentage) AS min_user_course_percentage,
-                        MAX(user_percentages.user_course_percentage) AS max_user_course_percentage
-                    FROM user_percentages
-                    GROUP BY course_id
-                ),
-                norm_user_course_percentages AS (
-                    SELECT
-                        cp.course_id,
-                        up.user_id,
-                        CASE
-                            WHEN up.user_course_percentage ISNULL OR cp.min_user_course_percentage ISNULL or
-                                cp.max_user_course_percentage ISNULL THEN NULL
-                            WHEN (cp.max_user_course_percentage - cp.min_user_course_percentage) = 0 THEN 0
-                            ELSE (up.user_course_percentage - cp.min_user_course_percentage) * 10 / 
-                            (cp.max_user_course_percentage - cp.min_user_course_percentage) - 5
-                        END AS normalized_user_course_percentage
-                    FROM user_percentages up
-                        LEFT JOIN course_percentages cp ON up.course_id = cp.course_id
-                    GROUP BY cp.course_id, up.user_id, normalized_user_course_percentage
-                )
-                SELECT nucp.user_id,
-                    nucp.course_id,
-                    AVG(nucp.normalized_user_course_percentage) as grade
-                FROM norm_user_course_percentages nucp JOIN data_aggregator_user on nucp.user_id = data_aggregator_user.id
-                GROUP BY nucp.user_id, nucp.course_id, data_aggregator_user.login_id
-            )
-            SELECT DISTINCT
-                u.canvas_user_id,
-                u.full_name,
-                '{term.sis_term_id}' as term,
-                {week.week} as week,
-                assignment_score,
-                participation_score,
-                grade,
-                avg_norm_ap.course_id
-            FROM avg_norm_ap
-            JOIN avg_norm_gr ON avg_norm_ap.user_id = avg_norm_gr.user_id AND avg_norm_ap.course_id = avg_norm_gr.course_id
-            JOIN data_aggregator_user u ON avg_norm_ap.user_id = u.id
-            '''  # noqa
-        )
-        return True
-
     def create_compass_data_file(self, sis_term_id=None, week_num=None,
                                  force=False):
         """
