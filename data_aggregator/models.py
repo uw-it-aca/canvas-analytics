@@ -322,6 +322,8 @@ class TaskTypes():
     create_participation_db_view = "create_participation_db_view"
     create_rad_db_view = "create_rad_db_view"
     create_rad_data_file = "create_rad_data_file"
+    create_compass_db_view = "create_compass_db_view"
+    create_compass_data_file = "create_compass_data_file"
     build_subaccount_activity_report = "build_subaccount_activity_report"
 
 
@@ -338,6 +340,8 @@ class JobType(models.Model):
          'CreateParticipationDBViewJob'),
         (TaskTypes.create_rad_db_view, 'CreateRadDBViewJob'),
         (TaskTypes.create_rad_data_file, 'CreateRadDataFileJob'),
+        (TaskTypes.create_compass_db_view, 'CreateCompassDBViewJob'),
+        (TaskTypes.create_compass_data_file, 'CreateCompassDataFileJob'),
         (TaskTypes.create_student_categories_data_file,
          'CreateStudentCategoriesDataFileJob'))
     type = models.CharField(max_length=64, choices=JOB_CHOICES)
@@ -683,6 +687,35 @@ class RadDbView(models.Model):
         models.DecimalField(null=True, max_digits=13, decimal_places=3)
     grade = \
         models.DecimalField(null=True, max_digits=13, decimal_places=3)
+
+
+class CompassDbView(models.Model):
+    class Meta:
+        abstract = True
+
+    @classmethod
+    def setDb_table(Class, tableName):
+        class Meta:
+            managed = False
+            db_table = tableName
+
+        attrs = {
+            '__module__': Class.__module__,
+            'Meta': Meta
+        }
+        return type(tableName, (Class,), attrs)
+
+    canvas_user_id = models.BigIntegerField(unique=True, primary_key=True)
+    full_name = models.TextField(null=True)
+    term = models.TextField(null=True)
+    week = models.IntegerField()
+    assignment_score = \
+        models.DecimalField(null=True, max_digits=13, decimal_places=3)
+    participation_score = \
+        models.DecimalField(null=True, max_digits=13, decimal_places=3)
+    grade = \
+        models.DecimalField(null=True, max_digits=13, decimal_places=3)
+    course_id = models.TextField(null=True)
 
 
 class ReportManager(models.Manager):

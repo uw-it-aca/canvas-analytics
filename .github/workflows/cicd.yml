@@ -40,9 +40,9 @@ env:
 # defined in the "deploy" job
 on:
   push:
-    branches: [main, master, qa, develop, feature/eval-me]
+    branches: [main, master, qa, develop, feature/compass_view]
   pull_request:
-    branches: [main, master, qa, develop, feature/eval-me]
+    branches: [main, master, qa, develop, feature/compass_view]
     types: [opened, reopened, synchronize]
 
 jobs:
@@ -163,7 +163,7 @@ jobs:
           gh_auth_token: ${{ secrets.GH_AUTH_TOKEN }}
 
       - name: Deploy Evaluation Branch
-        if: needs.context.outputs.git_repo_branch == 'feature/eval-me'
+        if: needs.context.outputs.git_repo_branch == 'feature/compass_view'
         uses: uw-it-aca/actions/cicd-deploy@main
         with:
           release_name: ${{ env.RELEASE_NAME }}
