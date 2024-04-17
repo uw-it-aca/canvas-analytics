@@ -9,7 +9,7 @@ from csv import DictReader
 from django.conf import settings
 from django.db import transaction, connection
 from data_aggregator.models import Adviser, AdviserTypes, Assignment, Course, \
-    Participation, TaskTypes, User, RadDbView, Term, Week, AnalyticTypes, Job, \
+    Participation, TaskTypes, User, RadDbView, Term, Week, AnalyticTypes, Job,\
     CompassDbView
 from data_aggregator.utilities import get_view_name, set_gcs_base_path, \
     get_term_number
@@ -996,7 +996,7 @@ class TaskDAO(BaseDAO):
             cursor.execute(f'DROP VIEW IF EXISTS "{view_name}"')
         else:
             create_action = f'CREATE OR REPLACE VIEW "{view_name}"'
-        
+
         cursor.execute(
             f'''
             {create_action} AS
@@ -1129,10 +1129,10 @@ class TaskDAO(BaseDAO):
                 max_raw_assignment_score
             FROM avg_norm_ap
             JOIN norm_user_course_percentages on
-                avg_norm_ap.user_id = norm_user_course_percentages.user_id and 
+                avg_norm_ap.user_id = norm_user_course_percentages.user_id and
                 avg_norm_ap.course_id = norm_user_course_percentages.course_id
             JOIN data_aggregator_user u ON avg_norm_ap.user_id = u.id
-            '''
+            '''  # noqa
         )
         return True
 
@@ -1567,8 +1567,8 @@ class LoadCompassDAO(LoadRadDAO):
 
     def get_compass_dbview_df(self, sis_term_id=None, week_num=None):
         """
-        Query Compass canvas data from the canvas-analytics Compass db view for the
-        current term and week and return pandas dataframe with contents
+        Query Compass canvas data from the canvas-analytics Compass db view for
+        the current term and week and return pandas dataframe with contents
 
         :param sis_term_id: sis term id to create data frame for. (default is
             the current term)
@@ -1586,9 +1586,9 @@ class LoadCompassDAO(LoadRadDAO):
         compass_canvas_qs = compass_db_model.objects.all().values()
         compass_df = pd.DataFrame(compass_canvas_qs)
         compass_df.rename(columns={'assignment_score': 'assignments',
-                               'grade': 'grades',
-                               'participation_score': 'activity'},
-                      inplace=True)
+                                   'grade': 'grades',
+                                   'participation_score': 'activity'},
+                          inplace=True)
         return compass_df
 
     def get_compass_df(self, sis_term_id=None, week_num=None):
@@ -1639,7 +1639,8 @@ class LoadCompassDAO(LoadRadDAO):
             AnalyticTypes.participation, term.sis_term_id, week.week)
         if ((running_assign_jobs.count() == 0 and
              running_partic_jobs.count() == 0) or force is True):
-            cdf = self.get_compass_df(sis_term_id=sis_term_id, week_num=week_num)
+            cdf = self.get_compass_df(sis_term_id=sis_term_id,
+                                      week_num=week_num)
             file_name = (f"compass_data/{term.sis_term_id}-week-"
                          f"{week.week}-compass-data.csv")
             file_obj = cdf.to_csv(sep=",", index=False, encoding="UTF-8")
