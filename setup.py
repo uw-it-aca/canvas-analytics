@@ -36,7 +36,6 @@ setup(
         'pandas~=1.1',
         'urllib3~=1.25',
         'pymssql~=2.3',
-        'lxml==4.9.4',
     ],
     license='Apache License, Version 2.0',
     description='Collects data about UW Canvas usage',

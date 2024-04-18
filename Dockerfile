@@ -16,7 +16,7 @@ RUN chmod u+x /scripts/app_start.sh
 
 RUN /app/bin/pip install -r requirements.txt
 RUN /app/bin/pip install django-webpack-loader psycopg2
-RUN /app/bin/pip install --force-reinstall --no-binary :all: lxml==4.9.0
+RUN /app/bin/pip install --force-reinstall --no-binary :all: lxml
 
 FROM node:8.15.1-jessie AS wpack
 ADD . /app/
