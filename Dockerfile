@@ -1,4 +1,4 @@
-ARG DJANGO_CONTAINER_VERSION=1.4.1
+ARG DJANGO_CONTAINER_VERSION=2.0.2
 
 FROM us-docker.pkg.dev/uwit-mci-axdd/containers/django-container:${DJANGO_CONTAINER_VERSION} as app-prewebpack-container
 
@@ -16,6 +16,7 @@ RUN chmod u+x /scripts/app_start.sh
 
 RUN /app/bin/pip install -r requirements.txt
 RUN /app/bin/pip install django-webpack-loader psycopg2
+RUN /app/bin/pip install --force-reinstall --no-binary :all: lxml==4.9.0
 
 FROM node:8.15.1-jessie AS wpack
 ADD . /app/

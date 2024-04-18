@@ -9,7 +9,8 @@ from csv import DictReader
 from django.conf import settings
 from django.db import transaction, connection
 from data_aggregator.models import Adviser, AdviserTypes, Assignment, Course, \
-    Participation, TaskTypes, User, RadDbView, Term, Week, AnalyticTypes, Job
+    Participation, TaskTypes, User, RadDbView, Term, Week, AnalyticTypes, \
+    Job, CompassDbView
 from data_aggregator.utilities import get_view_name, set_gcs_base_path, \
     get_term_number
 from data_aggregator.report_builder import ReportBuilder
@@ -468,6 +469,14 @@ class JobDAO(BaseDAO):
                                          week_num=week_num)
         elif job_type == TaskTypes.create_rad_data_file:
             LoadRadDAO().create_rad_data_file(
+                sis_term_id=sis_term_id,
+                week_num=week_num,
+                force=job.context.get("force", False))
+        elif job_type == TaskTypes.create_compass_db_view:
+            TaskDAO().create_compass_db_view(sis_term_id=sis_term_id,
+                                             week_num=week_num)
+        elif job_type == TaskTypes.create_compass_data_file:
+            LoadCompassDAO().create_compass_data_file(
                 sis_term_id=sis_term_id,
                 week_num=week_num,
                 force=job.context.get("force", False))
@@ -954,6 +963,179 @@ class TaskDAO(BaseDAO):
         )
         return True
 
+    def create_compass_db_view(self, sis_term_id=None, week_num=None):
+        """
+        Create compass db view for given week and sis-term-id
+
+        :param sis_term_id: sis term id to create view for. (default is
+            the current term)
+        :type sis_term_id: str
+        :param week_num: week number to create view for . (default is
+            the current week of term)
+        :type week_num: int
+        """
+
+        term, _ = Term.objects.get_or_create_term_from_sis_term_id(
+            sis_term_id=sis_term_id)
+        week, _ = Week.objects.get_or_create_week(sis_term_id=sis_term_id,
+                                                  week_num=week_num)
+
+        view_name = get_view_name(term.sis_term_id, week.week, "compass")
+        assignments_view_name = get_view_name(term.sis_term_id,
+                                              week.week,
+                                              "assignments")
+        participations_view_name = get_view_name(term.sis_term_id,
+                                                 week.week,
+                                                 "participations")
+
+        cursor = connection.cursor()
+
+        env = os.getenv("ENV")
+        if env == "localdev" or not env:
+            create_action = f'CREATE VIEW "{view_name}"'
+            cursor.execute(f'DROP VIEW IF EXISTS "{view_name}"')
+        else:
+            create_action = f'CREATE OR REPLACE VIEW "{view_name}"'
+
+        cursor.execute(
+            f'''
+            {create_action} AS
+            WITH
+            avg_norm_ap AS (
+                SELECT /* student, course, week specific normalized participation and assignment scores */
+                    p1.user_id,
+                    p1.course_id,
+                    p1.week_id,
+                    CASE /* normalized participation score = ((10 * (raw - class min)) / (class max - class min)) - 5 */
+                        WHEN (p1.participations IS NULL OR raw_ap_bounds.min_raw_participation_score IS NULL OR raw_ap_bounds.max_raw_participation_score IS NULL) THEN NULL 
+                        ELSE ((p1.participations - min_raw_participation_score) * 10) / NULLIF(max_raw_participation_score - min_raw_participation_score, 0) - 5
+                    END AS normalized_participation_score,
+                    CASE  /* ((10 * (((2 * on time) + late) - class min)) / (class max - class min)) - 5 */
+                        WHEN (p1.time_on_time IS NULL OR p1.time_late IS NULL OR raw_ap_bounds.min_raw_assignment_score IS NULL OR raw_ap_bounds.max_raw_assignment_score IS NULL) THEN NULL 
+                        ELSE ((COALESCE(2 * p1.time_on_time + p1.time_late, 0) - min_raw_assignment_score) * 10) / NULLIF(max_raw_assignment_score - min_raw_assignment_score, 0) - 5
+                    END AS normalized_assignment_score,
+                    p1.participations AS raw_participations,
+                    raw_ap_bounds.min_raw_participation_score,
+                    raw_ap_bounds.max_raw_participation_score,
+                    raw_ap_bounds.min_raw_assignment_score,
+                    raw_ap_bounds.max_raw_assignment_score
+                FROM "{participations_view_name}" p1
+                JOIN ( /* For each course, get the min and max participation & assignment scores */
+                    SELECT
+                        course_id,
+                        MIN(p2.participations) AS min_raw_participation_score,
+                        MAX(p2.participations) AS max_raw_participation_score,
+                        MIN(2 * p2.time_on_time + p2.time_late) AS min_raw_assignment_score,
+                        MAX(2 * p2.time_on_time + p2.time_late) AS max_raw_assignment_score
+                    FROM "{participations_view_name}" p2
+                    GROUP BY 
+                        course_id
+                ) raw_ap_bounds ON p1.course_id  = raw_ap_bounds.course_id
+                GROUP BY
+                    p1.user_id,
+                    p1.course_id,
+                    p1.week_id,
+                    participations,
+                    p1.time_on_time,
+                    p1.time_late,
+                    normalized_participation_score,
+                    normalized_assignment_score,
+                    min_raw_participation_score,
+                    max_raw_participation_score,
+                    min_raw_assignment_score,
+                    max_raw_assignment_score
+            ),
+            scores as (
+                SELECT course_id,
+                    user_id,
+                    points_possible,
+                    CASE
+                        WHEN a1.status = 'missing' AND score ISNULL THEN 0.0
+                        WHEN a1.status = 'late' AND score ISNULL THEN 0.0
+                        WHEN a1.status = 'on_time' AND score ISNULL THEN 0.0
+                        WHEN points_possible = 0 AND score ISNULL THEN 0.0
+                        ELSE score 
+                    END AS new_score
+                FROM "{assignments_view_name}"  a1 JOIN data_aggregator_course dac on
+                    a1.course_id = dac.id
+                WHERE (due_at NOTNULL AND due_at <= '{week.end_date.strftime("%Y-%m-%d")}'
+                        AND dac.status = 'active' AND a1.status <> 'floating')
+            ),
+            user_total_scores as (
+                SELECT course_id,
+                        user_id,
+                        SUM(new_score) as total_score,
+                        SUM(points_possible) as total_points_possible
+                FROM scores
+                GROUP BY course_id, user_id
+            ),
+            user_percentages AS (
+                SELECT course_id,
+                        user_id,
+                        CASE
+                            WHEN total_score = 0 AND total_points_possible = 0 THEN 0.0
+                            WHEN total_score > 0 AND total_points_possible = 0 THEN 1.0
+                            ELSE total_score / total_points_possible
+                        END AS user_course_percentage
+                FROM user_total_scores uts
+                GROUP BY course_id, user_id, total_score, total_points_possible
+            ),
+            course_percentages as (
+                SELECT 
+                    course_id,
+                    MIN(user_percentages.user_course_percentage) AS min_user_course_percentage,
+                    MAX(user_percentages.user_course_percentage) AS max_user_course_percentage
+                FROM user_percentages
+                GROUP BY course_id
+            ),
+            norm_user_course_percentages AS (
+                SELECT
+                    cp.course_id,
+                    up.user_id,
+                    CASE
+                        WHEN up.user_course_percentage ISNULL OR cp.min_user_course_percentage ISNULL or
+                            cp.max_user_course_percentage ISNULL THEN NULL
+                        WHEN (cp.max_user_course_percentage - cp.min_user_course_percentage) = 0 THEN 0
+                        ELSE (up.user_course_percentage - cp.min_user_course_percentage) * 10 / 
+                        (cp.max_user_course_percentage - cp.min_user_course_percentage) - 5
+                    END AS normalized_user_course_percentage,
+                    cp.max_user_course_percentage,
+                    cp.min_user_course_percentage,
+                    up.user_course_percentage
+                FROM user_percentages up
+                    LEFT JOIN course_percentages cp ON up.course_id = cp.course_id
+                GROUP BY cp.course_id,
+                    up.user_id,
+                    normalized_user_course_percentage,
+                    max_user_course_percentage,
+                    min_user_course_percentage,
+                    user_course_percentage
+            )
+            SELECT DISTINCT
+                u.canvas_user_id,
+                norm_user_course_percentages.course_id,
+                u.full_name,
+                '{term.sis_term_id}' as term,
+                {week.week} as week,
+                normalized_user_course_percentage,
+                user_course_percentage,
+                max_user_course_percentage,
+                min_user_course_percentage,
+                normalized_participation_score,
+                normalized_assignment_score,
+                min_raw_participation_score,
+                max_raw_participation_score,
+                min_raw_assignment_score,
+                max_raw_assignment_score
+            FROM avg_norm_ap
+            JOIN norm_user_course_percentages on
+                avg_norm_ap.user_id = norm_user_course_percentages.user_id and
+                avg_norm_ap.course_id = norm_user_course_percentages.course_id
+            JOIN data_aggregator_user u ON avg_norm_ap.user_id = u.id
+            '''  # noqa
+        )
+        return True
+
     def create_participation_db_view(self, sis_term_id=None, week_num=None):
         """
         Create participation db view for given week and sis-term-id
@@ -1374,6 +1556,102 @@ class LoadRadDAO(BaseDAO):
                 f"{running_partic_jobs.count()} running participation jobs "
                 f"for term {sis_term_id} and week {week_num}. Creation of "
                 f"the RAD data file could result in incomplete data.")
+            logging.critical(error_msg)
+            raise RuntimeError(error_msg)
+
+
+class LoadCompassDAO(LoadRadDAO):
+    """
+    Data Access Object for creating file for loading Compass
+    """
+
+    def get_compass_dbview_df(self, sis_term_id=None, week_num=None):
+        """
+        Query Compass canvas data from the canvas-analytics Compass db view for
+        the current term and week and return pandas dataframe with contents
+
+        :param sis_term_id: sis term id to create data frame for. (default is
+            the current term)
+        :type sis_term_id: str
+        :param week_num: week number to create data frame for. (default is
+            the current week of term)
+        :type week_num: int
+        """
+        term, _ = Term.objects.get_or_create_term_from_sis_term_id(
+            sis_term_id=sis_term_id)
+        week, _ = Week.objects.get_or_create_week(sis_term_id=sis_term_id,
+                                                  week_num=week_num)
+        view_name = get_view_name(term.sis_term_id, week.week, "compass")
+        compass_db_model = CompassDbView.setDb_table(view_name)
+        compass_canvas_qs = compass_db_model.objects.all().values()
+        compass_df = pd.DataFrame(compass_canvas_qs)
+        compass_df.rename(columns={'assignment_score': 'assignments',
+                                   'grade': 'grades',
+                                   'participation_score': 'activity'},
+                          inplace=True)
+        return compass_df
+
+    def get_compass_df(self, sis_term_id=None, week_num=None):
+        """
+        Get pandas dataframe from compass db view
+        """
+        # get compass canvas data
+        compass_df = self.get_compass_dbview_df(sis_term_id=sis_term_id,
+                                                week_num=week_num)
+        # get student categories
+        sdb_df = self.get_student_categories_df(sis_term_id=sis_term_id)
+        # get idp data
+        idp_df = self.get_idp_df()
+        # get predicted probabilities
+        probs_df = self.get_pred_proba_scores_df(sis_term_id=sis_term_id)
+        # merge to create the final dataset
+        joined_canvas_df = (
+            pd.merge(sdb_df, compass_df, how='left', on='canvas_user_id')
+            .merge(idp_df, how='left', on='uw_netid')
+            .merge(probs_df, how='left', on='system_key'))
+        joined_canvas_df = joined_canvas_df[
+            ['uw_netid', 'student_no', 'student_name_lowc', 'activity',
+             'assignments', 'grades', 'pred', 'sign_in', 'stem',
+             'incoming_freshman', 'premajor', 'eop', 'international', 'isso',
+             'engineering', 'informatics', 'campus_code', 'summer',
+             'class_code', 'sport_code']]
+        return joined_canvas_df
+
+    def create_compass_data_file(self, sis_term_id=None, week_num=None,
+                                 force=False):
+        """
+        Create compass data file and upload it to the GCS bucket
+
+        :param sis_term_id: sis term id to create data frame for. (default is
+            the current term)
+        :type sis_term_id: str
+        :param week_num: week number to create data frame for . (default is
+            the current week of term)
+        :type week_num: int
+        """
+        term, _ = Term.objects.get_or_create_term_from_sis_term_id(
+            sis_term_id=sis_term_id)
+        week, _ = Week.objects.get_or_create_week(sis_term_id=sis_term_id,
+                                                  week_num=week_num)
+        running_assign_jobs = Job.objects.get_running_jobs_for_term_week(
+            AnalyticTypes.assignment, term.sis_term_id, week.week)
+        running_partic_jobs = Job.objects.get_running_jobs_for_term_week(
+            AnalyticTypes.participation, term.sis_term_id, week.week)
+        if ((running_assign_jobs.count() == 0 and
+             running_partic_jobs.count() == 0) or force is True):
+            cdf = self.get_compass_df(sis_term_id=sis_term_id,
+                                      week_num=week_num)
+            file_name = (f"compass_data/{term.sis_term_id}-week-"
+                         f"{week.week}-compass-data.csv")
+            file_obj = cdf.to_csv(sep=",", index=False, encoding="UTF-8")
+            self.upload_to_gcs_bucket(file_name, file_obj)
+        else:
+            error_msg = (
+                f"Skipping creating Compass file. There are "
+                f"{running_assign_jobs.count()} running assignment jobs and "
+                f"{running_partic_jobs.count()} running participation jobs "
+                f"for term {sis_term_id} and week {week_num}. Creation of "
+                f"the Compass data file could result in incomplete data.")
             logging.critical(error_msg)
             raise RuntimeError(error_msg)
 

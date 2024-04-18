@@ -35,7 +35,7 @@ setup(
         'google-api-core~=1.26',
         'pandas~=1.1',
         'urllib3~=1.25',
-        'pymssql==2.2.2',
+        'pymssql~=2.3',
         'lxml==4.9.4',
     ],
     license='Apache License, Version 2.0',
