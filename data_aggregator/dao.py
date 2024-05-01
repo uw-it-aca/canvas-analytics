@@ -981,6 +981,10 @@ class TaskDAO(BaseDAO):
                                                   week_num=week_num)
 
         view_name = get_view_name(term.sis_term_id, week.week, "compass")
+        logging.info(
+            f"Creating compass db view {view_name} for term={sis_term_id}, "
+            f"week={week_num}"
+        )
         assignments_view_name = get_view_name(term.sis_term_id,
                                               week.week,
                                               "assignments")
@@ -1643,6 +1647,7 @@ class LoadCompassDAO(LoadRadDAO):
                                       week_num=week_num)
             file_name = (f"compass_data/{term.sis_term_id}-week-"
                          f"{week.week}-compass-data.csv")
+            logging.info(f"Creating Compass data file {file_name}")
             file_obj = cdf.to_csv(sep=",", index=False, encoding="UTF-8")
             self.upload_to_gcs_bucket(file_name, file_obj)
         else:
