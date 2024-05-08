@@ -1589,9 +1589,10 @@ class LoadCompassDAO(LoadRadDAO):
         compass_db_model = CompassDbView.setDb_table(view_name)
         compass_canvas_qs = compass_db_model.objects.all().values()
         compass_df = pd.DataFrame(compass_canvas_qs)
-        compass_df.rename(columns={'assignment_score': 'assignments',
-                                   'grade': 'grades',
-                                   'participation_score': 'activity'},
+        compass_df.rename(columns=
+                          {'normalized_assignment_score': 'assignments',
+                           'normalized_user_course_percentage': 'grades',
+                           'normalized_participation_score': 'activity'},
                           inplace=True)
         return compass_df
 
