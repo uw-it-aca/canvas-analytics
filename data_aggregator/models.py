@@ -709,11 +709,11 @@ class CompassDbView(models.Model):
     full_name = models.TextField(null=True)
     term = models.TextField(null=True)
     week = models.IntegerField()
-    assignment_score = \
+    normalized_assignment_score = \
         models.DecimalField(null=True, max_digits=13, decimal_places=3)
-    participation_score = \
+    normalized_participation_score = \
         models.DecimalField(null=True, max_digits=13, decimal_places=3)
-    grade = \
+    normalized_user_course_percentage = \
         models.DecimalField(null=True, max_digits=13, decimal_places=3)
     course_id = models.TextField(null=True)
 
