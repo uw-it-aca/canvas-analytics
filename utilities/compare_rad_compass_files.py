@@ -127,6 +127,10 @@ def run_tests():
     compare_stats(parsed_rad_data, combined_cmps)
 
 
+""" 
+Usage: 
+python compare_rad_compass_files.py <rad_file> <cmps_file> [--show_mismatch]
+"""
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Compare RAD and CMPs files')
     parser.add_argument('rad_file',
