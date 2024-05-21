@@ -28,15 +28,21 @@ def combine_cmps_courses(cmps_data):
             combined_courses[uw_netid] = {
                 'activity': get_float(row['activity']),
                 'assignments': get_float(row['assignments']),
-                'grades': get_float(row['grades'])
+                'grades': get_float(row['grades']),
+                'course_count': 1
             }
         else:
+            combined_courses[uw_netid]['course_count'] += 1
+            new_num_courses = combined_courses[uw_netid]['course_count']
+            combined_courses[uw_netid]['activity'] *= (new_num_courses - 1 / new_num_courses)
             combined_courses[uw_netid]['activity'] += (
-                get_float(row['activity']))
+                get_float(row['activity'])) * (1 / new_num_courses)
+            combined_courses[uw_netid]['assignments'] *= (new_num_courses - 1 / new_num_courses)
             combined_courses[uw_netid]['assignments'] += (
-                get_float(row['assignments']))
+                get_float(row['assignments'])) * (1 / new_num_courses)
+            combined_courses[uw_netid]['grades']  *= (new_num_courses - 1 / new_num_courses)
             combined_courses[uw_netid]['grades'] += (
-                get_float(row['grades']))
+                get_float(row['grades'])) * (1 / new_num_courses)
     return combined_courses
 
 
