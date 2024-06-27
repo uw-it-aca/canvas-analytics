@@ -111,7 +111,7 @@ class BaseDAO():
                 timeout=self.get_gcs_timeout())
             if content:
                 return content.decode('utf-8')
-        except NotFound as ex:
+        except (NotFound, AttributeError) as ex:
             logging.error(f"gcp {url_key}: {ex}")
             raise
 
