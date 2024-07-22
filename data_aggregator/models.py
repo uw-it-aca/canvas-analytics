@@ -715,7 +715,7 @@ class CompassDbView(models.Model):
         models.DecimalField(null=True, max_digits=13, decimal_places=3)
     normalized_user_course_percentage = \
         models.DecimalField(null=True, max_digits=13, decimal_places=3)
-    course_id = models.TextField(null=True)
+    course_id = models.ForeignKey(Course, on_delete=models.PROTECT)
 
 
 class ReportManager(models.Manager):

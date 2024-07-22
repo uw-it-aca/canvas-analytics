@@ -8,6 +8,7 @@ import pymssql
 from csv import DictReader
 from django.conf import settings
 from django.db import transaction, connection
+from django.db.models import F
 from data_aggregator.models import Adviser, AdviserTypes, Assignment, Course, \
     Participation, TaskTypes, User, RadDbView, Term, Week, AnalyticTypes, \
     Job, CompassDbView
@@ -1587,7 +1588,9 @@ class LoadCompassDAO(LoadRadDAO):
                                                   week_num=week_num)
         view_name = get_view_name(term.sis_term_id, week.week, "compass")
         compass_db_model = CompassDbView.setDb_table(view_name)
-        compass_canvas_qs = compass_db_model.objects.all().values()
+        compass_canvas_qs = (compass_db_model.objects.all()
+                             .annotate(course_code=F('course_id__short_name'))
+                             .values())
         compass_df = pd.DataFrame(compass_canvas_qs)
         col_map = {'normalized_assignment_score': 'assignments',
                    'normalized_user_course_percentage': 'grades',
@@ -1615,8 +1618,8 @@ class LoadCompassDAO(LoadRadDAO):
             .merge(idp_df, how='left', on='uw_netid')
             .merge(probs_df, how='left', on='system_key'))
         joined_canvas_df = joined_canvas_df[
-            ['uw_netid', 'student_no', 'student_name_lowc', 'activity',
-             'assignments', 'grades', 'pred', 'sign_in', 'stem',
+            ['uw_netid', 'student_no', 'student_name_lowc', 'course_code',
+             'activity', 'assignments', 'grades', 'pred', 'sign_in', 'stem',
              'incoming_freshman', 'premajor', 'eop', 'international', 'isso',
              'engineering', 'informatics', 'campus_code', 'summer',
              'class_code', 'sport_code']]
