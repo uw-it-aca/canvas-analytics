@@ -38,6 +38,7 @@ setup(
         'pymssql~=2.3',
         'lxml==4.9.4',
         'xmlsec==1.3.13',
+        'numpy<2.0'
     ],
     license='Apache License, Version 2.0',
     description='Collects data about UW Canvas usage',
