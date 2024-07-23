@@ -1569,7 +1569,6 @@ class LoadCompassDAO(LoadRadDAO):
     Data Access Object for creating file for loading Compass
     """
 
-
     def _get_course_df(self, sis_term_id=None):
         term, _ = Term.objects.get_or_create_term_from_sis_term_id(
             sis_term_id=sis_term_id)
