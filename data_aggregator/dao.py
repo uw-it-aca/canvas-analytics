@@ -1573,7 +1573,7 @@ class LoadCompassDAO(LoadRadDAO):
         term, _ = Term.objects.get_or_create_term_from_sis_term_id(
             sis_term_id=sis_term_id)
         course_qs = (Course.objects.filter(term=term)
-                     .values(['id', 'short_name']))
+                     .values('id', 'short_name'))
         course_df = pd.DataFrame(course_qs)
         course_df.rename(columns={'short_name': 'course_code'},
                          inplace=True)
