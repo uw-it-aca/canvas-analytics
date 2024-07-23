@@ -8,7 +8,6 @@ import pymssql
 from csv import DictReader
 from django.conf import settings
 from django.db import transaction, connection
-from django.db.models import F
 from data_aggregator.models import Adviser, AdviserTypes, Assignment, Course, \
     Participation, TaskTypes, User, RadDbView, Term, Week, AnalyticTypes, \
     Job, CompassDbView
@@ -1570,6 +1569,17 @@ class LoadCompassDAO(LoadRadDAO):
     Data Access Object for creating file for loading Compass
     """
 
+
+    def _get_course_df(self, sis_term_id=None):
+        term, _ = Term.objects.get_or_create_term_from_sis_term_id(
+            sis_term_id=sis_term_id)
+        course_qs = (Course.objects.filter(term=term)
+                     .values(['id', 'short_name']))
+        course_df = pd.DataFrame(course_qs)
+        course_df.rename(columns={'short_name': 'course_code'},
+                         inplace=True)
+        return course_df
+
     def get_compass_dbview_df(self, sis_term_id=None, week_num=None):
         """
         Query Compass canvas data from the canvas-analytics Compass db view for
@@ -1588,9 +1598,7 @@ class LoadCompassDAO(LoadRadDAO):
                                                   week_num=week_num)
         view_name = get_view_name(term.sis_term_id, week.week, "compass")
         compass_db_model = CompassDbView.setDb_table(view_name)
-        compass_canvas_qs = (compass_db_model.objects.all()
-                             .annotate(course_code=F('course_id__short_name'))
-                             .values())
+        compass_canvas_qs = compass_db_model.objects.all().values()
         compass_df = pd.DataFrame(compass_canvas_qs)
         col_map = {'normalized_assignment_score': 'assignments',
                    'normalized_user_course_percentage': 'grades',
@@ -1612,11 +1620,14 @@ class LoadCompassDAO(LoadRadDAO):
         idp_df = self.get_idp_df()
         # get predicted probabilities
         probs_df = self.get_pred_proba_scores_df(sis_term_id=sis_term_id)
+        # get course id lookup
+        course_df = self._get_course_df(sis_term_id=sis_term_id)
         # merge to create the final dataset
         joined_canvas_df = (
             pd.merge(sdb_df, compass_df, how='left', on='canvas_user_id')
             .merge(idp_df, how='left', on='uw_netid')
-            .merge(probs_df, how='left', on='system_key'))
+            .merge(probs_df, how='left', on='system_key')
+            .merge(course_df, how='left', left_on='course_id', right_on='id'))
         joined_canvas_df = joined_canvas_df[
             ['uw_netid', 'student_no', 'student_name_lowc', 'course_code',
              'activity', 'assignments', 'grades', 'pred', 'sign_in', 'stem',
