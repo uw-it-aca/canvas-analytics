@@ -126,7 +126,7 @@ def get_view_name(sis_term_id, week, label):
         Choose from (assignments, participations, or rad)
     :type str:
     """
-    if label not in ["assignments", "participations", "rad"]:
+    if label not in ["assignments", "participations", "rad", "compass"]:
         raise ValueError(f"Unknown DB view label {label}. "
                          f"Choose from (assignments, participations, or rad).")
     sis_term_id = sis_term_id.replace("-", "_")
