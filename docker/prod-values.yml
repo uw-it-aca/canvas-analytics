@@ -138,6 +138,10 @@ cronjob:
       schedule: "50 6 * * 6" # At 11:50pm PDT on Friday
       command: ["/scripts/management_command.sh"]
       args: ["create_and_run_jobs", "create_rad_db_view"]
+    - name: add-compass-view
+      schedule: "55 6 * * 6" # At 11:55pm PDT on Friday
+      command: ["/scripts/management_command.sh"]
+      args: ["create_and_run_jobs", "create_compass_db_view"]
     # adds analytics jobs for cronjob daemons to run
     - name: add-assign-jobs
       schedule: "0 7 * * 6" # At 12:00am PDT on Saturday
@@ -162,6 +166,16 @@ cronjob:
       schedule: "0 13 * * 0" # At 6:00am PDT on Sunday
       command: ["/scripts/management_command.sh"]
       args: ["run_jobs", "create_rad_data_file"]
+    # add Compass file job upfront so that it is created for the correct week
+    - name: add-crt-compass-data
+      schedule: "0 21 * * 6" # At 2:00pm PDT on Saturday
+      command: [ "/scripts/management_command.sh" ]
+      args: [ "create_jobs", "create_compass_data_file" ]
+    # run create Compass data file job
+    - name: crt-compass-data
+      schedule: "0 14 * * 0" # At 7:00am PDT on Sunday
+      command: [ "/scripts/management_command.sh" ]
+      args: [ "run_jobs", "create_compass_data_file" ]
 daemon:
   enabled: true
   daemons:
