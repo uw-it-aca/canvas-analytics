@@ -58,8 +58,8 @@ class BaseDAO():
 
     def get_s3_client(self):
         return client('s3',
-                      aws_access_key_id=settings.AWS_ACCESS_ID,
-                      aws_secret_access_key=settings.AWS_ACCESS_KEY)
+                      aws_access_key_id=settings.IDP_AWS_ACCESS_ID,
+                      aws_secret_access_key=settings.IDP_AWS_ACCESS_KEY)
 
     def get_gcs_bucket_name(self):
         return getattr(settings, "RAD_METADATA_BUCKET_NAME", "")
@@ -483,6 +483,9 @@ class JobDAO(BaseDAO):
         elif job_type == TaskTypes.build_subaccount_activity_report:
             ReportBuilder().build_subaccount_activity_report(
                 subaccount_id, sis_term_id=sis_term_id, week_num=week_num)
+        elif job_type == TaskTypes.export_subaccount_activity_report:
+            ReportBuilder().export_subaccount_activity_report(
+                sis_term_id=sis_term_id, week_num=week_num)
         else:
             raise ValueError(f"Unknown job type {job_type}")
 

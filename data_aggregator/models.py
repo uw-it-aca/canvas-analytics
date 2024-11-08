@@ -260,6 +260,7 @@ class JobManager(models.Manager):
         if jobtype in (AnalyticTypes.assignment,
                        AnalyticTypes.participation,
                        TaskTypes.build_subaccount_activity_report,
+                       TaskTypes.export_subaccount_activity_report,
                        TaskTypes.create_rad_db_view,
                        TaskTypes.create_assignment_db_view,
                        TaskTypes.create_participation_db_view,
@@ -325,6 +326,7 @@ class TaskTypes():
     create_compass_db_view = "create_compass_db_view"
     create_compass_data_file = "create_compass_data_file"
     build_subaccount_activity_report = "build_subaccount_activity_report"
+    export_subaccount_activity_report = "export_subaccount_activity_report"
 
 
 class JobType(models.Model):
@@ -775,6 +777,23 @@ class Report(models.Model):
         self.save()
 
 
+class SubaccountActivityManager(models.Manager):
+    def get_export_data(self, term_sis_id, week_num):
+        return super().get_queryset().filter(
+                report__term_id=term_sis_id,
+                report__term_week=week_num,
+            ).values(
+                "subaccount_id",
+                "subaccount_name",
+                "courses",
+                "active_courses",
+                "ind_study_courses",
+                "active_ind_study_courses",
+                "xlist_courses",
+                "xlist_ind_study_courses",
+            ).order_by("subaccount_id")
+
+
 class SubaccountActivity(models.Model):
     """
     Represents activity by sub-account and term
@@ -816,3 +835,5 @@ class SubaccountActivity(models.Model):
     other_views = models.PositiveIntegerField(default=0)
     pages_views = models.PositiveIntegerField(default=0)
     quizzes_views = models.PositiveIntegerField(default=0)
+
+    objects = SubaccountActivityManager()

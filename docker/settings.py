@@ -23,10 +23,12 @@ else:
         GCS_BUCKET_NAME = 'canvas-analytics-test'
         RAD_METADATA_BUCKET_NAME = 'canvas-analytics-test'
         IDP_BUCKET_NAME = 'uw-idp-data-files'
+        EXPORT_BUCKET_NAME = 'TODO'
     elif os.getenv('ENV') == 'prod':
         GCS_BUCKET_NAME = 'canvas-analytics'
         RAD_METADATA_BUCKET_NAME = 'canvas-analytics'
         IDP_BUCKET_NAME = 'uw-idp-data-files'
+        EXPORT_BUCKET_NAME = 'TODO'
 
     EDW_HOSTNAME = "localhost"
     EDW_USER = os.getenv('EDW_USER', '')
@@ -36,8 +38,11 @@ else:
     GCS_TIMEOUT = 10  # request timeout in seconds
     GCS_NUM_RETRIES = 3  # number of request retries
 
-    AWS_ACCESS_ID = os.getenv('AWS_ACCESS_ID', '')
-    AWS_ACCESS_KEY = os.getenv('AWS_ACCESS_KEY', '')
+    IDP_AWS_ACCESS_ID = os.getenv('IDP_AWS_ACCESS_ID', '')
+    IDP_AWS_ACCESS_KEY = os.getenv('IDP_AWS_ACCESS_KEY', '')
+
+    EXPORT_AWS_ACCESS_ID = os.getenv('EXPORT_AWS_ACCESS_ID', '')
+    EXPORT_AWS_ACCESS_KEY = os.getenv('EXPORT_AWS_ACCESS_KEY', '')
 
 WEBPACK_LOADER = {
     'DEFAULT': {

@@ -368,11 +368,11 @@ environmentVariablesSecrets:
     secretName: analytics.apps.canvas.uw.edu-uw-idp-cert
     secretKey: uw-idp-cert
   awsIDPAccessId:
-    name: AWS_ACCESS_ID
+    name: IDP_AWS_ACCESS_ID
     secretName: analytics.apps.canvas.uw.edu-idp-aws-credentials
     secretKey: aws_access_id
   awsIDPAccessKey:
-    name: AWS_ACCESS_KEY
+    name: IDP_AWS_ACCESS_KEY
     secretName: analytics.apps.canvas.uw.edu-idp-aws-credentials
     secretKey: aws_access_key
   edwUser:

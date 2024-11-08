@@ -2,10 +2,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+import io
 import csv
+from boto3 import client
+from logging import getLogger
 from django.db import transaction
 from django.test import override_settings
-from logging import getLogger
+from django.core.files.storage import default_storage
 from data_aggregator.models import Report, SubaccountActivity
 from data_aggregator.utilities import set_gcs_base_path
 from data_aggregator.exceptions import TermNotStarted
@@ -206,3 +209,67 @@ class ReportBuilder():
                 continue
 
         report.finished()
+
+    def export_subaccount_activity_report(self, sis_term_id, week_num):
+        queryset = SubaccountActivity.objects.get_export_data(sis_term_id,
+                                                              week_num)
+        if not len(queryset):
+            print("Nothing found")
+
+        s = io.StringIO()
+        csv.register_dialect("unix_newline", lineterminator="\n")
+        writer = csv.writer(s, dialect="unix_newline")
+
+        writer.writerow([
+            "term_sis_id", "week_num", "subaccount_id", "subaccount_name",
+            "campus", "college", "department", "adoption_rate", "courses",
+            "active_courses", "ind_study_courses", "active_ind_study_courses",
+            "xlist_courses", "xlist_ind_study_courses"])
+
+        for row in queryset:
+            accounts = row.get("subaccount_id", "").split(":")
+            courses = row.get("courses", 0)
+            active_courses = row.get("active_courses", 0)
+            ind_study_courses = row.get("ind_study_courses", 0)
+            active_ind_study_courses = row.get("active_ind_study_courses", 0)
+            xlist_courses = row.get("xlist_courses", 0)
+            xlist_ind_study_courses = row.get("xlist_ind_study_courses", 0)
+
+            writer.writerow([
+                sis_term_id,
+                week_num,
+                row.get("subaccount_id"),
+                row.get("subaccount_name"),
+                accounts[1],
+                accounts[2],
+                accounts[3],
+                round(
+                    ((active_courses - active_ind_study_courses) /
+                        (courses - xlist_courses - ind_study_courses -
+                            xlist_ind_study_courses)) * 100, ndigits=2),
+                courses,
+                active_courses,
+                ind_study_courses,
+                active_ind_study_courses,
+                xlist_courses,
+                xlist_ind_study_courses,
+            ])
+
+        print(s.getvalue())
+
+        return  # S3 not yet configured
+
+        filename = "TEST/test.csv"
+        client = client("s3",
+                        aws_access_key_id=settings.EXPORT_AWS_ACCESS_ID,
+                        aws_secret_access_key=settings.EXPORT_AWS_ACCESS_KEY)
+
+        try:
+            client.put_object(
+                Body=s.getvalue(),
+                Bucket=settings.EXPORT_BUCKET_NAME,
+                Key=filename,
+                ContentType='text/csv',
+            )
+        except Exception as ex:
+            logger.error(f"CSV write failed: {ex}")
