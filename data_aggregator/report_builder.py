@@ -8,7 +8,6 @@ from boto3 import client
 from logging import getLogger
 from django.db import transaction
 from django.test import override_settings
-from django.core.files.storage import default_storage
 from data_aggregator.models import Report, SubaccountActivity
 from data_aggregator.utilities import set_gcs_base_path
 from data_aggregator.exceptions import TermNotStarted
