@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-import io
 import csv
 from boto3 import client
 from logging import getLogger
@@ -210,52 +209,16 @@ class ReportBuilder():
         report.finished()
 
     def export_subaccount_activity_report(self, sis_term_id, week_num):
-        queryset = SubaccountActivity.objects.get_export_data(sis_term_id,
-                                                              week_num)
-        if not len(queryset):
-            print("Nothing found")
+        try:
+            report = Report.objects.get_by_term_and_week(sis_term_id, week_num)
+            fileobj = report.create_export_file()
+            self.export_csv(fileobj)
+        except Report.DoesNotExist:
+            logger.info(f"No export data for {sis_term_id} week {week_num}")
+            return
 
-        s = io.StringIO()
-        csv.register_dialect("unix_newline", lineterminator="\n")
-        writer = csv.writer(s, dialect="unix_newline")
-
-        writer.writerow([
-            "term_sis_id", "week_num", "subaccount_id", "subaccount_name",
-            "campus", "college", "department", "adoption_rate", "courses",
-            "active_courses", "ind_study_courses", "active_ind_study_courses",
-            "xlist_courses", "xlist_ind_study_courses"])
-
-        for row in queryset:
-            accounts = row.get("subaccount_id", "").split(":")
-            courses = row.get("courses", 0)
-            active_courses = row.get("active_courses", 0)
-            ind_study_courses = row.get("ind_study_courses", 0)
-            active_ind_study_courses = row.get("active_ind_study_courses", 0)
-            xlist_courses = row.get("xlist_courses", 0)
-            xlist_ind_study_courses = row.get("xlist_ind_study_courses", 0)
-
-            writer.writerow([
-                sis_term_id,
-                week_num,
-                row.get("subaccount_id"),
-                row.get("subaccount_name"),
-                accounts[1],
-                accounts[2],
-                accounts[3],
-                round(
-                    ((active_courses - active_ind_study_courses) /
-                        (courses - xlist_courses - ind_study_courses -
-                            xlist_ind_study_courses)) * 100, ndigits=2),
-                courses,
-                active_courses,
-                ind_study_courses,
-                active_ind_study_courses,
-                xlist_courses,
-                xlist_ind_study_courses,
-            ])
-
-        print(s.getvalue())
-
+    def export_csv(self, fileobj):
+        print(fileobj.getvalue())
         return  # S3 not yet configured
 
         filename = "TEST/test.csv"

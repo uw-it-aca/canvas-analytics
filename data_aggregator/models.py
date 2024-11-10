@@ -3,10 +3,12 @@
 
 
 import os
+import io
+import csv
 import logging
 from datetime import datetime, date, timedelta
 from django.db import models, IntegrityError
-from django.db.models import Q
+from django.db.models import Q, Prefetch
 from django.utils import timezone
 from data_aggregator.exceptions import TermNotStarted
 from data_aggregator import utilities
@@ -721,7 +723,6 @@ class CompassDbView(models.Model):
 
 
 class ReportManager(models.Manager):
-
     def get_or_create_report(self, report_type,
                              sis_term_id=None, week_num=None):
         term, _ = Term.objects.get_or_create_term_from_sis_term_id(
@@ -750,6 +751,18 @@ class ReportManager(models.Manager):
 
         return report
 
+    def get_by_term_and_week(self, sis_term_id, week_num):
+        prefetch = Prefetch("subaccountactivity_set",
+            queryset=SubaccountActivity.objects.order_by("subaccount_id"),
+            to_attr="subaccounts")
+
+        # Raises Report.DoesNotExist if not found
+        return super().get_queryset().prefetch_related(prefetch).get(
+            report_type=Report.SUBACCOUNT_ACTIVITY,
+            term_id=sis_term_id,
+            term_week=week_num
+        )
+
 
 class Report(models.Model):
     """
@@ -776,22 +789,23 @@ class Report(models.Model):
         self.finished_date = datetime.utcnow().replace(tzinfo=timezone.utc)
         self.save()
 
+    def create_export_file(self):
+        s = io.StringIO()
+        csv.register_dialect("unix_newline", lineterminator="\n")
+        writer = csv.writer(s, dialect="unix_newline")
 
-class SubaccountActivityManager(models.Manager):
-    def get_export_data(self, term_sis_id, week_num):
-        return super().get_queryset().filter(
-                report__term_id=term_sis_id,
-                report__term_week=week_num,
-            ).values(
-                "subaccount_id",
-                "subaccount_name",
-                "courses",
-                "active_courses",
-                "ind_study_courses",
-                "active_ind_study_courses",
-                "xlist_courses",
-                "xlist_ind_study_courses",
-            ).order_by("subaccount_id")
+        writer.writerow([
+            "term_sis_id", "week_num", "subaccount_id", "subaccount_name",
+            "campus", "college", "department", "adoption_rate", "courses",
+            "active_courses", "ind_study_courses", "active_ind_study_courses",
+            "xlist_courses", "xlist_ind_study_courses"])
+
+        for subaccount in self.subaccounts:
+            export_data = [self.term_id, self.term_week]
+            export_data.extend(subaccount.csv_export_data())
+            writer.writerow(export_data)
+
+        return s
 
 
 class SubaccountActivity(models.Model):
@@ -836,4 +850,31 @@ class SubaccountActivity(models.Model):
     pages_views = models.PositiveIntegerField(default=0)
     quizzes_views = models.PositiveIntegerField(default=0)
 
-    objects = SubaccountActivityManager()
+    def adoption_rate(self):
+        courses = self.courses or 0
+        active_courses = self.active_courses or 0
+        ind_study_courses = self.ind_study_courses or 0
+        active_ind_study_courses = self.active_ind_study_courses or 0
+        xlist_courses = self.xlist_courses or 0
+        xlist_ind_study_courses = self.xlist_ind_study_courses or 0
+
+        return round(((active_courses - active_ind_study_courses) /
+            (courses - xlist_courses - ind_study_courses -
+                xlist_ind_study_courses)) * 100, ndigits=2)
+
+    def csv_export_data(self):
+        accounts = self.subaccount_id.split(":")
+        return [
+            self.subaccount_id,
+            self.subaccount_name,
+            accounts[1] if 1 < len(accounts) else None,
+            accounts[2] if 2 < len(accounts) else None,
+            accounts[3] if 3 < len(accounts) else None,
+            self.adoption_rate(),
+            self.courses or 0,
+            self.active_courses or 0,
+            self.ind_study_courses or 0,
+            self.active_ind_study_courses or 0,
+            self.xlist_courses or 0,
+            self.xlist_ind_study_courses or 0,
+        ]

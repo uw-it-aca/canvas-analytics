@@ -8,8 +8,9 @@ from django.db.utils import IntegrityError
 from django.test import TestCase
 from django.utils import timezone
 from datetime import timedelta, date
-from data_aggregator.models import Assignment, Job, Participation, Term, \
-    Week, Course, JobType, AnalyticTypes, User, TaskTypes
+from data_aggregator.models import (
+    Assignment, Job, Participation, Term, Week, Course, JobType, AnalyticTypes,
+    User, TaskTypes, Report, SubaccountActivity)
 from data_aggregator.utilities import datestring_to_datetime
 from mock import MagicMock, patch
 
@@ -805,6 +806,63 @@ class TestParticipationManager(TestCase):
         duplicate_partic.time_floating = partic.time_floating
         with self.assertRaises(IntegrityError):
             duplicate_partic.save()
+
+
+class TestReportManager(TestCase):
+    fixtures = [
+        'data_aggregator/fixtures/mock_data/da_report.json',
+        'data_aggregator/fixtures/mock_data/da_subaccountactivity.json',
+    ]
+
+    def test_get_by_term_and_week(self):
+        term = "2013-spring"
+        week = 10;
+
+        with self.assertRaises(Report.DoesNotExist):
+            report = Report.objects.get_by_term_and_week(term, 9)
+
+        report = Report.objects.get_by_term_and_week(term, week)
+
+        self.assertEqual(report.term_id, term)
+        self.assertEqual(report.term_week, week)
+
+        self.assertEqual(len(report.subaccounts), 3)
+
+        subaccount = report.subaccounts[0]
+        self.assertEqual(subaccount.term_id, term)
+        self.assertEqual(subaccount.subaccount_id, "courses:tacoma")
+        self.assertEqual(subaccount.adoption_rate(), 30.14)
+
+        subaccount = report.subaccounts[1]
+        self.assertEqual(subaccount.term_id, term)
+        self.assertEqual(
+            subaccount.subaccount_id, "courses:tacoma:test-college")
+        self.assertEqual(subaccount.adoption_rate(), 96.15)
+
+        subaccount = report.subaccounts[2]
+        self.assertEqual(subaccount.term_id, term)
+        self.assertEqual(
+            subaccount.subaccount_id,
+            "courses:tacoma:test-college:test-department")
+        self.assertEqual(subaccount.adoption_rate(), 73.78)
+        self.assertEqual(subaccount.csv_export_data(), [
+            'courses:tacoma:test-college:test-department', 'Test Department',
+            'tacoma', 'test-college', 'test-department', 73.78, 199, 122, 33,
+            1, 2, 0])
+
+        fileobj = report.create_export_file()
+        self.assertMultiLineEqual(fileobj.getvalue(), (
+            "term_sis_id,week_num,subaccount_id,subaccount_name,campus,"
+            "college,department,adoption_rate,courses,active_courses,"
+            "ind_study_courses,active_ind_study_courses,xlist_courses,"
+            "xlist_ind_study_courses\n"
+            "2013-spring,10,courses:tacoma,Tacoma,tacoma,,,30.14,595,151,91,"
+            "3,12,1\n"
+            "2013-spring,10,courses:tacoma:test-college,College of Test,"
+            "tacoma,test-college,,96.15,268,202,51,2,8,1\n"
+            "2013-spring,10,courses:tacoma:test-college:test-department,"
+            "Test Department,tacoma,test-college,test-department,73.78,199,"
+            "122,33,1,2,0\n"))
 
 
 if __name__ == "__main__":
