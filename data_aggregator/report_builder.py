@@ -212,12 +212,12 @@ class ReportBuilder():
         try:
             report = Report.objects.get_by_term_and_week(sis_term_id, week_num)
             fileobj = report.create_export_file()
-            self.export_csv(fileobj)
+            self.upload_csv_file(fileobj)
         except Report.DoesNotExist:
             logger.info(f"No export data for {sis_term_id} week {week_num}")
             return
 
-    def export_csv(self, fileobj):
+    def upload_csv_file(self, fileobj):
         print(fileobj.getvalue())
         return  # S3 not yet configured
 
@@ -228,7 +228,7 @@ class ReportBuilder():
 
         try:
             client.put_object(
-                Body=s.getvalue(),
+                Body=fileobj.getvalue(),
                 Bucket=settings.EXPORT_BUCKET_NAME,
                 Key=filename,
                 ContentType='text/csv',

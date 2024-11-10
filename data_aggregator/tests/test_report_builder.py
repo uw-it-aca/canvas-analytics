@@ -3,10 +3,11 @@
 
 
 import os
+import io
 from data_aggregator.models import Report, SubaccountActivity
 from data_aggregator.report_builder import ReportBuilder
 from django.test import TestCase
-from mock import MagicMock
+from mock import MagicMock, patch
 from csv import DictReader
 
 
@@ -182,3 +183,34 @@ class TestBuildSubAccountActivityReport(TestCase):
 
         activities = SubaccountActivity.objects.all()
         self.assertEqual(activities.count(), 4)
+
+
+class TestExportSubAccountActivityReport(TestCase):
+    fixtures = [
+        'data_aggregator/fixtures/mock_data/da_report.json',
+        'data_aggregator/fixtures/mock_data/da_subaccountactivity.json',
+    ]
+
+    def setUp(self):
+        self.report_builder = ReportBuilder()
+        with io.StringIO() as f:
+            f.write("A,B,C\n10,20,30\n100,200,300\n")
+            self.test_fileobj = f
+
+    @patch.object(Report, "create_export_file")
+    @patch.object(ReportBuilder, "upload_csv_file")
+    def test_export_subaccount_activity_report(self, mock_upload, mock_create):
+        mock_create.return_value = self.test_fileobj
+        term_id = "2013-spring"
+        week = 10
+
+        self.report_builder.export_subaccount_activity_report(term_id, week)
+        mock_upload.assert_called_once_with(mock_create.return_value)
+
+    @patch("data_aggregator.report_builder.client")
+    def test_upload_csv_file(self, mock_client):
+        client_instance = MagicMock()
+        client_instance.execute.return_value = "testing"
+        mock_client.return_value = client_instance
+
+        # TODO add tests for client.put_object

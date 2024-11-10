@@ -697,6 +697,14 @@ class TestJobDAO(TestCase):
                  "uwcourse",
                  sis_term_id="2021-summer",
                  week_num=4)
+        job.type.type = TaskTypes.export_subaccount_activity_report
+        with patch("data_aggregator.report_builder.ReportBuilder."
+                   "export_subaccount_activity_report") \
+                as mock_export_subaccount_activity_report:
+            JobDAO().run_task_job(job)
+            mock_export_subaccount_activity_report.assert_called_once_with(
+                 sis_term_id="2021-summer",
+                 week_num=4)
         job.type.type = "unknown-job-type"
         with self.assertRaises(ValueError):
             JobDAO().run_task_job(job)
