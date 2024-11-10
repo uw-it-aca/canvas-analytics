@@ -816,7 +816,7 @@ class TestReportManager(TestCase):
 
     def test_get_by_term_and_week(self):
         term = "2013-spring"
-        week = 10;
+        week = 10
 
         with self.assertRaises(Report.DoesNotExist):
             report = Report.objects.get_by_term_and_week(term, 9)

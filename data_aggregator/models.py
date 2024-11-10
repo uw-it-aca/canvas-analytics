@@ -752,7 +752,8 @@ class ReportManager(models.Manager):
         return report
 
     def get_by_term_and_week(self, sis_term_id, week_num):
-        prefetch = Prefetch("subaccountactivity_set",
+        prefetch = Prefetch(
+            "subaccountactivity_set",
             queryset=SubaccountActivity.objects.order_by("subaccount_id"),
             to_attr="subaccounts")
 
@@ -858,9 +859,10 @@ class SubaccountActivity(models.Model):
         xlist_courses = self.xlist_courses or 0
         xlist_ind_study_courses = self.xlist_ind_study_courses or 0
 
-        return round(((active_courses - active_ind_study_courses) /
-            (courses - xlist_courses - ind_study_courses -
-                xlist_ind_study_courses)) * 100, ndigits=2)
+        return round(
+            ((active_courses - active_ind_study_courses) /
+                (courses - xlist_courses - ind_study_courses -
+                    xlist_ind_study_courses)) * 100, ndigits=2)
 
     def csv_export_data(self):
         accounts = self.subaccount_id.split(":")
