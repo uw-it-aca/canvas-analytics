@@ -227,13 +227,10 @@ class ReportBuilder():
         csv.register_dialect("unix_newline", lineterminator="\n")
         writer = csv.writer(fileobj, dialect="unix_newline")
 
-        writer.writerow([
-            "term_sis_id", "week_num", "subaccount_id", "subaccount_name",
-            "campus", "college", "department", "adoption_rate", "courses",
-            "active_courses", "ind_study_courses", "active_ind_study_courses",
-            "xlist_courses", "xlist_ind_study_courses"])
+        for index, report in enumerate(reports):
+            if index == 0:
+                writer.writerow(report.subaccount_activity_header())
 
-        for report in reports:
             for subaccount in report.subaccounts:
                 writer.writerow(subaccount.csv_export_data())
 
