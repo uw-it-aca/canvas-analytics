@@ -34,7 +34,8 @@ class RunJobCommand(BaseCommand, RunJobMixin):
                                 TaskTypes.create_compass_db_view,
                                 TaskTypes.create_compass_data_file,
                                 TaskTypes.create_student_categories_data_file,
-                                TaskTypes.build_subaccount_activity_report],
+                                TaskTypes.build_subaccount_activity_report,
+                                TaskTypes.export_subaccount_activity_report],
                             help=("Name of job to run."))
         parser.add_argument("--job_batch_size",
                             type=int,
@@ -285,6 +286,17 @@ class CreateJobCommand(BaseCommand):
             include_account=True,
             command_help_message=(
                 "Creates participation database view for given term and week."
+            ),
+            default_sis_term_id=curr_sis_term_id,
+            default_week=curr_week)
+
+        subparsers = self._add_subparser(
+            subparsers,
+            TaskTypes.export_subaccount_activity_report,
+            include_week=True,
+            include_course=True,
+            command_help_message=(
+                "Exports participation database view for given term and week."
             ),
             default_sis_term_id=curr_sis_term_id,
             default_week=curr_week)
