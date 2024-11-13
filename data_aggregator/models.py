@@ -791,6 +791,21 @@ class Report(models.Model):
         self.finished_date = datetime.utcnow().replace(tzinfo=timezone.utc)
         self.save()
 
+    def subaccount_activity_header(self):
+        return [
+            "term_sis_id", "week_num", "subaccount_id", "subaccount_name",
+            "campus", "college", "department", "adoption_rate", "courses",
+            "active_courses", "ind_study_courses", "active_ind_study_courses",
+            "xlist_courses", "xlist_ind_study_courses", "teachers",
+            "unique_teachers", "students", "unique_students",
+            "discussion_topics", "discussion_replies", "media_objects",
+            "attachments", "assignments", "submissions", "announcements_views",
+            "assignments_views", "collaborations_views", "conferences_views",
+            "discussions_views", "files_views", "general_views",
+            "grades_views", "groups_views", "modules_views", "other_views",
+            "pages_views", "quizzes_views"
+        ]
+
 
 class SubaccountActivity(models.Model):
     """
@@ -864,4 +879,27 @@ class SubaccountActivity(models.Model):
             self.active_ind_study_courses or 0,
             self.xlist_courses or 0,
             self.xlist_ind_study_courses or 0,
+            self.teachers or 0,
+            self.unique_teachers or 0,
+            self.students or 0,
+            self.unique_students or 0,
+            self.discussion_topics or 0,
+            self.discussion_replies or 0,
+            self.media_objects or 0,
+            self.attachments or 0,
+            self.assignments or 0,
+            self.submissions or 0,
+            self.announcements_views or 0,
+            self.assignments_views or 0,
+            self.collaborations_views or 0,
+            self.conferences_views or 0,
+            self.discussions_views or 0,
+            self.files_views or 0,
+            self.general_views or 0,
+            self.grades_views or 0,
+            self.groups_views or 0,
+            self.modules_views or 0,
+            self.other_views or 0,
+            self.pages_views or 0,
+            self.quizzes_views or 0,
         ]
