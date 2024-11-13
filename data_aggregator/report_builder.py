@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+import io
 import csv
 from boto3 import client
 from logging import getLogger
@@ -208,14 +209,35 @@ class ReportBuilder():
 
         report.finished()
 
-    def export_subaccount_activity_report(self, sis_term_id, week_num):
-        try:
-            report = Report.objects.get_by_term_and_week(sis_term_id, week_num)
-            fileobj = report.create_export_file()
-            self.upload_csv_file(fileobj)
-        except Report.DoesNotExist:
+    def export_subaccount_activity_report(
+            self, sis_term_id=None, week_num=None):
+
+        reports = Report.objects.get_subaccount_activity(
+            sis_term_id=sis_term_id, week_num=week_num)
+
+        if not len(reports):
             logger.info(f"No export data for {sis_term_id} week {week_num}")
             return
+
+        fileobj = self.generate_report_csv(reports)
+        self.upload_csv_file(fileobj)
+
+    def generate_report_csv(self, reports):
+        fileobj = io.StringIO()
+        csv.register_dialect("unix_newline", lineterminator="\n")
+        writer = csv.writer(fileobj, dialect="unix_newline")
+
+        writer.writerow([
+            "term_sis_id", "week_num", "subaccount_id", "subaccount_name",
+            "campus", "college", "department", "adoption_rate", "courses",
+            "active_courses", "ind_study_courses", "active_ind_study_courses",
+            "xlist_courses", "xlist_ind_study_courses"])
+
+        for report in reports:
+            for subaccount in report.subaccounts:
+                writer.writerow(subaccount.csv_export_data())
+
+        return fileobj
 
     def upload_csv_file(self, fileobj):
         print(fileobj.getvalue())

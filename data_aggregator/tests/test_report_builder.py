@@ -193,19 +193,40 @@ class TestExportSubAccountActivityReport(TestCase):
 
     def setUp(self):
         self.report_builder = ReportBuilder()
+        self.term_id = "2013-spring"
+        self.week = 10
+
         with io.StringIO() as f:
             f.write("A,B,C\n10,20,30\n100,200,300\n")
             self.test_fileobj = f
 
-    @patch.object(Report, "create_export_file")
+    @patch.object(ReportBuilder, "generate_report_csv")
     @patch.object(ReportBuilder, "upload_csv_file")
     def test_export_subaccount_activity_report(self, mock_upload, mock_create):
         mock_create.return_value = self.test_fileobj
-        term_id = "2013-spring"
-        week = 10
-
-        self.report_builder.export_subaccount_activity_report(term_id, week)
+        self.report_builder.export_subaccount_activity_report(self.term_id,
+                                                              self.week)
         mock_upload.assert_called_once_with(mock_create.return_value)
+
+    @patch.object(ReportBuilder, "upload_csv_file")
+    def test_generate_export_csv(self, mock_upload):
+        reports = Report.objects.get_subaccount_activity(
+            sis_term_id=self.term_id, week_num=self.week)
+
+        fileobj = self.report_builder.generate_report_csv(reports)
+
+        self.assertMultiLineEqual(fileobj.getvalue(), (
+            "term_sis_id,week_num,subaccount_id,subaccount_name,campus,"
+            "college,department,adoption_rate,courses,active_courses,"
+            "ind_study_courses,active_ind_study_courses,xlist_courses,"
+            "xlist_ind_study_courses\n"
+            "2013-spring,10,courses:tacoma,Tacoma,tacoma,,,30.14,595,151,91,"
+            "3,12,1\n"
+            "2013-spring,10,courses:tacoma:test-college,College of Test,"
+            "tacoma,test-college,,96.15,268,202,51,2,8,1\n"
+            "2013-spring,10,courses:tacoma:test-college:test-department,"
+            "Test Department,tacoma,test-college,test-department,73.78,199,"
+            "122,33,1,2,0\n"))
 
     @patch("data_aggregator.report_builder.client")
     def test_upload_csv_file(self, mock_client):

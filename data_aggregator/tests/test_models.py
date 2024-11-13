@@ -814,18 +814,32 @@ class TestReportManager(TestCase):
         'data_aggregator/fixtures/mock_data/da_subaccountactivity.json',
     ]
 
-    def test_get_by_term_and_week(self):
+    def test_get_subaccount_activity(self):
         term = "2013-spring"
         week = 10
 
-        with self.assertRaises(Report.DoesNotExist):
-            report = Report.objects.get_by_term_and_week(term, 9)
+        # No term/week
+        reports = Report.objects.get_subaccount_activity()
+        self.assertEqual(len(reports), 1)
+        self.assertEqual(reports[0].term_id, term)
+        self.assertEqual(reports[0].term_week, week)
 
-        report = Report.objects.get_by_term_and_week(term, week)
+        # Term only
+        reports = Report.objects.get_subaccount_activity(term)
+        self.assertEqual(len(reports), 1)
+        self.assertEqual(reports[0].term_id, term)
+        self.assertEqual(reports[0].term_week, week)
 
-        self.assertEqual(report.term_id, term)
-        self.assertEqual(report.term_week, week)
+        # Term, unknown week
+        reports = Report.objects.get_subaccount_activity(term, 9)
+        self.assertEqual(len(reports), 0)
 
+        # Term and week
+        reports = Report.objects.get_subaccount_activity(term, week)
+        self.assertEqual(reports[0].term_id, term)
+        self.assertEqual(reports[0].term_week, week)
+
+        report = reports[0]
         self.assertEqual(len(report.subaccounts), 3)
 
         subaccount = report.subaccounts[0]
@@ -846,23 +860,9 @@ class TestReportManager(TestCase):
             "courses:tacoma:test-college:test-department")
         self.assertEqual(subaccount.adoption_rate(), 73.78)
         self.assertEqual(subaccount.csv_export_data(), [
-            'courses:tacoma:test-college:test-department', 'Test Department',
-            'tacoma', 'test-college', 'test-department', 73.78, 199, 122, 33,
-            1, 2, 0])
-
-        fileobj = report.create_export_file()
-        self.assertMultiLineEqual(fileobj.getvalue(), (
-            "term_sis_id,week_num,subaccount_id,subaccount_name,campus,"
-            "college,department,adoption_rate,courses,active_courses,"
-            "ind_study_courses,active_ind_study_courses,xlist_courses,"
-            "xlist_ind_study_courses\n"
-            "2013-spring,10,courses:tacoma,Tacoma,tacoma,,,30.14,595,151,91,"
-            "3,12,1\n"
-            "2013-spring,10,courses:tacoma:test-college,College of Test,"
-            "tacoma,test-college,,96.15,268,202,51,2,8,1\n"
-            "2013-spring,10,courses:tacoma:test-college:test-department,"
-            "Test Department,tacoma,test-college,test-department,73.78,199,"
-            "122,33,1,2,0\n"))
+            "2013-spring", 10, "courses:tacoma:test-college:test-department",
+            "Test Department", "tacoma", "test-college", "test-department",
+            73.78, 199, 122, 33, 1, 2, 0])
 
 
 if __name__ == "__main__":

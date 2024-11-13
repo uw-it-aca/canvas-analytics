@@ -3,12 +3,11 @@
 
 
 import os
-import io
 import csv
 import logging
 from datetime import datetime, date, timedelta
 from django.db import models, IntegrityError
-from django.db.models import Q, Prefetch
+from django.db.models import Q, Max, Prefetch
 from django.utils import timezone
 from data_aggregator.exceptions import TermNotStarted
 from data_aggregator import utilities
@@ -751,18 +750,20 @@ class ReportManager(models.Manager):
 
         return report
 
-    def get_by_term_and_week(self, sis_term_id, week_num):
+    def get_subaccount_activity(self, sis_term_id=None, week_num=None):
+        kwargs = {"report_type": Report.SUBACCOUNT_ACTIVITY}
+        if sis_term_id is not None:
+            kwargs["term_id"] = sis_term_id
+            if week_num is not None:
+                kwargs["term_week"] = week_num
+
         prefetch = Prefetch(
             "subaccountactivity_set",
             queryset=SubaccountActivity.objects.order_by("subaccount_id"),
             to_attr="subaccounts")
 
-        # Raises Report.DoesNotExist if not found
-        return super().get_queryset().prefetch_related(prefetch).get(
-            report_type=Report.SUBACCOUNT_ACTIVITY,
-            term_id=sis_term_id,
-            term_week=week_num
-        )
+        return super().get_queryset().prefetch_related(prefetch).filter(
+            **kwargs).order_by("term_id", "term_week")
 
 
 class Report(models.Model):
@@ -789,24 +790,6 @@ class Report(models.Model):
     def finished(self):
         self.finished_date = datetime.utcnow().replace(tzinfo=timezone.utc)
         self.save()
-
-    def create_export_file(self):
-        s = io.StringIO()
-        csv.register_dialect("unix_newline", lineterminator="\n")
-        writer = csv.writer(s, dialect="unix_newline")
-
-        writer.writerow([
-            "term_sis_id", "week_num", "subaccount_id", "subaccount_name",
-            "campus", "college", "department", "adoption_rate", "courses",
-            "active_courses", "ind_study_courses", "active_ind_study_courses",
-            "xlist_courses", "xlist_ind_study_courses"])
-
-        for subaccount in self.subaccounts:
-            export_data = [self.term_id, self.term_week]
-            export_data.extend(subaccount.csv_export_data())
-            writer.writerow(export_data)
-
-        return s
 
 
 class SubaccountActivity(models.Model):
@@ -867,6 +850,8 @@ class SubaccountActivity(models.Model):
     def csv_export_data(self):
         accounts = self.subaccount_id.split(":")
         return [
+            self.report.term_id,
+            self.report.term_week,
             self.subaccount_id,
             self.subaccount_name,
             accounts[1] if 1 < len(accounts) else None,
