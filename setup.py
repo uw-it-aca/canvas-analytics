@@ -25,7 +25,7 @@ setup(
         'UW-RestClients-Core~=1.4',
         'UW-RestClients-SWS~=2.4',
         'UW-RestClients-PWS~=2.1',
-        'UW-RestClients-Canvas~=1.2',
+        'UW-RestClients-Canvas>=1.2.5,<2',
         'UW-Django-SAML2~=1.8',
         'django-webpack-loader~=0.7',
         'djangorestframework~=3.12',
