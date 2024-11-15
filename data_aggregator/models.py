@@ -763,7 +763,7 @@ class ReportManager(models.Manager):
             to_attr="subaccounts")
 
         return super().get_queryset().prefetch_related(prefetch).filter(
-            **kwargs).order_by("term_id", "term_week")
+            **kwargs).order_by("-finished_date")
 
 
 class Report(models.Model):

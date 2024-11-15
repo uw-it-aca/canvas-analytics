@@ -227,12 +227,15 @@ class ReportBuilder():
         csv.register_dialect("unix_newline", lineterminator="\n")
         writer = csv.writer(fileobj, dialect="unix_newline")
 
+        seen_terms = set()
         for index, report in enumerate(reports):
             if index == 0:
                 writer.writerow(report.subaccount_activity_header())
 
-            for subaccount in report.subaccounts:
-                writer.writerow(subaccount.csv_export_data())
+            if report.term_id not in seen_terms:
+                for subaccount in report.subaccounts:
+                    writer.writerow(subaccount.csv_export_data())
+                seen_terms.add(report.term_id)
 
         return fileobj
 
@@ -240,7 +243,7 @@ class ReportBuilder():
         print(fileobj.getvalue())
         return  # S3 not yet configured
 
-        filename = "TEST/test.csv"
+        filename = "canvas-subaccount-activity.csv"
         client = client("s3",
                         aws_access_key_id=settings.EXPORT_AWS_ACCESS_ID,
                         aws_secret_access_key=settings.EXPORT_AWS_ACCESS_KEY)
