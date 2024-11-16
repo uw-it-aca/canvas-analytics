@@ -244,14 +244,15 @@ class ReportBuilder():
         return  # S3 not yet configured
 
         filename = "canvas-subaccount-activity.csv"
-        client = client("s3",
-                        aws_access_key_id=settings.EXPORT_AWS_ACCESS_ID,
-                        aws_secret_access_key=settings.EXPORT_AWS_ACCESS_KEY)
+        client = client(
+            "s3",
+            aws_access_key_id=settings.EXPORT_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=settings.EXPORT_AWS_SECRET_ACCESS_KEY)
 
         try:
             client.put_object(
                 Body=fileobj.getvalue(),
-                Bucket=settings.EXPORT_BUCKET_NAME,
+                Bucket=settings.EXPORT_AWS_STORAGE_BUCKET_NAME,
                 Key=filename,
                 ContentType='text/csv',
             )
