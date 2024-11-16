@@ -240,9 +240,6 @@ class ReportBuilder():
         return fileobj
 
     def upload_csv_file(self, fileobj):
-        print(fileobj.getvalue())
-        return  # S3 not yet configured
-
         filename = "canvas-subaccount-activity.csv"
         client = client(
             "s3",

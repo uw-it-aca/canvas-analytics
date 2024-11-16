@@ -91,7 +91,7 @@ class TestBaseDAO(TestCase):
         base_dao = BaseDAO()
         base_dao.get_s3_bucket_name()
         mock_getattr.assert_called_once_with(mock_settings,
-                                             "IDP_BUCKET_NAME",
+                                             "IDP_AWS_STORAGE_BUCKET_NAME",
                                              "")
 
     @patch('data_aggregator.dao.settings')

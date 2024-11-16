@@ -208,8 +208,7 @@ class TestExportSubAccountActivityReport(TestCase):
                                                               self.week)
         mock_upload.assert_called_once_with(mock_create.return_value)
 
-    @patch.object(ReportBuilder, "upload_csv_file")
-    def test_generate_export_csv(self, mock_upload):
+    def test_generate_report_csv(self):
         reports = Report.objects.get_subaccount_activity(
             sis_term_id=self.term_id, week_num=self.week)
 
