@@ -249,7 +249,7 @@ class ReportBuilder():
             s3client.put_object(
                 Body=csv_data,
                 Bucket=settings.EXPORT_AWS_STORAGE_BUCKET_NAME,
-                Key=settings.EXPORT_AWS_DEFAIULT_FILE_NAME,
+                Key=settings.EXPORT_AWS_DEFAULT_FILE_NAME,
                 ContentType="text/csv",
             )
         except Exception as ex:
