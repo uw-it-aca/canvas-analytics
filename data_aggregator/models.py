@@ -7,7 +7,7 @@ import csv
 import logging
 from datetime import datetime, date, timedelta
 from django.db import models, IntegrityError
-from django.db.models import Q, Max, Prefetch
+from django.db.models import Q, Prefetch
 from django.utils import timezone
 from data_aggregator.exceptions import TermNotStarted
 from data_aggregator import utilities
@@ -759,7 +759,9 @@ class ReportManager(models.Manager):
 
         prefetch = Prefetch(
             "subaccountactivity_set",
-            queryset=SubaccountActivity.objects.order_by("subaccount_id"),
+            queryset=SubaccountActivity.objects.filter(
+                Q(subaccount_id__startswith="uwcourse")
+                    ).order_by("subaccount_id"),
             to_attr="subaccounts")
 
         return super().get_queryset().prefetch_related(prefetch).filter(
@@ -857,10 +859,15 @@ class SubaccountActivity(models.Model):
         xlist_courses = self.xlist_courses or 0
         xlist_ind_study_courses = self.xlist_ind_study_courses or 0
 
-        return round(
-            ((active_courses - active_ind_study_courses) /
-                (courses - xlist_courses - ind_study_courses -
-                    xlist_ind_study_courses)) * 100, ndigits=2)
+        try:
+            rate = round(
+                ((active_courses - active_ind_study_courses) /
+                    (courses - xlist_courses - ind_study_courses -
+                        xlist_ind_study_courses)) * 100, ndigits=2)
+        except ZeroDivisionError:
+            rate = 0.00
+
+        return rate
 
     def csv_export_data(self):
         accounts = self.subaccount_id.split(":")
