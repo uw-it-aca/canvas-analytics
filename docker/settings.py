@@ -34,6 +34,8 @@ else:
     GCS_TIMEOUT = 10  # request timeout in seconds
     GCS_NUM_RETRIES = 3  # number of request retries
 
+    AWS_S3_REGION_NAME = os.getenv('AWS_S3_REGION_NAME')
+
     IDP_AWS_STORAGE_BUCKET_NAME = os.getenv('IDP_AWS_STORAGE_BUCKET_NAME')
     IDP_AWS_ACCESS_KEY_ID = os.getenv('IDP_AWS_ACCESS_KEY_ID')
     IDP_AWS_SECRET_ACCESS_KEY = os.getenv('IDP_AWS_SECRET_ACCESS_KEY')
