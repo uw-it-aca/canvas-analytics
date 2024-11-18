@@ -5,7 +5,7 @@
     "fields": {
       "report": 1,
       "term_id": "2013-spring",
-      "subaccount_id": "courses:tacoma:test-college:test-department",
+      "subaccount_id": "uwcourse:tacoma:test-college:test-department",
       "subaccount_name": "Test Department",
       "courses": 199,
       "active_courses": 122,
@@ -44,7 +44,7 @@
     "fields": {
       "report": 1,
       "term_id": "2013-spring",
-      "subaccount_id": "courses:tacoma:test-college",
+      "subaccount_id": "uwcourse:tacoma:test-college",
       "subaccount_name": "College of Test",
       "courses": 268,
       "active_courses": 202,
@@ -83,7 +83,7 @@
     "fields": {
       "report": 1,
       "term_id": "2013-spring",
-      "subaccount_id": "courses:tacoma",
+      "subaccount_id": "uwcourse:tacoma",
       "subaccount_name": "Tacoma",
       "courses": 595,
       "active_courses": 151,

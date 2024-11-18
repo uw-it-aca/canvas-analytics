@@ -293,13 +293,11 @@ class CreateJobCommand(BaseCommand):
         subparsers = self._add_subparser(
             subparsers,
             TaskTypes.export_subaccount_activity_report,
-            include_term=True,
-            include_week=True,
             command_help_message=(
                 "Exports participation database view for given term and week."
             ),
-            default_sis_term_id=curr_sis_term_id,
-            default_week=curr_week)
+            include_term=False,
+            include_week=False)
 
         subparsers = self._add_subparser(
             subparsers,
