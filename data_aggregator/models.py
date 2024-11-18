@@ -751,7 +751,11 @@ class ReportManager(models.Manager):
         return report
 
     def get_subaccount_activity(self, sis_term_id=None, week_num=None):
-        kwargs = {"report_type": Report.SUBACCOUNT_ACTIVITY}
+        kwargs = {
+            "report_type": Report.SUBACCOUNT_ACTIVITY,
+            "finished_date__isnull": False,
+            "term_week__isnull": False,
+        }
         if sis_term_id is not None:
             kwargs["term_id"] = sis_term_id
             if week_num is not None:
