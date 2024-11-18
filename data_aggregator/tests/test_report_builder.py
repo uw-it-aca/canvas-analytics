@@ -195,28 +195,24 @@ class TestExportSubAccountActivityReport(TestCase):
         self.report_builder = ReportBuilder()
         self.term_id = "2013-spring"
         self.week = 10
-
-        with io.StringIO() as f:
-            f.write("A,B,C\n10,20,30\n100,200,300\n")
-            self.test_fileobj = f
+        self.csv_data = "A,B,C\n10,20,30\n100,200,300\n"
 
     @patch.object(ReportBuilder, "generate_report_csv")
     @patch.object(ReportBuilder, "upload_csv_file")
     def test_export_subaccount_activity_report(self, mock_upload, mock_create):
-        mock_create.return_value = self.test_fileobj
+        mock_create.return_value = self.csv_data
         self.report_builder.export_subaccount_activity_report(self.term_id,
                                                               self.week)
         mock_upload.assert_called_once_with(mock_create.return_value)
 
-    @patch.object(ReportBuilder, "upload_csv_file")
-    def test_generate_export_csv(self, mock_upload):
+    def test_generate_report_csv(self):
         reports = Report.objects.get_subaccount_activity(
             sis_term_id=self.term_id, week_num=self.week)
 
-        fileobj = self.report_builder.generate_report_csv(reports)
+        csv_data = self.report_builder.generate_report_csv(reports)
 
         self.maxDiff = None
-        self.assertMultiLineEqual(fileobj.getvalue(), (
+        self.assertMultiLineEqual(csv_data, (
             "term_sis_id,week_num,subaccount_id,subaccount_name,campus,"
             "college,department,adoption_rate,courses,active_courses,"
             "ind_study_courses,active_ind_study_courses,xlist_courses,"
@@ -238,11 +234,3 @@ class TestExportSubAccountActivityReport(TestCase):
             "Test Department,tacoma,test-college,test-department,73.78,199,"
             "122,33,1,2,0,54,21,678,528,12,631,3,8,65,786,453,678,2,23,456,"
             "776,900,4,41,33,77,76,98\n"))
-
-    @patch("data_aggregator.report_builder.client")
-    def test_upload_csv_file(self, mock_client):
-        client_instance = MagicMock()
-        client_instance.execute.return_value = "testing"
-        mock_client.return_value = client_instance
-
-        # TODO add tests for client.put_object

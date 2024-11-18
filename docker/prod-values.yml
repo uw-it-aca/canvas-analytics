@@ -261,6 +261,9 @@ environmentVariables:
   - name: GOOGLE_APPLICATION_CREDENTIALS
     value: "/gcs/credentials.json"
 
+  - name: AWS_S3_REGION_NAME
+    value: us-west-2
+
 externalSecrets:
   enabled: true
   secrets:
@@ -273,10 +276,22 @@ externalSecrets:
     - name: analytics.apps.canvas.uw.edu-idp-aws-credentials
       externalKey: canvas/analytics/shared/idp-aws-credentials
       data:
-        - name: aws_access_id
-          property: aws_access_id
-        - name: aws_access_key
-          property: aws_access_key
+        - name: access-key-id
+          property: access-key-id
+        - name: secret-access-key
+          property: secret-access-key
+        - name: storage-bucket-name
+          property: storage-bucket-name
+
+    - name: analytics.apps.canvas.uw.edu-export-aws-credentials
+      externalKey: canvas/analytics/shared/export-aws-credentials
+      data:
+        - name: access-key-id
+          property: access-key-id
+        - name: secret-access-key
+          property: secret-access-key
+        - name: storage-bucket-name
+          property: storage-bucket-name
 
     - name: analytics.apps.canvas.uw.edu-canvas-secrets
       externalKey: canvas/shared/secrets
@@ -367,14 +382,30 @@ environmentVariablesSecrets:
     name: IDP_CERT
     secretName: analytics.apps.canvas.uw.edu-uw-idp-cert
     secretKey: uw-idp-cert
-  awsIDPAccessId:
-    name: IDP_AWS_ACCESS_ID
+  awsIDPAccessKeyId:
+    name: IDP_AWS_ACCESS_KEY_ID
     secretName: analytics.apps.canvas.uw.edu-idp-aws-credentials
-    secretKey: aws_access_id
-  awsIDPAccessKey:
-    name: IDP_AWS_ACCESS_KEY
+    secretKey: access-key-id
+  awsIDPSecretAccessKey:
+    name: IDP_AWS_SECRET_ACCESS_KEY
     secretName: analytics.apps.canvas.uw.edu-idp-aws-credentials
-    secretKey: aws_access_key
+    secretKey: secret-access-key
+  awsIDPStorageBucketName:
+    name: IDP_AWS_STORAGE_BUCKET_NAME
+    secretName: analytics.apps.canvas.uw.edu-idp-aws-credentials
+    secretKey: storage-bucket-name
+  awsExportAccessKeyId:
+    name: EXPORT_AWS_ACCESS_KEY_ID
+    secretName: analytics.apps.canvas.uw.edu-export-aws-credentials
+    secretKey: access-key-id
+  awsExportSecretAccessKey:
+    name: EXPORT_AWS_SECRET_ACCESS_KEY
+    secretName: analytics.apps.canvas.uw.edu-export-aws-credentials
+    secretKey: secret-access-key
+  awsExportStorageBucketName:
+    name: EXPORT_AWS_STORAGE_BUCKET_NAME
+    secretName: analytics.apps.canvas.uw.edu-export-aws-credentials
+    secretKey: storage-bucket-name
   edwUser:
     name: EDW_USER
     secretName: analytics.apps.canvas.uw.edu-edw-secrets

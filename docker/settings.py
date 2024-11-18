@@ -34,13 +34,14 @@ else:
     GCS_TIMEOUT = 10  # request timeout in seconds
     GCS_NUM_RETRIES = 3  # number of request retries
 
-    IDP_BUCKET_NAME = os.getenv('IDP_BUCKET_NAME', 'uw-idp-data-files')
-    IDP_AWS_ACCESS_ID = os.getenv('IDP_AWS_ACCESS_ID', '')
-    IDP_AWS_ACCESS_KEY = os.getenv('IDP_AWS_ACCESS_KEY', '')
+    IDP_AWS_STORAGE_BUCKET_NAME = os.getenv('IDP_AWS_STORAGE_BUCKET_NAME')
+    IDP_AWS_ACCESS_KEY_ID = os.getenv('IDP_AWS_ACCESS_KEY_ID')
+    IDP_AWS_SECRET_ACCESS_KEY = os.getenv('IDP_AWS_SECRET_ACCESS_KEY')
 
-    EXPORT_BUCKET_NAME = os.getenv('EXPORT_BUCKET_NAME', 'uw-canvas-subaccount-activity')
-    EXPORT_AWS_ACCESS_ID = os.getenv('EXPORT_AWS_ACCESS_ID', '')
-    EXPORT_AWS_ACCESS_KEY = os.getenv('EXPORT_AWS_ACCESS_KEY', '')
+    EXPORT_AWS_STORAGE_BUCKET_NAME = os.getenv('EXPORT_AWS_STORAGE_BUCKET_NAME')
+    EXPORT_AWS_ACCESS_KEY_ID = os.getenv('EXPORT_AWS_ACCESS_KEY_ID')
+    EXPORT_AWS_SECRET_ACCESS_KEY = os.getenv('EXPORT_AWS_SECRET_ACCESS_KEY')
+    EXPORT_AWS_DEFAULT_FILE_NAME = 'canvas-subaccount-activity.csv'
 
 WEBPACK_LOADER = {
     'DEFAULT': {

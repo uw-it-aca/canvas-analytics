@@ -6,6 +6,7 @@ import io
 import csv
 from boto3 import client
 from logging import getLogger
+from django.conf import settings
 from django.db import transaction
 from django.test import override_settings
 from data_aggregator.models import Report, SubaccountActivity
@@ -219,8 +220,7 @@ class ReportBuilder():
             logger.info(f"No export data for {sis_term_id} week {week_num}")
             return
 
-        fileobj = self.generate_report_csv(reports)
-        self.upload_csv_file(fileobj)
+        self.upload_csv_file(self.generate_report_csv(reports))
 
     def generate_report_csv(self, reports):
         fileobj = io.StringIO()
@@ -237,23 +237,20 @@ class ReportBuilder():
                     writer.writerow(subaccount.csv_export_data())
                 seen_terms.add(report.term_id)
 
-        return fileobj
+        return fileobj.getvalue()
 
-    def upload_csv_file(self, fileobj):
-        print(fileobj.getvalue())
-        return  # S3 not yet configured
-
-        filename = "canvas-subaccount-activity.csv"
-        client = client("s3",
-                        aws_access_key_id=settings.EXPORT_AWS_ACCESS_ID,
-                        aws_secret_access_key=settings.EXPORT_AWS_ACCESS_KEY)
+    def upload_csv_file(self, csv_data):
+        s3client = client(
+            "s3",
+            aws_access_key_id=settings.EXPORT_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=settings.EXPORT_AWS_SECRET_ACCESS_KEY)
 
         try:
-            client.put_object(
-                Body=fileobj.getvalue(),
-                Bucket=settings.EXPORT_BUCKET_NAME,
-                Key=filename,
-                ContentType='text/csv',
+            s3client.put_object(
+                Body=csv_data,
+                Bucket=settings.EXPORT_AWS_STORAGE_BUCKET_NAME,
+                Key=settings.EXPORT_AWS_DEFAIULT_FILE_NAME,
+                ContentType="text/csv",
             )
         except Exception as ex:
             logger.error(f"CSV write failed: {ex}")

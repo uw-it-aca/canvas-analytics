@@ -69,8 +69,8 @@ class TestBaseDAO(TestCase):
     @patch('data_aggregator.dao.client')
     @patch('data_aggregator.dao.settings')
     def test_get_s3_client(self, mock_settings, mock_s3_client):
-        mock_settings.IDP_AWS_ACCESS_ID = MagicMock()
-        mock_settings.IDP_AWS_ACCESS_KEY = MagicMock()
+        mock_settings.IDP_AWS_ACCESS_KEY_ID = MagicMock()
+        mock_settings.IDP_AWS_SECRET_ACCESS_KEY = MagicMock()
         mock_s3_client_inst = mock_s3_client()
         base_dao = BaseDAO()
         client = base_dao.get_s3_client()
@@ -91,7 +91,7 @@ class TestBaseDAO(TestCase):
         base_dao = BaseDAO()
         base_dao.get_s3_bucket_name()
         mock_getattr.assert_called_once_with(mock_settings,
-                                             "IDP_BUCKET_NAME",
+                                             "IDP_AWS_STORAGE_BUCKET_NAME",
                                              "")
 
     @patch('data_aggregator.dao.settings')
