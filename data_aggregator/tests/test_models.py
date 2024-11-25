@@ -8,8 +8,9 @@ from django.db.utils import IntegrityError
 from django.test import TestCase
 from django.utils import timezone
 from datetime import timedelta, date
-from data_aggregator.models import Assignment, Job, Participation, Term, \
-    Week, Course, JobType, AnalyticTypes, User, TaskTypes
+from data_aggregator.models import (
+    Assignment, Job, Participation, Term, Week, Course, JobType, AnalyticTypes,
+    User, TaskTypes, Report, SubaccountActivity)
 from data_aggregator.utilities import datestring_to_datetime
 from mock import MagicMock, patch
 
@@ -805,6 +806,64 @@ class TestParticipationManager(TestCase):
         duplicate_partic.time_floating = partic.time_floating
         with self.assertRaises(IntegrityError):
             duplicate_partic.save()
+
+
+class TestReportManager(TestCase):
+    fixtures = [
+        'data_aggregator/fixtures/mock_data/da_report.json',
+        'data_aggregator/fixtures/mock_data/da_subaccountactivity.json',
+    ]
+
+    def test_get_subaccount_activity(self):
+        term = "2013-spring"
+        week = 10
+
+        # No term/week
+        reports = Report.objects.get_subaccount_activity()
+        self.assertEqual(len(reports), 1)
+        self.assertEqual(reports[0].term_id, term)
+        self.assertEqual(reports[0].term_week, week)
+
+        # Term only
+        reports = Report.objects.get_subaccount_activity(term)
+        self.assertEqual(len(reports), 1)
+        self.assertEqual(reports[0].term_id, term)
+        self.assertEqual(reports[0].term_week, week)
+
+        # Term, unknown week
+        reports = Report.objects.get_subaccount_activity(term, 9)
+        self.assertEqual(len(reports), 0)
+
+        # Term and week
+        reports = Report.objects.get_subaccount_activity(term, week)
+        self.assertEqual(reports[0].term_id, term)
+        self.assertEqual(reports[0].term_week, week)
+
+        report = reports[0]
+        self.assertEqual(len(report.subaccounts), 3)
+
+        subaccount = report.subaccounts[0]
+        self.assertEqual(subaccount.term_id, term)
+        self.assertEqual(subaccount.subaccount_id, "uwcourse:tacoma")
+        self.assertEqual(subaccount.adoption_rate(), 30.14)
+
+        subaccount = report.subaccounts[1]
+        self.assertEqual(subaccount.term_id, term)
+        self.assertEqual(
+            subaccount.subaccount_id, "uwcourse:tacoma:test-college")
+        self.assertEqual(subaccount.adoption_rate(), 96.15)
+
+        subaccount = report.subaccounts[2]
+        self.assertEqual(subaccount.term_id, term)
+        self.assertEqual(
+            subaccount.subaccount_id,
+            "uwcourse:tacoma:test-college:test-department")
+        self.assertEqual(subaccount.adoption_rate(), 73.78)
+        self.assertEqual(subaccount.csv_export_data(), [
+            "2013-spring", 10, "uwcourse:tacoma:test-college:test-department",
+            "Test Department", "tacoma", "test-college", "test-department",
+            73.78, 199, 122, 33, 1, 2, 0, 54, 21, 678, 528, 12, 631, 3, 8,
+            65, 786, 453, 678, 2, 23, 456, 776, 900, 4, 41, 33, 77, 76, 98])
 
 
 if __name__ == "__main__":

@@ -22,13 +22,11 @@ else:
     if os.getenv('ENV') == 'test':
         GCS_BUCKET_NAME = 'canvas-analytics-test'
         RAD_METADATA_BUCKET_NAME = 'canvas-analytics-test'
-        IDP_BUCKET_NAME = 'uw-idp-data-files'
     elif os.getenv('ENV') == 'prod':
         GCS_BUCKET_NAME = 'canvas-analytics'
         RAD_METADATA_BUCKET_NAME = 'canvas-analytics'
-        IDP_BUCKET_NAME = 'uw-idp-data-files'
 
-    EDW_HOSTNAME = "localhost"
+    EDW_HOSTNAME = 'localhost'
     EDW_USER = os.getenv('EDW_USER', '')
     EDW_PASSWORD = os.getenv('EDW_PASSWORD', '')
 
@@ -36,8 +34,16 @@ else:
     GCS_TIMEOUT = 10  # request timeout in seconds
     GCS_NUM_RETRIES = 3  # number of request retries
 
-    AWS_ACCESS_ID = os.getenv('AWS_ACCESS_ID', '')
-    AWS_ACCESS_KEY = os.getenv('AWS_ACCESS_KEY', '')
+    AWS_S3_REGION_NAME = os.getenv('AWS_S3_REGION_NAME')
+
+    IDP_AWS_STORAGE_BUCKET_NAME = os.getenv('IDP_AWS_STORAGE_BUCKET_NAME')
+    IDP_AWS_ACCESS_KEY_ID = os.getenv('IDP_AWS_ACCESS_KEY_ID')
+    IDP_AWS_SECRET_ACCESS_KEY = os.getenv('IDP_AWS_SECRET_ACCESS_KEY')
+
+    EXPORT_AWS_STORAGE_BUCKET_NAME = os.getenv('EXPORT_AWS_STORAGE_BUCKET_NAME')
+    EXPORT_AWS_ACCESS_KEY_ID = os.getenv('EXPORT_AWS_ACCESS_KEY_ID')
+    EXPORT_AWS_SECRET_ACCESS_KEY = os.getenv('EXPORT_AWS_SECRET_ACCESS_KEY')
+    EXPORT_AWS_DEFAULT_FILE_NAME = 'canvas-subaccount-activity.csv'
 
 WEBPACK_LOADER = {
     'DEFAULT': {

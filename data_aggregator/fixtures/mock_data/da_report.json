@@ -1,0 +1,13 @@
+[
+  {
+    "model": "data_aggregator.report",
+    "pk": 1,
+    "fields": {
+      "report_type": "subaccount_activity",
+      "started_date": "2023-05-30 21:59:59Z",
+      "finished_date": "2023-05-30 23:59:59Z",
+      "term_id": "2013-spring",
+      "term_week": 10
+    }
+  }
+]

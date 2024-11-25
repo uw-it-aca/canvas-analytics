@@ -44,7 +44,7 @@ setup(
     description='Collects data about UW Canvas usage',
     long_description=README,
     url='https://github.com/uw-it-aca/canvas-analytics',
-    author = "UW-IT AXDD",
+    author = "UW-IT T&LS",
     author_email = "aca-it@uw.edu",
     classifiers=[
         'Environment :: Web Environment',

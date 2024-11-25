@@ -1,6 +1,6 @@
-ARG DJANGO_CONTAINER_VERSION=2.0.2
+ARG DJANGO_CONTAINER_VERSION=2.0.5
 
-FROM us-docker.pkg.dev/uwit-mci-axdd/containers/django-container:${DJANGO_CONTAINER_VERSION} as app-prewebpack-container
+FROM us-docker.pkg.dev/uwit-mci-axdd/containers/django-container:${DJANGO_CONTAINER_VERSION} AS app-prewebpack-container
 
 USER root
 
@@ -23,13 +23,13 @@ WORKDIR /app/
 RUN npm install .
 RUN npx webpack --mode=production
 
-FROM app-prewebpack-container as app-container
+FROM app-prewebpack-container AS app-container
 
 COPY --chown=acait:acait --from=wpack /app/data_aggregator/static/data_aggregator/bundles/* /app/data_aggregator/static/data_aggregator/bundles/
 COPY --chown=acait:acait --from=wpack /app/data_aggregator/static/ /static/
 COPY --chown=acait:acait --from=wpack /app/data_aggregator/static/webpack-stats.json /app/data_aggregator/static/webpack-stats.json
 
-FROM us-docker.pkg.dev/uwit-mci-axdd/containers/django-test-container:${DJANGO_CONTAINER_VERSION} as app-test-container
+FROM us-docker.pkg.dev/uwit-mci-axdd/containers/django-test-container:${DJANGO_CONTAINER_VERSION} AS app-test-container
 
 COPY --from=app-container /app/ /app/
 COPY --from=app-container /static/ /static/

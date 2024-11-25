@@ -2,10 +2,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+import io
 import csv
+from boto3 import client
+from logging import getLogger
+from django.conf import settings
 from django.db import transaction
 from django.test import override_settings
-from logging import getLogger
 from data_aggregator.models import Report, SubaccountActivity
 from data_aggregator.utilities import set_gcs_base_path
 from data_aggregator.exceptions import TermNotStarted
@@ -206,3 +209,49 @@ class ReportBuilder():
                 continue
 
         report.finished()
+
+    def export_subaccount_activity_report(
+            self, sis_term_id=None, week_num=None):
+
+        reports = Report.objects.get_subaccount_activity(
+            sis_term_id=sis_term_id, week_num=week_num)
+
+        if not len(reports):
+            logger.info(f"No export data for {sis_term_id} week {week_num}")
+            return
+
+        self.upload_csv_file(self.generate_report_csv(reports))
+
+    def generate_report_csv(self, reports):
+        fileobj = io.StringIO()
+        csv.register_dialect("unix_newline", lineterminator="\n")
+        writer = csv.writer(fileobj, dialect="unix_newline")
+
+        seen_terms = set()
+        for index, report in enumerate(reports):
+            if index == 0:
+                writer.writerow(report.subaccount_activity_header())
+
+            if report.term_id not in seen_terms:
+                for subaccount in report.subaccounts:
+                    writer.writerow(subaccount.csv_export_data())
+                seen_terms.add(report.term_id)
+
+        return fileobj.getvalue()
+
+    def upload_csv_file(self, csv_data):
+        s3client = client(
+            "s3",
+            region_name=settings.AWS_S3_REGION_NAME,
+            aws_access_key_id=settings.EXPORT_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=settings.EXPORT_AWS_SECRET_ACCESS_KEY)
+
+        try:
+            s3client.put_object(
+                Body=csv_data,
+                Bucket=settings.EXPORT_AWS_STORAGE_BUCKET_NAME,
+                Key=settings.EXPORT_AWS_DEFAULT_FILE_NAME,
+                ContentType="text/csv",
+            )
+        except Exception as ex:
+            logger.error(f"CSV write failed: {ex}")

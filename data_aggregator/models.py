@@ -3,10 +3,11 @@
 
 
 import os
+import csv
 import logging
 from datetime import datetime, date, timedelta
 from django.db import models, IntegrityError
-from django.db.models import Q
+from django.db.models import Q, Prefetch
 from django.utils import timezone
 from data_aggregator.exceptions import TermNotStarted
 from data_aggregator import utilities
@@ -260,6 +261,7 @@ class JobManager(models.Manager):
         if jobtype in (AnalyticTypes.assignment,
                        AnalyticTypes.participation,
                        TaskTypes.build_subaccount_activity_report,
+                       TaskTypes.export_subaccount_activity_report,
                        TaskTypes.create_rad_db_view,
                        TaskTypes.create_assignment_db_view,
                        TaskTypes.create_participation_db_view,
@@ -325,6 +327,7 @@ class TaskTypes():
     create_compass_db_view = "create_compass_db_view"
     create_compass_data_file = "create_compass_data_file"
     build_subaccount_activity_report = "build_subaccount_activity_report"
+    export_subaccount_activity_report = "export_subaccount_activity_report"
 
 
 class JobType(models.Model):
@@ -719,7 +722,6 @@ class CompassDbView(models.Model):
 
 
 class ReportManager(models.Manager):
-
     def get_or_create_report(self, report_type,
                              sis_term_id=None, week_num=None):
         term, _ = Term.objects.get_or_create_term_from_sis_term_id(
@@ -748,6 +750,27 @@ class ReportManager(models.Manager):
 
         return report
 
+    def get_subaccount_activity(self, sis_term_id=None, week_num=None):
+        kwargs = {
+            "report_type": Report.SUBACCOUNT_ACTIVITY,
+            "finished_date__isnull": False,
+            "term_week__isnull": False,
+        }
+        if sis_term_id is not None:
+            kwargs["term_id"] = sis_term_id
+            if week_num is not None:
+                kwargs["term_week"] = week_num
+
+        prefetch = Prefetch(
+            "subaccountactivity_set",
+            queryset=SubaccountActivity.objects.filter(
+                Q(subaccount_id__startswith="uwcourse")
+                    ).order_by("subaccount_id"),
+            to_attr="subaccounts")
+
+        return super().get_queryset().prefetch_related(prefetch).filter(
+            **kwargs).order_by("-finished_date")
+
 
 class Report(models.Model):
     """
@@ -773,6 +796,21 @@ class Report(models.Model):
     def finished(self):
         self.finished_date = datetime.utcnow().replace(tzinfo=timezone.utc)
         self.save()
+
+    def subaccount_activity_header(self):
+        return [
+            "term_sis_id", "week_num", "subaccount_id", "subaccount_name",
+            "campus", "college", "department", "adoption_rate", "courses",
+            "active_courses", "ind_study_courses", "active_ind_study_courses",
+            "xlist_courses", "xlist_ind_study_courses", "teachers",
+            "unique_teachers", "students", "unique_students",
+            "discussion_topics", "discussion_replies", "media_objects",
+            "attachments", "assignments", "submissions", "announcements_views",
+            "assignments_views", "collaborations_views", "conferences_views",
+            "discussions_views", "files_views", "general_views",
+            "grades_views", "groups_views", "modules_views", "other_views",
+            "pages_views", "quizzes_views"
+        ]
 
 
 class SubaccountActivity(models.Model):
@@ -816,3 +854,63 @@ class SubaccountActivity(models.Model):
     other_views = models.PositiveIntegerField(default=0)
     pages_views = models.PositiveIntegerField(default=0)
     quizzes_views = models.PositiveIntegerField(default=0)
+
+    def adoption_rate(self):
+        courses = self.courses or 0
+        active_courses = self.active_courses or 0
+        ind_study_courses = self.ind_study_courses or 0
+        active_ind_study_courses = self.active_ind_study_courses or 0
+        xlist_courses = self.xlist_courses or 0
+        xlist_ind_study_courses = self.xlist_ind_study_courses or 0
+
+        try:
+            rate = round(
+                ((active_courses - active_ind_study_courses) /
+                    (courses - xlist_courses - ind_study_courses -
+                        xlist_ind_study_courses)) * 100, ndigits=2)
+        except ZeroDivisionError:
+            rate = 0.00
+
+        return rate
+
+    def csv_export_data(self):
+        accounts = self.subaccount_id.split(":")
+        return [
+            self.report.term_id,
+            self.report.term_week,
+            self.subaccount_id,
+            self.subaccount_name,
+            accounts[1] if 1 < len(accounts) else None,
+            accounts[2] if 2 < len(accounts) else None,
+            accounts[3] if 3 < len(accounts) else None,
+            self.adoption_rate(),
+            self.courses or 0,
+            self.active_courses or 0,
+            self.ind_study_courses or 0,
+            self.active_ind_study_courses or 0,
+            self.xlist_courses or 0,
+            self.xlist_ind_study_courses or 0,
+            self.teachers or 0,
+            self.unique_teachers or 0,
+            self.students or 0,
+            self.unique_students or 0,
+            self.discussion_topics or 0,
+            self.discussion_replies or 0,
+            self.media_objects or 0,
+            self.attachments or 0,
+            self.assignments or 0,
+            self.submissions or 0,
+            self.announcements_views or 0,
+            self.assignments_views or 0,
+            self.collaborations_views or 0,
+            self.conferences_views or 0,
+            self.discussions_views or 0,
+            self.files_views or 0,
+            self.general_views or 0,
+            self.grades_views or 0,
+            self.groups_views or 0,
+            self.modules_views or 0,
+            self.other_views or 0,
+            self.pages_views or 0,
+            self.quizzes_views or 0,
+        ]
