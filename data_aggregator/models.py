@@ -758,8 +758,11 @@ class ReportManager(models.Manager):
         }
         if sis_term_id is not None:
             kwargs["term_id"] = sis_term_id
-            if week_num is not None:
-                kwargs["term_week"] = week_num
+
+        if week_num is not None:
+            kwargs["term_week"] = week_num
+        else:
+            kwargs["term_week__lte"] = 10
 
         prefetch = Prefetch(
             "subaccountactivity_set",
@@ -855,6 +858,11 @@ class SubaccountActivity(models.Model):
     pages_views = models.PositiveIntegerField(default=0)
     quizzes_views = models.PositiveIntegerField(default=0)
 
+    @staticmethod
+    def format_name(s):
+        return "Continuum" if (
+            s == "uweo") else s.replace("-", " ").title()
+
     def adoption_rate(self):
         courses = self.courses or 0
         active_courses = self.active_courses or 0
@@ -880,9 +888,9 @@ class SubaccountActivity(models.Model):
             self.report.term_week,
             self.subaccount_id,
             self.subaccount_name,
-            accounts[1] if 1 < len(accounts) else None,
-            accounts[2] if 2 < len(accounts) else None,
-            accounts[3] if 3 < len(accounts) else None,
+            self.format_name(accounts[1]) if (1 < len(accounts)) else "",
+            self.format_name(accounts[2]) if (2 < len(accounts)) else "",
+            self.format_name(accounts[3]) if (3 < len(accounts)) else "",
             self.adoption_rate(),
             self.courses or 0,
             self.active_courses or 0,

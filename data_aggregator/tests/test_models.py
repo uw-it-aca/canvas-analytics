@@ -861,7 +861,7 @@ class TestReportManager(TestCase):
         self.assertEqual(subaccount.adoption_rate(), 73.78)
         self.assertEqual(subaccount.csv_export_data(), [
             "2013-spring", 10, "uwcourse:tacoma:test-college:test-department",
-            "Test Department", "tacoma", "test-college", "test-department",
+            "Test Department", "Tacoma", "Test College", "Test Department",
             73.78, 199, 122, 33, 1, 2, 0, 54, 21, 678, 528, 12, 631, 3, 8,
             65, 786, 453, 678, 2, 23, 456, 776, 900, 4, 41, 33, 77, 76, 98])
 
