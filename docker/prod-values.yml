@@ -284,7 +284,7 @@ externalSecrets:
           property: storage-bucket-name
 
     - name: analytics.apps.canvas.uw.edu-export-aws-credentials
-      externalKey: canvas/analytics/shared/export-aws-credentials
+      externalKey: canvas/analytics/prod/export-aws-credentials
       data:
         - name: access-key-id
           property: access-key-id
