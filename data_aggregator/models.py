@@ -861,7 +861,7 @@ class SubaccountActivity(models.Model):
     @staticmethod
     def format_name(s):
         return "Continuum" if (
-            s == "uweo") else s.replace("-", " ").title()
+            s == "uweo") else s.replace("-", " ").title().replace("Uw", "UW")
 
     def adoption_rate(self):
         courses = self.courses or 0
