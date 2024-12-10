@@ -247,11 +247,12 @@ class ReportBuilder():
             aws_secret_access_key=settings.EXPORT_AWS_SECRET_ACCESS_KEY)
 
         try:
-            s3client.put_object(
+            response = s3client.put_object(
                 Body=csv_data,
                 Bucket=settings.EXPORT_AWS_STORAGE_BUCKET_NAME,
                 Key=settings.EXPORT_AWS_DEFAULT_FILE_NAME,
                 ContentType="text/csv",
             )
+            logger.info(f"CSV upload completed, response: {response}")
         except Exception as ex:
-            logger.error(f"CSV write failed: {ex}")
+            logger.error(f"CSV upload failed: {ex}, response: {response}")
