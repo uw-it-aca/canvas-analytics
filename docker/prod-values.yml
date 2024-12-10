@@ -152,12 +152,12 @@ cronjob:
       command: ["/scripts/management_command.sh"]
       args: ["create_jobs", "participation"]
     # run build subaccount activity report job
-    - name: subacct-activity
+    - name: subacct-build
       schedule: "10 21 * * 6" # At 2:10pm PDT on Saturday
       command: ["/scripts/management_command.sh"]
       args: ["create_and_run_jobs", "build_subaccount_activity_report"]
     # run export subaccount activity report job
-    - name: export-subacct-activity
+    - name: subacct-export
       schedule: "59 23 * * 6" # At 4:59pm PDT on Saturday
       command: ["/scripts/management_command.sh"]
       args: ["create_and_run_jobs", "export_subaccount_activity_report"]
