@@ -153,9 +153,14 @@ cronjob:
       args: ["create_jobs", "participation"]
     # run build subaccount activity report job
     - name: subacct-activity
-      schedule: "0 21 * * 6" # At 2:00pm PDT on Saturday
+      schedule: "10 21 * * 6" # At 2:10pm PDT on Saturday
       command: ["/scripts/management_command.sh"]
       args: ["create_and_run_jobs", "build_subaccount_activity_report"]
+    # run export subaccount activity report job
+    - name: export-subacct-activity
+      schedule: "59 23 * * 6" # At 4:59pm PDT on Saturday
+      command: ["/scripts/management_command.sh"]
+      args: ["create_and_run_jobs", "export_subaccount_activity_report"]
     # add rad file job upfront so that it is created for the correct week
     - name: add-crt-rad-data
       schedule: "0 21 * * 6" # At 2:00pm PDT on Saturday
