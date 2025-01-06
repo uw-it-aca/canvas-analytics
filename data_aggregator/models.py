@@ -876,9 +876,9 @@ class SubaccountActivity(models.Model):
             rate = round(
                 ((active_courses - active_ind_study_courses) /
                     (courses - xlist_courses - ind_study_courses -
-                        xlist_ind_study_courses)) * 100, ndigits=2)
+                        xlist_ind_study_courses)) * 100, ndigits=1)
         except ZeroDivisionError:
-            rate = 0.00
+            rate = 0.0
 
         return rate
 
