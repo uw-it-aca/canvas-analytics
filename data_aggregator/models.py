@@ -1,4 +1,4 @@
-# Copyright 2024 UW-IT, University of Washington
+# Copyright 2025 UW-IT, University of Washington
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -767,7 +767,8 @@ class ReportManager(models.Manager):
         prefetch = Prefetch(
             "subaccountactivity_set",
             queryset=SubaccountActivity.objects.filter(
-                Q(subaccount_id__startswith="uwcourse")
+                Q(subaccount_id__startswith="uwcourse"),
+                ~Q(subaccount_id__endswith="nqpilot")
                     ).order_by("subaccount_id"),
             to_attr="subaccounts")
 
@@ -875,9 +876,9 @@ class SubaccountActivity(models.Model):
             rate = round(
                 ((active_courses - active_ind_study_courses) /
                     (courses - xlist_courses - ind_study_courses -
-                        xlist_ind_study_courses)) * 100, ndigits=2)
+                        xlist_ind_study_courses)) * 100, ndigits=1)
         except ZeroDivisionError:
-            rate = 0.00
+            rate = 0.0
 
         return rate
 

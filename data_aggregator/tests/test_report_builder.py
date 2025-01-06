@@ -1,4 +1,4 @@
-# Copyright 2024 UW-IT, University of Washington
+# Copyright 2025 UW-IT, University of Washington
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -223,14 +223,14 @@ class TestExportSubAccountActivityReport(TestCase):
             "conferences_views,discussions_views,files_views,general_views,"
             "grades_views,groups_views,modules_views,other_views,pages_views,"
             "quizzes_views\n"
-            "2013-spring,10,uwcourse:tacoma,Tacoma,Tacoma,,,30.14,595,151,91,"
+            "2013-spring,10,uwcourse:tacoma,Tacoma,Tacoma,,,30.1,595,151,91,"
             "3,12,1,1154,1121,11678,11528,1112,11631,113,118,1165,11786,11453,"
             "11678,112,1123,11456,11776,11900,114,1141,1133,1177,1176,1198\n"
             "2013-spring,10,uwcourse:tacoma:test-college,College of Test,"
-            "Tacoma,Test College,,96.15,268,202,51,2,8,1,154,121,1678,1528,"
+            "Tacoma,Test College,,96.2,268,202,51,2,8,1,154,121,1678,1528,"
             "112,1631,13,18,165,1786,1453,1678,12,123,1456,1776,1900,14,141,"
             "133,177,176,198\n"
             "2013-spring,10,uwcourse:tacoma:test-college:test-department,"
-            "Test Department,Tacoma,Test College,Test Department,73.78,199,"
+            "Test Department,Tacoma,Test College,Test Department,73.8,199,"
             "122,33,1,2,0,54,21,678,528,12,631,3,8,65,786,453,678,2,23,456,"
             "776,900,4,41,33,77,76,98\n"))

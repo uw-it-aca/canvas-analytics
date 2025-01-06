@@ -1,4 +1,4 @@
-# Copyright 2024 UW-IT, University of Washington
+# Copyright 2025 UW-IT, University of Washington
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -845,24 +845,24 @@ class TestReportManager(TestCase):
         subaccount = report.subaccounts[0]
         self.assertEqual(subaccount.term_id, term)
         self.assertEqual(subaccount.subaccount_id, "uwcourse:tacoma")
-        self.assertEqual(subaccount.adoption_rate(), 30.14)
+        self.assertEqual(subaccount.adoption_rate(), 30.1)
 
         subaccount = report.subaccounts[1]
         self.assertEqual(subaccount.term_id, term)
         self.assertEqual(
             subaccount.subaccount_id, "uwcourse:tacoma:test-college")
-        self.assertEqual(subaccount.adoption_rate(), 96.15)
+        self.assertEqual(subaccount.adoption_rate(), 96.2)
 
         subaccount = report.subaccounts[2]
         self.assertEqual(subaccount.term_id, term)
         self.assertEqual(
             subaccount.subaccount_id,
             "uwcourse:tacoma:test-college:test-department")
-        self.assertEqual(subaccount.adoption_rate(), 73.78)
+        self.assertEqual(subaccount.adoption_rate(), 73.8)
         self.assertEqual(subaccount.csv_export_data(), [
             "2013-spring", 10, "uwcourse:tacoma:test-college:test-department",
             "Test Department", "Tacoma", "Test College", "Test Department",
-            73.78, 199, 122, 33, 1, 2, 0, 54, 21, 678, 528, 12, 631, 3, 8,
+            73.8, 199, 122, 33, 1, 2, 0, 54, 21, 678, 528, 12, 631, 3, 8,
             65, 786, 453, 678, 2, 23, 456, 776, 900, 4, 41, 33, 77, 76, 98])
 
 
