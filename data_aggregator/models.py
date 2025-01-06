@@ -768,7 +768,7 @@ class ReportManager(models.Manager):
             "subaccountactivity_set",
             queryset=SubaccountActivity.objects.filter(
                 Q(subaccount_id__startswith="uwcourse"),
-                ~Q(subaccount_id__endswith="nqpilot"),
+                ~Q(subaccount_id__endswith="nqpilot")
                     ).order_by("subaccount_id"),
             to_attr="subaccounts")
 
