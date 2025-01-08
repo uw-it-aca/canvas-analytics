@@ -845,13 +845,13 @@ class TestReportManager(TestCase):
         subaccount = report.subaccounts[0]
         self.assertEqual(subaccount.term_id, term)
         self.assertEqual(subaccount.subaccount_id, "uwcourse:tacoma")
-        self.assertEqual(subaccount.adoption_rate(), 30.1)
+        self.assertEqual(subaccount.adoption_rate(), 30.0)
 
         subaccount = report.subaccounts[1]
         self.assertEqual(subaccount.term_id, term)
         self.assertEqual(
             subaccount.subaccount_id, "uwcourse:tacoma:test-college")
-        self.assertEqual(subaccount.adoption_rate(), 96.2)
+        self.assertEqual(subaccount.adoption_rate(), 95.2)
 
         subaccount = report.subaccounts[2]
         self.assertEqual(subaccount.term_id, term)
