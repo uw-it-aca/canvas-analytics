@@ -253,6 +253,8 @@ class ReportBuilder():
                 Key=settings.EXPORT_AWS_DEFAULT_FILE_NAME,
                 ContentType="text/csv",
             )
-            logger.info(f"CSV upload completed, response: {response}")
+            logger.info(
+                f"CSV upload completed, data-length: {len(csv_data)}, "
+                f"response: {response}")
         except Exception as ex:
             logger.error(f"CSV upload failed: {ex}, response: {response}")
