@@ -1,4 +1,4 @@
-[![Build Status](https://github.com/uw-it-aca/canvas-analytics/actions/workflows/cicd.yml/badge.svg?branch=main)](https://github.com/uw-it-aca/canvas-analytics/actions)
+[![Build Status](https://github.com/uw-it-aca/canvas-analytics/actions/workflows/cicd.yml/badge.svg)](https://github.com/uw-it-aca/canvas-analytics/actions)
 [![Coverage Status](https://coveralls.io/repos/github/uw-it-aca/canvas-analytics/badge.svg?branch=main)](https://coveralls.io/github/uw-it-aca/canvas-analytics?branch=main)
 
 # Canvas Analytics

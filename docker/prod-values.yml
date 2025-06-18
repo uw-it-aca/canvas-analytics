@@ -49,6 +49,8 @@ database:
   secretName: analytics.apps.canvas.uw.edu-sql-secrets
 repo: canvas-analytics
 instance: prod
+namespace:
+  enabled: true
 memcached:
   enabled: false
 gcsCredentials:

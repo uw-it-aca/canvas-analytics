@@ -41,6 +41,8 @@ database:
   secretName: test-analytics.apps.canvas.uw.edu-sql-secrets
 repo: canvas-analytics
 instance: test
+namespace:
+  enabled: true
 targetAverageUtilization: 100
 resources:
   limits:
