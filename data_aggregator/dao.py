@@ -1354,76 +1354,6 @@ class LoadRadDAO(BaseDAO):
         sdb_df = sdb_df.merge(users_df, how='left', on='uw_netid')
         return sdb_df
 
-    def get_pred_proba_scores_df(self, sis_term_id=None):
-        """
-        Download predicted probabilities file from the configured GCS bucket
-        and return pandas dataframe with contents
-
-        :param sis_term_id: sis term id to create data frame for. (default is
-            the current term)
-        :type sis_term_id: str
-        """
-        term, _ = Term.objects.get_or_create_term_from_sis_term_id(
-            sis_term_id=sis_term_id)
-        url_key = (f"application_metadata/predicted_probabilites/"
-                   f"{term.sis_term_id}-pred-proba.csv")
-        content = self.download_from_gcs_bucket(url_key)
-
-        probs_df = pd.read_csv(
-            StringIO(content),
-            usecols=['system_key', 'pred0'])
-        probs_df['pred0'] = probs_df['pred0'].transform(self._rescale_range)
-        probs_df.rename(columns={'pred0': 'pred'},
-                        inplace=True)
-        return probs_df
-
-    def get_eop_advisers_df(self, sis_term_id=None):
-        """
-        Download eop advisers file from the configured GCS bucket
-        and return pandas dataframe with contents
-
-        :param sis_term_id: sis term id to create data frame for. (default is
-            the current term)
-        :type sis_term_id: str
-        """
-        term, _ = Term.objects.get_or_create_term_from_sis_term_id(
-            sis_term_id=sis_term_id)
-        url_key = (f"application_metadata/eop_advisers/"
-                   f"{term.sis_term_id}-eop-advisers.csv")
-        content = self.download_from_gcs_bucket(url_key)
-        eop_df = pd.read_csv(
-            StringIO(content),
-            usecols=['student_no', 'adviser_name', 'staff_id'])
-        # strip any whitespace
-        eop_df['adviser_name'] = eop_df['adviser_name'].str.strip()
-        eop_df['staff_id'] = eop_df['staff_id'].str.strip()
-        eop_df['adviser_type'] = AdviserTypes.eop
-        return eop_df
-
-    def get_iss_advisers_df(self, sis_term_id=None):
-        """
-        Download iss advisers file from the configured GCS bucket
-        and return pandas dataframe with contents
-
-        :param sis_term_id: sis term id to create data frame for. (default is
-            the current term)
-        :type sis_term_id: str
-        """
-        term, _ = Term.objects.get_or_create_term_from_sis_term_id(
-            sis_term_id=sis_term_id)
-        url_key = (f"application_metadata/iss_advisers/"
-                   f"{term.sis_term_id}-iss-advisers.csv")
-        content = self.download_from_gcs_bucket(url_key)
-        iss_df = pd.read_csv(
-            StringIO(content),
-            usecols=['student_no', 'adviser_name',
-                     'staff_id'])
-        # strip any whitespace
-        iss_df['adviser_name'] = iss_df['adviser_name'].str.strip()
-        iss_df['staff_id'] = iss_df['staff_id'].str.strip()
-        iss_df['adviser_type'] = AdviserTypes.iss
-        return iss_df
-
     def get_rad_dbview_df(self, sis_term_id=None, week_num=None):
         """
         Query RAD canvas data from the canvas-analytics RAD db view for the
@@ -1506,25 +1436,14 @@ class LoadRadDAO(BaseDAO):
         sdb_df = self.get_student_categories_df(sis_term_id=sis_term_id)
         # get idp data
         idp_df = self.get_idp_df()
-        # get predicted probabilities
-        probs_df = self.get_pred_proba_scores_df(sis_term_id=sis_term_id)
-        # get eop advisers
-        eop_advisers_df = self.get_eop_advisers_df(sis_term_id=sis_term_id)
-        # get iss advisers
-        iss_advisers_df = self.get_iss_advisers_df(sis_term_id=sis_term_id)
-        # combine advisers
-        combined_advisers_df = \
-            pd.concat([eop_advisers_df, iss_advisers_df])
         # merge to create the final dataset
         joined_canvas_df = (
             pd.merge(sdb_df, rad_df, how='left', on='canvas_user_id')
-              .merge(idp_df, how='left', on='uw_netid')
-              .merge(probs_df, how='left', on='system_key')
-              .merge(combined_advisers_df, how='left', on='student_no'))
+              .merge(idp_df, how='left', on='uw_netid'))
         joined_canvas_df = joined_canvas_df[
             ['uw_netid', 'student_no', 'student_name_lowc', 'activity',
-             'assignments', 'grades', 'pred', 'adviser_name', 'adviser_type',
-             'staff_id', 'sign_in', 'stem', 'incoming_freshman', 'premajor',
+             'assignments', 'grades', 'sign_in', 'stem', 'incoming_freshman',
+             'premajor',
              'eop', 'international', 'isso', 'engineering', 'informatics',
              'campus_code', 'summer', 'class_code', 'sport_code']]
         return joined_canvas_df
@@ -1620,19 +1539,16 @@ class LoadCompassDAO(LoadRadDAO):
         sdb_df = self.get_student_categories_df(sis_term_id=sis_term_id)
         # get idp data
         idp_df = self.get_idp_df()
-        # get predicted probabilities
-        probs_df = self.get_pred_proba_scores_df(sis_term_id=sis_term_id)
         # get course id lookup
         course_df = self._get_course_df(sis_term_id=sis_term_id)
         # merge to create the final dataset
         joined_canvas_df = (
             pd.merge(sdb_df, compass_df, how='left', on='canvas_user_id')
             .merge(idp_df, how='left', on='uw_netid')
-            .merge(probs_df, how='left', on='system_key')
             .merge(course_df, how='left', left_on='course_id', right_on='id'))
         joined_canvas_df = joined_canvas_df[
             ['uw_netid', 'student_no', 'student_name_lowc', 'course_code',
-             'activity', 'assignments', 'grades', 'pred', 'sign_in', 'stem',
+             'activity', 'assignments', 'grades', 'sign_in', 'stem',
              'incoming_freshman', 'premajor', 'eop', 'international', 'isso',
              'engineering', 'informatics', 'campus_code', 'summer',
              'class_code', 'sport_code']]
