@@ -938,43 +938,6 @@ class TestLoadRadDAO(TestCase):
             lrd.get_student_categories_df(sis_term_id=sis_term_id)
         return mock_student_categories_df
 
-    def _get_mock_pred_proba_df(self):
-        lrd = self._get_test_load_rad_dao()
-        mock_pred_proba_file = \
-            os.path.join(os.path.dirname(__file__),
-                         'test_data/2013-spring-pred-proba.csv')
-        mock_pred_proba = open(mock_pred_proba_file).read()
-        lrd.download_from_gcs_bucket = MagicMock(return_value=mock_pred_proba)
-        mock_pred_proba_df = \
-            lrd.get_pred_proba_scores_df(sis_term_id="2013-spring")
-        return mock_pred_proba_df
-
-    def _get_mock_eop_advisers_df(self):
-        lrd = self._get_test_load_rad_dao()
-        mock_eop_advisers_file = \
-            os.path.join(os.path.dirname(__file__),
-                         'test_data/2013-spring-eop-advisers.csv')
-        mock_eop_advisers = open(mock_eop_advisers_file).read()
-        lrd.download_from_gcs_bucket = \
-            MagicMock(return_value=mock_eop_advisers)
-        mock_eop_advisers_df = \
-            lrd.get_eop_advisers_df(sis_term_id="2013-spring")
-        mock_eop_advisers_df["adviser_type"] = AdviserTypes.eop
-        return mock_eop_advisers_df
-
-    def _get_mock_iss_advisers_df(self):
-        lrd = self._get_test_load_rad_dao()
-        mock_iss_advisers_file = \
-            os.path.join(os.path.dirname(__file__),
-                         'test_data/2013-spring-iss-advisers.csv')
-        mock_iss_advisers = open(mock_iss_advisers_file).read()
-        lrd.download_from_gcs_bucket = \
-            MagicMock(return_value=mock_iss_advisers)
-        mock_iss_advisers_df = \
-            lrd.get_iss_advisers_df(sis_term_id="2013-spring")
-        mock_iss_advisers_df["adviser_type"] = AdviserTypes.iss
-        return mock_iss_advisers_df
-
     def _get_mock_idp_data(self, lrd):
         mock_idp_file = \
             os.path.join(os.path.dirname(__file__),
@@ -1081,24 +1044,6 @@ class TestLoadRadDAO(TestCase):
             mock_student_categories_df.columns.values.tolist(),
             columns)
 
-    def test_get_pred_proba_scores_df(self):
-        mock_pred_proba_df = self._get_mock_pred_proba_df()
-        self.assertEqual(
-            mock_pred_proba_df.columns.values.tolist(),
-            ["system_key", "pred"])
-
-    def test_get_eop_advisers_df(self):
-        mock_eop_advisers_df = self._get_mock_eop_advisers_df()
-        self.assertEqual(
-            mock_eop_advisers_df.columns.values.tolist(),
-            ["student_no", "adviser_name", "staff_id", "adviser_type"])
-
-    def test_get_iss_advisers_df(self):
-        mock_iss_advisers_df = self._get_mock_iss_advisers_df()
-        self.assertEqual(
-            mock_iss_advisers_df.columns.values.tolist(),
-            ["student_no", "adviser_name", "staff_id", "adviser_type"])
-
     def test_get_last_idp_file(self):
         lrd = self._get_test_load_rad_dao()
         mock_s3_bucket_name = MagicMock()
@@ -1131,17 +1076,10 @@ class TestLoadRadDAO(TestCase):
             MagicMock(return_value=self._get_mock_student_categories_df())
         lrd.get_idp_df = \
             MagicMock(return_value=self._get_mock_idp_df())
-        lrd.get_pred_proba_scores_df = \
-            MagicMock(return_value=self._get_mock_pred_proba_df())
-        lrd.get_eop_advisers_df = \
-            MagicMock(return_value=self._get_mock_eop_advisers_df())
-        lrd.get_iss_advisers_df = \
-            MagicMock(return_value=self._get_mock_iss_advisers_df())
         mock_rad_df = lrd.get_rad_df(sis_term_id="2013-spring", week_num=3)
         self.assertEqual(mock_rad_df.columns.values.tolist(),
                          ["uw_netid", "student_no", "student_name_lowc",
-                          "activity", "assignments", "grades", "pred",
-                          "adviser_name", "adviser_type", "staff_id",
+                          "activity", "assignments", "grades",
                           "sign_in", "stem", "incoming_freshman", "premajor",
                           "eop", "international", "isso", "engineering",
                           "informatics", "campus_code", "summer", "class_code",
