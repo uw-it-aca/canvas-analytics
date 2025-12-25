@@ -1443,8 +1443,7 @@ class LoadRadDAO(BaseDAO):
         joined_canvas_df = joined_canvas_df[
             ['uw_netid', 'student_no', 'student_name_lowc', 'activity',
              'assignments', 'grades', 'sign_in', 'stem', 'incoming_freshman',
-             'premajor',
-             'eop', 'international', 'isso', 'engineering', 'informatics',
+             'premajor', 'eop', 'international', 'isso', 'engineering',
              'campus_code', 'summer', 'class_code', 'sport_code']]
         return joined_canvas_df
 
