@@ -1082,8 +1082,7 @@ class TestLoadRadDAO(TestCase):
                           "activity", "assignments", "grades",
                           "sign_in", "stem", "incoming_freshman", "premajor",
                           "eop", "international", "isso", "engineering",
-                          "informatics", "campus_code", "summer", "class_code",
-                          "sport_code"])
+                          "campus_code", "summer", "class_code", "sport_code"])
 
     @patch('data_aggregator.dao.Week')
     @patch('data_aggregator.dao.Term')
