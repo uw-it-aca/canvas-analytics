@@ -118,9 +118,6 @@ export default {
       selectedUploadType: null,
       newFileName: null,
       uploadTypes: [
-        { text: "EOP Advisers", value: "eop-advisers" },
-        { text: "ISS Advisers", value: "iss-advisers" },
-        { text: "Predicted Probabilites", value: "pred-proba" },
         { text: "Student Categories", value: "netid-name-stunum-categories" },
       ],
     };
