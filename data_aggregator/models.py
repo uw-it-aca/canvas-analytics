@@ -5,7 +5,7 @@
 import os
 import csv
 import logging
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone as dt_timezone
 from django.db import models, IntegrityError
 from django.db.models import Q, Prefetch
 from django.utils import timezone
@@ -84,9 +84,9 @@ class TermManager(models.Manager):
         def sws_to_utc(dt):
             if isinstance(dt, date):
                 # convert date to datetime
-                dt = datetime.combine(dt, datetime.min.time())
-                SWS_TIMEZONE.localize(dt)
-                return dt.astimezone(timezone.utc)
+                return datetime.combine(
+                        dt, datetime.min.time(), tzinfo=SWS_TIMEZONE
+                    ).astimezone(dt_timezone.utc)
 
         # get/create model for the term
         term, created = \
@@ -733,7 +733,7 @@ class ReportManager(models.Manager):
         if week.week < 1:
             raise TermNotStarted(term.sis_term_id)
 
-        started_dt = datetime.utcnow().replace(tzinfo=timezone.utc)
+        started_dt = datetime.now().replace(tzinfo=dt_timezone.utc)
         report, report_created = Report.objects.get_or_create(
             report_type=report_type,
             term_id=term.sis_term_id,
@@ -798,7 +798,7 @@ class Report(models.Model):
     term_week = models.PositiveIntegerField(null=True)
 
     def finished(self):
-        self.finished_date = datetime.utcnow().replace(tzinfo=timezone.utc)
+        self.finished_date = datetime.now().replace(tzinfo=dt_timezone.utc)
         self.save()
 
     def subaccount_activity_header(self):
