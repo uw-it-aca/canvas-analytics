@@ -4,6 +4,7 @@
 
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
+from uw_sws import SWS_TIMEZONE
 import os
 
 
@@ -28,7 +29,8 @@ def datestring_to_datetime(date_str, tz_name="UTC"):
                 "%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%dT%H:%M:%S")
         for fmt in fmts:
             try:
-                dt = datetime.strptime(date_str, fmt).astimezone(tz)
+                dt = datetime.strptime(date_str, fmt).replace(
+                    tzinfo=SWS_TIMEZONE).astimezone(tz)
                 if dt.year < 1900:
                     err_msg = (f"Date {date_str} is out of range. "
                                f"Year must be year >= 1900.")
