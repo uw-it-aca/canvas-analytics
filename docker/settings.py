@@ -3,7 +3,6 @@ import os
 
 INSTALLED_APPS += [
     'data_aggregator.apps.DataAggregatorConfig',
-    'webpack_loader',
     'rest_framework'
 ]
 
@@ -45,12 +44,6 @@ else:
     EXPORT_AWS_SECRET_ACCESS_KEY = os.getenv('EXPORT_AWS_SECRET_ACCESS_KEY')
     EXPORT_AWS_DEFAULT_FILE_NAME = 'canvas-subaccount-activity.csv'
 
-WEBPACK_LOADER = {
-    'DEFAULT': {
-        'BUNDLE_DIR_NAME': 'data_aggregator/bundles/',
-        'STATS_FILE': os.path.join(BASE_DIR, 'data_aggregator', 'static', 'webpack-stats.json'),
-    }
-}
 
 RESTCLIENTS_CANVAS_POOL_SIZE = 20
 ACADEMIC_CANVAS_ACCOUNT_ID = '84378'
