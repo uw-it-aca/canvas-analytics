@@ -4,7 +4,7 @@ FROM us-docker.pkg.dev/uwit-mci-axdd/containers/django-container:${DJANGO_CONTAI
 
 USER root
 
-RUN apt-get update && apt-get install -y postgresql-client libpq-dev
+RUN apt-get update && apt-get install -y postgresql-client libpq-dev freetds-bin freetds-dev
 
 USER acait
 
