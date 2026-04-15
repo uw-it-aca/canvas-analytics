@@ -2,9 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from django.utils import timezone
 from datetime import date, datetime
-from pytz import timezone as tz
+from zoneinfo import ZoneInfo
+from uw_sws import SWS_TIMEZONE
 import os
 
 
@@ -21,12 +21,16 @@ def datestring_to_datetime(date_str, tz_name="UTC"):
     :type: datetime
     """
     if isinstance(date_str, (str)):
+        if not tz_name:
+            tz_name = "UTC"
+        tz = ZoneInfo(tz_name)
+
         fmts = ("%Y-%m-%dT%H:%M:%S.%fZ", "%Y-%m-%dT%H:%M:%S.%f",
                 "%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%dT%H:%M:%S")
         for fmt in fmts:
             try:
-                dt = timezone.make_aware(
-                    datetime.strptime(date_str, fmt), timezone=tz(tz_name))
+                dt = datetime.strptime(date_str, fmt).replace(
+                    tzinfo=SWS_TIMEZONE).astimezone(tz)
                 if dt.year < 1900:
                     err_msg = (f"Date {date_str} is out of range. "
                                f"Year must be year >= 1900.")
@@ -49,14 +53,18 @@ def get_relative_week(relative_date, cmp_dt=None, tz_name="UTC"):
     cmp_dt. If cmp_dt is not supplied, then returns number of weeks between
     supplied relative_date and the current utc date.
     """
+    if not tz_name:
+        tz_name = "UTC"
+    tz = ZoneInfo(tz_name)
+
     week = 0
     if cmp_dt is None:
-        cmp_dt = timezone.make_aware(datetime.now(),
-                                     timezone=tz(tz_name))
+        cmp_dt = datetime.now(tz)
+
     if isinstance(relative_date, date):
-        relative_date = timezone.make_aware(
-            datetime.combine(relative_date, datetime.min.time()),
-            timezone=tz(tz_name))
+        relative_date = datetime.combine(
+            relative_date, datetime.min.time(), tzinfo=tz)
+
     days = (cmp_dt - relative_date).days
     week = (days // 7)
     if days >= 0:
