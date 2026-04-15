@@ -28,7 +28,6 @@ setup(
         'uw-restclients-pws~=2.1',
         'uw-restclients-canvas~=1.2',
         'uw-django-saml2~=1.8',
-        'django-webpack-loader~=0.7',
         'djangorestframework~=3.12',
         'uw-gcs-clients~=1.0',
         'boto3~=1.17',
