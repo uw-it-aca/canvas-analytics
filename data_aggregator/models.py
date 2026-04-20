@@ -733,8 +733,7 @@ class ReportManager(models.Manager):
         if week.week < 1:
             raise TermNotStarted(term.sis_term_id)
 
-        started_dt = datetime.now(SWS_TIMEZONE).replace(
-            tzinfo=dt_timezone.utc)
+        started_dt = datetime.now(SWS_TIMEZONE).astimezone(dt_timezone.utc)
         report, report_created = Report.objects.get_or_create(
             report_type=report_type,
             term_id=term.sis_term_id,
@@ -799,8 +798,8 @@ class Report(models.Model):
     term_week = models.PositiveIntegerField(null=True)
 
     def finished(self):
-        self.finished_date = datetime.now(SWS_TIMEZONE).replace(
-            tzinfo=dt_timezone.utc)
+        self.finished_date = datetime.now(SWS_TIMEZONE).astimezone(
+            dt_timezone.utc)
         self.save()
 
     def subaccount_activity_header(self):
