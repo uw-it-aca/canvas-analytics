@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from django.urls import re_path
-from django.views.generic import RedirectView
 from data_aggregator.views.pages import APIDocumentationView, JobAdminView, \
     JobAdminDetailView, MetadataFileAdminView
 from data_aggregator.views.api.jobs import JobView, JobRestartView, \
@@ -14,15 +13,6 @@ from data_aggregator.views.api.analytics import AccountAssignmentView, \
     UserView, UserAssignmentView, UserParticipationView
 
 urlpatterns = [
-    re_path(r'^$',
-            RedirectView.as_view(pattern_name='api_analytics',
-                                 permanent=False)),
-    re_path(r'admin/$',
-            RedirectView.as_view(pattern_name='admin_jobs', permanent=False)),
-    re_path(r'admin/jobs/$', JobAdminView.as_view(), name="admin_jobs"),
-    re_path(r'admin/jobs/(?P<pk>[-@:\d]+)/$', JobAdminDetailView.as_view()),
-    re_path(r'admin/metadata/$', MetadataFileAdminView.as_view(),
-            name="metadata"),
     re_path(r'api/internal/metadata/$', MetadataFileListView.as_view()),
     re_path(r'api/internal/metadata/upload/$',
             MetadataFileUploadView.as_view()),

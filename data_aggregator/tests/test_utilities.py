@@ -8,7 +8,7 @@ import unittest
 from django.test import TestCase
 from data_aggregator import utilities
 from django.utils import timezone
-from pytz import timezone as tz
+from zoneinfo import ZoneInfo as tz
 
 
 class TestUtilities(TestCase):
