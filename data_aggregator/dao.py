@@ -8,7 +8,7 @@ import pymssql
 from csv import DictReader
 from django.conf import settings
 from django.db import transaction, connection
-from data_aggregator.models import Adviser, AdviserTypes, Assignment, Course, \
+from data_aggregator.models import Adviser, Assignment, Course, \
     Participation, TaskTypes, User, RadDbView, Term, Week, AnalyticTypes, \
     Job, CompassDbView
 from data_aggregator.utilities import get_view_name, set_gcs_base_path, \

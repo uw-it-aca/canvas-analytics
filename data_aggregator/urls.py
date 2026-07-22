@@ -2,8 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from django.urls import re_path
-from data_aggregator.views.pages import APIDocumentationView, JobAdminView, \
-    JobAdminDetailView, MetadataFileAdminView
+from data_aggregator.views.pages import APIDocumentationView
 from data_aggregator.views.api.jobs import JobView, JobRestartView, \
     JobChartDataView
 from data_aggregator.views.api.metadata import MetadataFileListView, \

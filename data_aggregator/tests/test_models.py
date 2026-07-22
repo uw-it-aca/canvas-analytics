@@ -10,7 +10,7 @@ from django.utils import timezone
 from datetime import timedelta, date
 from data_aggregator.models import (
     Assignment, Job, Participation, Term, Week, Course, JobType, AnalyticTypes,
-    User, TaskTypes, Report, SubaccountActivity)
+    User, TaskTypes, Report)
 from data_aggregator.utilities import datestring_to_datetime
 from mock import MagicMock, patch
 

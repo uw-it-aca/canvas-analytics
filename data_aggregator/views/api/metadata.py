@@ -3,8 +3,6 @@
 
 
 import json
-import csv
-from io import StringIO
 from data_aggregator import utilities
 from data_aggregator.dao import BaseDAO
 from data_aggregator.models import Term
