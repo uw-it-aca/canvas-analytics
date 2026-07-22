@@ -3,7 +3,6 @@
 
 
 import os
-import io
 from data_aggregator.models import Report, SubaccountActivity
 from data_aggregator.report_builder import ReportBuilder
 from django.test import TestCase

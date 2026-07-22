@@ -3,7 +3,6 @@
 
 
 import os
-import csv
 import logging
 from datetime import datetime, date, timedelta, timezone as dt_timezone
 from django.db import models, IntegrityError
