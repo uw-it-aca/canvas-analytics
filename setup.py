@@ -21,7 +21,6 @@ setup(
     packages=['data_aggregator'],
     include_package_data=True,
     install_requires = [
-        'setuptools<81',
         'django~=5.2',
         'uw-restclients-core~=1.4',
         'uw-restclients-sws~=2.5',
@@ -29,10 +28,10 @@ setup(
         'uw-restclients-canvas~=1.2',
         'uw-django-saml2~=1.8',
         'djangorestframework~=3.12',
-        'uw-gcs-clients~=1.0',
+        'uw-gcs-clients~=1.1',
         'boto3~=1.17',
-        'google-cloud-storage~=1.37',
-        'google-api-core~=1.26',
+        'google-cloud-storage~=2.0',
+        'google-api-core~=2.0',
         'pandas<3',
         'pymssql~=2.3',
         'numpy<2.0'
