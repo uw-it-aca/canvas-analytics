@@ -1,26 +1,8 @@
-ingress:
-  enabled: true
-  type: nginx
-  tls:
-    canvas-analytics:
-      secretName: analytics.apps.canvas.uw.edu-ingress-cert
-      hosts:
-        - analytics.apps.canvas.uw.edu
-  hosts:
-    canvas-analytics:
-      host: analytics.apps.canvas.uw.edu
-      paths:
-        - "/"
-  annotations:
-    cert-manager.io/cluster-issuer: letsencrypt
-    nginx.ingress.kubernetes.io/client-body-buffer-size: "16K"
-    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "500"
+gateway:
+  enabled: false
 autoscaling:
-  enabled: true
-  minReplicas: 1
-  maxReplicas: 2
-targetAverageUtilization: 100
+  enabled: false
+replicaCount: 1
 resources:
   limits:
     cpu: 2000m
@@ -239,8 +221,8 @@ daemon:
 
 certs:
   mounted: true
-  certPath: /certs/apps.canvas.uw.edu-ic.cert
-  keyPath: /certs/apps.canvas.uw.edu-ic.key
+  certPath: /certs/apps.canvas.uw.edu-uwca.cert
+  keyPath: /certs/apps.canvas.uw.edu-uwca.key
   secretName: analytics.apps.canvas.uw.edu-client-cert
 
 environmentVariables:
@@ -270,6 +252,9 @@ environmentVariables:
 
   - name: AWS_S3_REGION_NAME
     value: us-west-2
+
+  - name: OPENSSL_CONF
+    value: /ssl/openssl.cnf
 
 externalSecrets:
   enabled: true
@@ -345,18 +330,12 @@ externalSecrets:
           property: proxy-id
 
     - name: analytics.apps.canvas.uw.edu-client-cert
-      externalKey: canvas/prod/ic-certs
+      externalKey: canvas/prod/uwca-certs
       data:
-        - name: apps.canvas.uw.edu-ic.cert
-          property: apps.canvas.uw.edu-ic.cert
-        - name: apps.canvas.uw.edu-ic.key
-          property: apps.canvas.uw.edu-ic.key
-
-    - name: analytics.apps.canvas.uw.edu-sp-cert
-      externalKey: canvas/analytics/prod/ic-certs
-      data:
-        - name: analytics.apps.canvas.uw.edu-ic.cert
-          property: analytics.apps.canvas.uw.edu-ic.cert
+        - name: apps.canvas.uw.edu-uwca.cert
+          property: apps.canvas.uw.edu-uwca.cert
+        - name: apps.canvas.uw.edu-uwca.key
+          property: apps.canvas.uw.edu-uwca.key
 
     - name: analytics.apps.canvas.uw.edu-uw-idp-cert
       externalKey: idp-cert
@@ -381,10 +360,6 @@ environmentVariablesSecrets:
     name: ACCESS_GROUP
     secretName: analytics.apps.canvas.uw.edu-shared-secrets
     secretKey: access-group-id
-  samlSPCert:
-    name: SP_CERT
-    secretName: analytics.apps.canvas.uw.edu-sp-cert
-    secretKey: analytics.apps.canvas.uw.edu-ic.cert
   samlIDPCert:
     name: IDP_CERT
     secretName: analytics.apps.canvas.uw.edu-uw-idp-cert

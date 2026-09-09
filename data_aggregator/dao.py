@@ -48,7 +48,6 @@ class BaseDAO():
         """
         Configure global pandas options
         """
-        pd.options.mode.use_inf_as_na = True
         pd.options.display.max_rows = 500
         pd.options.display.precision = 3
         pd.options.display.float_format = '{:.3f}'.format
@@ -1414,6 +1413,7 @@ class LoadRadDAO(BaseDAO):
         idp_df = self._remove_outlying_idp_signins(idp_df)
         # normalize sign-in score
         idp_df['sign_in'] = np.log(idp_df['sign_in']+1)
+        idp_df['sign_in'].replace([np.inf, -np.inf], np.nan, inplace=True)
         idp_df['sign_in'] = self._rescale_range(idp_df['sign_in'])
         return idp_df
 
