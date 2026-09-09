@@ -34,6 +34,7 @@ setup(
         'google-cloud-storage~=1.37',
         'google-api-core~=1.26',
         'pandas<3',
+        'psycopg[c]'
         'pymssql~=2.3',
         'numpy<2.0'
     ],
