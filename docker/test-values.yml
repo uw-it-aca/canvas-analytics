@@ -1,20 +1,5 @@
-ingress:
-  enabled: true
-  tls:
-    canvas-analytics:
-      secretName: test-analytics.apps.canvas.uw.edu-ingress-cert
-      hosts:
-        - test-analytics.apps.canvas.uw.edu
-  hosts:
-    canvas-analytics:
-      host: test-analytics.apps.canvas.uw.edu
-      paths:
-        - "/"
-  annotations:
-    cert-manager.io/cluster-issuer: letsencrypt
-    nginx.ingress.kubernetes.io/client-body-buffer-size: "16K"
-    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "500"
+gateway:
+  enabled: false
 lifecycle:
   enabled: true
   preStop:
@@ -43,7 +28,6 @@ repo: canvas-analytics
 instance: test
 namespace:
   enabled: true
-targetAverageUtilization: 100
 resources:
   limits:
     cpu: 1000m
@@ -207,9 +191,13 @@ daemon:
       args: ['--cron', '* * * * *', "run_jobs", 'participation']
 certs:
   mounted: true
-  certPath: /certs/test-apps.canvas.uw.edu-ic.cert
-  keyPath: /certs/test-apps.canvas.uw.edu-ic.key
+  certPath: /certs/test-apps.canvas.uw.edu-uwca.cert
+  keyPath: /certs/test-apps.canvas.uw.edu-uwca.key
   secretName: test-analytics.apps.canvas.uw.edu-client-cert
+mountedSecrets:
+  enabled: true
+  mountPath: /ssl
+  secretName: test-analytics.apps.canvas.uw.edu-openssl-conf
 environmentVariables:
   - name: ENV
     value: test
@@ -237,6 +225,9 @@ environmentVariables:
 
   - name: AWS_S3_REGION_NAME
     value: us-west-2
+
+  - name: OPENSSL_CONF
+    value: /ssl/openssl.cnf
 
 externalSecrets:
   enabled: true
@@ -312,24 +303,24 @@ externalSecrets:
           property: password
 
     - name: test-analytics.apps.canvas.uw.edu-client-cert
-      externalKey: canvas/test/ic-certs
+      externalKey: canvas/test/uwca-certs
       data:
-        - name: test-apps.canvas.uw.edu-ic.cert
-          property: test-apps.canvas.uw.edu-ic.cert
-        - name: test-apps.canvas.uw.edu-ic.key
-          property: test-apps.canvas.uw.edu-ic.key
-
-    - name: test-analytics.apps.canvas.uw.edu-sp-cert
-      externalKey: canvas/analytics/test/ic-certs
-      data:
-        - name: test-analytics.apps.canvas.uw.edu-ic.cert
-          property: test-analytics.apps.canvas.uw.edu-ic.cert
+        - name: test-apps.canvas.uw.edu-uwca.cert
+          property: test-apps.canvas.uw.edu-uwca.cert
+        - name: test-apps.canvas.uw.edu-uwca.key
+          property: test-apps.canvas.uw.edu-uwca.key
 
     - name: test-analytics.apps.canvas.uw.edu-uw-idp-cert
       externalKey: idp-cert
       data:
         - name: uw-idp-cert
           property: cert
+
+    - name: test-analytics.apps.canvas.uw.edu-openssl-conf
+      externalKey: openssl-conf
+      data:
+        - name: openssl.cnf
+          property: openssl.cnf
 
 environmentVariablesSecrets:
   djangoSecret:
@@ -348,10 +339,6 @@ environmentVariablesSecrets:
     name: ACCESS_GROUP
     secretName: test-analytics.apps.canvas.uw.edu-shared-secrets
     secretKey: access-group-id
-  samlSPCert:
-    name: SP_CERT
-    secretName: test-analytics.apps.canvas.uw.edu-sp-cert
-    secretKey: test-analytics.apps.canvas.uw.edu-ic.cert
   samlIDPCert:
     name: IDP_CERT
     secretName: test-analytics.apps.canvas.uw.edu-uw-idp-cert
